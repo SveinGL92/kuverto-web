@@ -11,7 +11,7 @@ const variants: Record<Variant, string> = {
   text: 'border-0 bg-transparent text-primary underline underline-offset-4 hover:text-primary-hover !px-2',
   accent: 'no-underline bg-accent text-accent-on hover:text-accent-on border-0 hover:brightness-95',
   'on-panel': 'no-underline border-2 border-panel-on text-panel-on bg-transparent hover:bg-white/10',
-  danger: 'no-underline bg-error text-white border-0 hover:brightness-95',
+  danger: 'no-underline bg-error text-[var(--k-on-error)] border-0 hover:brightness-95',
 };
 
 const sizes: Record<Size, string> = {

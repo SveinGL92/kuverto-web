@@ -35,7 +35,7 @@ export function Dialog({
         className,
       )}
     >
-      <div className="relative">
+      <div className="relative max-h-[calc(100dvh-32px)] overflow-y-auto rounded-[28px]">
         <button
           type="button"
           aria-label="Lukk"

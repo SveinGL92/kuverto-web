@@ -18,7 +18,6 @@ for (const colorScheme of ['light', 'dark']) {
       await side.waitForTimeout(400);
       await side.addScriptTag({ content: axe });
       const res = await side.evaluate(() =>
-        // eslint-disable-next-line no-undef
         axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] } }),
       );
       for (const v of res.violations) {

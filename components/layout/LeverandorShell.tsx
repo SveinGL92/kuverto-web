@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { Symbol } from './Logo';
+import { ThemeToggle } from './ThemeToggle';
 
 export interface MenyPunkt {
   href: string;
@@ -54,6 +55,9 @@ export function LeverandorShell({
         <div className="mt-auto flex flex-col gap-1 border-t border-white/20 px-3 pt-4">
           <strong>{firma}</strong>
           <span className="text-small text-panel-on-muted">Godkjent · {dekning}</span>
+        </div>
+        <div className="-mt-4 px-1 [&_label]:text-panel-on-muted [&_label:has(:checked)]:bg-white/15 [&_label:has(:checked)]:text-panel-on">
+          <ThemeToggle />
         </div>
       </aside>
 

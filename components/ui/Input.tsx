@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn';
 export const feltKlasse = (feil?: boolean) =>
   cn(
     'w-full min-h-[52px] rounded-input bg-surface px-3.5 text-[17px] font-medium text-text box-border',
-    'focus:outline-none focus-visible:outline-none focus:ring-[3px] focus:ring-primary-on-muted focus:border-2 focus:border-primary focus:px-[13px]',
+    'focus:border-2 focus:border-primary focus:px-[13px]',
     feil ? 'border-2 border-error px-[13px]' : 'border-[1.5px] border-border-input',
   );
 

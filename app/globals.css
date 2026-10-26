@@ -7,12 +7,16 @@
   --k-on-panel: var(--k-on-primary);
   --k-on-panel-muted: var(--k-on-primary-muted);
   --k-neutral-bg: #E6E4D6; /* «Låst» og deaktiverte knapper i artboardene */
+  --k-on-error: #FFFFFF;
+  --k-status-accent: var(--k-accent); /* lenke og hake i det mørke statusvarselet */
 }
 :root[data-theme='dark'] {
   --k-panel: #262D17;
   --k-on-panel: #F1F0E3;
   --k-on-panel-muted: #B7B9A4;
   --k-neutral-bg: #3A4324;
+  --k-on-error: #12160A;
+  --k-status-accent: #2E3A12;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
@@ -20,6 +24,8 @@
     --k-on-panel: #F1F0E3;
     --k-on-panel-muted: #B7B9A4;
     --k-neutral-bg: #3A4324;
+    --k-on-error: #12160A;
+    --k-status-accent: #2E3A12;
   }
 }
 

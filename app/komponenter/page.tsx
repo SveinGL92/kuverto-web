@@ -7,7 +7,7 @@ import { PriceRing } from '@/components/ui/PriceRing';
 import { Progress } from '@/components/ui/Progress';
 import { KomponentDemo } from './demo';
 
-export const metadata: Metadata = { title: 'Komponenter', robots: { index: false } };
+export const metadata: Metadata = { title: 'Komponenter', description: 'Oversikt over knapper, felt, merker og andre komponenter i Kuverto.', robots: { index: false } };
 
 const H = ({ children }: { children: string }) => <h2 className="k-heading m-0 text-2xl">{children}</h2>;
 

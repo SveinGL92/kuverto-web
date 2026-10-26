@@ -1,5 +1,8 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EmptyState } from '@/components/states/EmptyState';
+
+export const metadata: Metadata = { title: 'Fant ikke siden', description: 'Siden finnes ikke, eller lenken er feil.' };
 
 export default function IkkeFunnet() {
   return (

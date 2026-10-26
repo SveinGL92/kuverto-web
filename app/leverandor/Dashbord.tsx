@@ -33,7 +33,7 @@ const undertekst = (f: Foresporsel) => {
 
 const merkelapp = (f: Foresporsel) => {
   const dager = dagerTil(f.dato);
-  if (dager >= 0 && dager <= 3) return <Badge tone="advarsel">Om {dager} dager</Badge>;
+  if (dager >= 0 && dager <= 3) return <Badge tone="advarsel">{dager === 0 ? 'I dag' : dager === 1 ? 'I morgen' : `Om ${dager} dager`}</Badge>;
   const t = tidSiden(f.opprettet);
   return <Badge tone="ny">Ny · {t}</Badge>;
 };
@@ -83,7 +83,7 @@ export function Dashbord() {
           <Symbol size={24} />
           <span className="text-[15px] font-semibold text-panel-on-muted">{leverandor.navn}</span>
         </span>
-        <button type="button" aria-label={`Varsler, ${ulest + 1} nye`} className="relative flex h-11 w-11 items-center justify-center">
+        <button type="button" aria-label={`Varsler, ${ulest} nye`} className="relative flex h-11 w-11 items-center justify-center">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" />
             <path d="M10 20.5h4" />

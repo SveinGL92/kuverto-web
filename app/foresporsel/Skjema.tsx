@@ -50,10 +50,14 @@ interface Utkast {
   epost: string;
 }
 
-type Feil = Partial<Record<'dato' | 'klokkeslett' | 'postnummer' | 'navn' | 'epost', string>>;
+type Feil = Partial<Record<'gjester' | 'dato' | 'klokkeslett' | 'postnummer' | 'navn' | 'epost', string>>;
 
 const LAGER = 'kuverto-utkast';
-const iDag = () => new Date().toISOString().slice(0, 10);
+/** Dagens dato i lokal tid (ikke UTC), som YYYY-MM-DD. */
+const iDag = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 const epostOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 
 function startverdi(q: URLSearchParams): Utkast {
@@ -126,12 +130,14 @@ export function Skjema() {
 
   const valider = (): Feil => {
     const f: Feil = {};
+    if (steg === 2 && u.gjester < 1) f.gjester = 'Skriv antall gjester, minst 1.';
     if (steg === 3) {
       if (!u.dato) f.dato = 'Velg en dato.';
       else if (u.dato < iDag()) f.dato = 'Datoen har passert. Velg en dato fra i dag og fremover.';
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(u.klokkeslett)) f.klokkeslett = 'Skriv klokkeslett som tt:mm, for eksempel 11:30.';
     }
-    if (steg === 4 && !gyldigPostnummer(u.postnummer)) f.postnummer = 'Vi finner ikke dette postnummeret. Skriv fire siffer, for eksempel 0150.';
+    if (steg === 4 && !gyldigPostnummer(u.postnummer))
+      f.postnummer = u.postnummer.length === 4 ? 'Vi finner ikke dette postnummeret.' : 'Skriv postnummeret med fire siffer, for eksempel 0150.';
     if (steg === 7) {
       if (!u.navn.trim()) f.navn = 'Skriv navnet ditt.';
       if (!epostOk(u.epost)) f.epost = u.epost.includes('@') ? 'Mangler domene, f.eks. @firma.no' : 'Skriv e-postadressen din, f.eks. kari@firma.no';
@@ -175,7 +181,7 @@ export function Skjema() {
               {anledninger.find((a) => a.id === u.anledning)?.navn} · {u.gjester} kuverter
             </strong>
             <span className="text-[15px] text-text-muted">
-              {u.dato ? stor(datoKort(u.dato)) : 'Fleksibel dato'} · {u.postnummer} {sted ?? ''} · {budsjettNavn(u.budsjett)}
+              {u.dato ? stor(datoKort(u.dato)) : 'Fleksibel dato'} · {[u.postnummer, sted].filter(Boolean).join(' ')} · {budsjettNavn(u.budsjett)}
             </span>
           </div>
           <div className="mt-auto flex flex-col gap-2">
@@ -275,6 +281,8 @@ export function Skjema() {
                     <span className="sr-only">Antall gjester</span>
                     <input
                       id="felt-gjester"
+                      aria-invalid={feil.gjester ? true : undefined}
+                      aria-describedby={feil.gjester ? 'felt-gjester-feil' : undefined}
                       inputMode="numeric"
                       value={u.gjester}
                       onChange={(e) => sett('gjester', Math.min(9999, Number(e.target.value.replace(/\D/g, '')) || 0))}
@@ -296,6 +304,11 @@ export function Skjema() {
                     </svg>
                   </button>
                 </div>
+                {feil.gjester && (
+                  <p id="felt-gjester-feil" className="-mt-3 mb-0 text-small font-semibold text-error">
+                    {feil.gjester}
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {[10, 25, 50, 100].map((n) => (
                     <Chip key={n} pressed={u.gjester === n} onClick={() => sett('gjester', n)}>

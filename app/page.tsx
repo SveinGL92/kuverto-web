@@ -74,7 +74,7 @@ export default function Forside() {
             </div>
             <div className="k-on-accent absolute bottom-0 right-0 flex flex-col rounded-[24px] bg-accent px-[18px] py-3.5 text-accent-on shadow-float md:bottom-auto md:top-[70px] md:rounded-[28px] md:px-[22px] md:py-[18px]">
               <span className="text-[13px] font-semibold md:text-small">Eksempel på tilbud</span>
-              <PriceRing className="mb-1.5 ml-3 mt-2 text-[32px] tracking-[-0.04em] md:mb-2 md:ml-3.5 md:mt-2.5 md:text-[40px]">kr 289</PriceRing>
+              <PriceRing className="mb-2.5 ml-3 mt-2.5 text-[32px] tracking-[-0.04em] md:mb-3.5 md:ml-3.5 md:mt-3 md:text-[40px]">kr 289</PriceRing>
               <span className="text-[13px] font-bold md:text-small">per kuvert</span>
             </div>
             <div className="absolute bottom-0 left-0 hidden items-center gap-3 rounded-[22px] bg-surface px-[18px] py-3.5 shadow-float md:flex">

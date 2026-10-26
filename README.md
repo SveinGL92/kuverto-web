@@ -52,7 +52,8 @@ design/         designpakken (fasit) – DESIGN.md, tokens, artboards, bilder, l
 - **Postnummer:** artboarden godtok bare 0000–3999. Appen godtar alle fire siffer (0001–9999). Oppslag mot registeret kommer i fase 2.
 - **Mørk modus:** olivenpaneler bruker en egen mørk flate (`--k-panel` i `app/globals.css`), fordi primærfargen blir sitron i mørk modus. Strektegningene inverteres med `.k-ink`.
 - **Strektegninger:** artboardene peker til lerretets ID-er. Koblingen til filene ligger i `design/blob-map.json`. Åtte av dem er koblet ved å se på tegningene.
-- **Mock-datoer:** forespørselen er satt til torsdag 12. november 2026 (artboardet sier «torsdag 14. november», men den datoen er en lørdag i 2026).
+- **Mock-datoer:** forespørselen er satt til torsdag 12. november 2026 (artboardet sier «torsdag 14. november», men den datoen er en lørdag i 2026). Relative tekster som «12 min» og «I morgen» regnes fra en fast mock-klokke (`MOCK_NA` i `lib/mock.ts`), så server og nettleser alltid viser det samme. Byttes mot ekte tid i fase 2.
+- **Fokus på felt:** den globale 3 px olivenringen brukes også på felt (artboardet viste en lys ring som ikke har nok kontrast).
 
 ## Fase 2
 

@@ -6,7 +6,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { TilstandFeil } from './TilstandFeil';
 
-export const metadata: Metadata = { title: 'Tilstander', robots: { index: false } };
+export const metadata: Metadata = { title: 'Tilstander', description: 'Oversikt over tomme tilstander, lasting, feil og bekreftelser i Kuverto.', robots: { index: false } };
 
 const celle = 'flex flex-col gap-3 border-border p-0 py-8 md:p-8';
 

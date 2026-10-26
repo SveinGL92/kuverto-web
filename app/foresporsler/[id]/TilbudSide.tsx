@@ -6,6 +6,7 @@ import { useMemo, useRef, useState } from 'react';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { EmptyState } from '@/components/states/EmptyState';
+import { dagerTil } from '@/components/kuverto/tid';
 import { BordetErDekket } from '@/components/states/BordetErDekket';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { PriceRing } from '@/components/ui/PriceRing';
@@ -27,11 +28,9 @@ const inkludertPoeng = (t: Tilbud) => Number(t.levering.inkludert) + Number(t.op
 const kortnavn = (t: Tilbud) => t.leverandorNavn.match(/\b([A-ZÆØÅ])\]?$/)?.[1] ?? t.leverandorNavn;
 
 function gjelderTil(iso: string) {
-  const imorgen = new Date();
-  imorgen.setDate(imorgen.getDate() + 1);
-  const iDag = new Date().toISOString().slice(0, 10);
-  if (iso === iDag) return { tekst: 'I dag', haster: true };
-  if (iso === imorgen.toISOString().slice(0, 10)) return { tekst: 'I morgen', haster: true };
+  const d = dagerTil(iso);
+  if (d === 0) return { tekst: 'I dag', haster: true };
+  if (d === 1) return { tekst: 'I morgen', haster: true };
   return { tekst: dagMndLang(iso), haster: false };
 }
 
@@ -60,6 +59,12 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
 
   const anledning = anledningNavn(f.anledning).toLowerCase();
   const kostholdTekst = f.kosthold.map((k) => `${k.type === 'notter' ? 'nøttefritt' : kostholdNavn(k.type).toLowerCase()} ${k.antall}`).join(' · ');
+  // «Vegetar og nøttefritt» ut fra det kunden har oppgitt.
+  const kostholdKort = (() => {
+    const ord = f.kosthold.map((k) => (k.type === 'notter' ? 'nøttefritt' : kostholdNavn(k.type).toLowerCase()));
+    const tekst = ord.length > 1 ? `${ord.slice(0, -1).join(', ')} og ${ord.at(-1)}` : (ord[0] ?? '');
+    return tekst.charAt(0).toUpperCase() + tekst.slice(1);
+  })();
   const velg = (id: string) => {
     setValgt(id);
     requestAnimationFrame(() => kvittering.current?.focus());
@@ -167,6 +172,7 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
                 </p>
               )}
               <ul
+                tabIndex={0}
                 aria-label="Tilbud"
                 aria-describedby={sortert.length > 2 ? 'sveip-hint' : undefined}
                 className="k-scroll-snap m-0 flex list-none gap-3 overflow-x-auto px-4 pb-4 [scroll-padding-inline:16px]"
@@ -205,20 +211,21 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
                                     Levering
                                   </li>
                                 )}
-                                {t.kosthold.dekket ? (
-                                  <li>
-                                    <Hake />
-                                    Vegetar og nøttefritt
-                                  </li>
-                                ) : (
-                                  <>
+                                {f.kosthold.length > 0 &&
+                                  (t.kosthold.dekket ? (
                                     <li>
                                       <Hake />
-                                      Vegetar
+                                      {kostholdKort}
                                     </li>
-                                    {t.kosthold.merknad && <li className="font-semibold text-warning">{t.kosthold.merknad.replace(/\.$/, '')}</li>}
-                                  </>
-                                )}
+                                  ) : (
+                                    <>
+                                      <li>
+                                        <Hake />
+                                        {t.kosthold.tekst.replace(/ dekket\.?$/, '')}
+                                      </li>
+                                      {t.kosthold.merknad && <li className="font-semibold text-warning">{t.kosthold.merknad.replace(/\.$/, '')}</li>}
+                                    </>
+                                  ))}
                                 {t.oppsettOgRydding ? (
                                   <li>
                                     <Hake />

@@ -1,5 +1,9 @@
 /** «12 min», «1 t», «i går», «3 dager». */
-export function tidSiden(iso: string, na = Date.now()) {
+import { MOCK_NA } from '@/lib/mock';
+
+const naMs = () => Date.parse(MOCK_NA);
+
+export function tidSiden(iso: string, na = naMs()) {
   const min = Math.max(1, Math.round((na - Date.parse(iso)) / 60_000));
   if (min < 60) return `${min} min`;
   const t = Math.round(min / 60);
@@ -9,8 +13,8 @@ export function tidSiden(iso: string, na = Date.now()) {
 }
 
 /** Dager fra i dag til en dato (YYYY-MM-DD). */
-export function dagerTil(iso: string, na = new Date()) {
-  const idag = Date.UTC(na.getFullYear(), na.getMonth(), na.getDate());
+export function dagerTil(iso: string, na = new Date(naMs())) {
+  const idag = Date.UTC(na.getUTCFullYear(), na.getUTCMonth(), na.getUTCDate());
   const [y, m, d] = iso.split('-').map(Number);
   return Math.round((Date.UTC(y, m - 1, d) - idag) / 86_400_000);
 }

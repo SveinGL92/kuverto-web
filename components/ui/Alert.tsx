@@ -22,11 +22,11 @@ export function Alert({
           className,
         )}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--k-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--k-status-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
           <path d="M5 12l5 5 9-10" />
         </svg>
         <span>{children}</span>
-        {handling && <span className="ml-auto [&_a]:py-2 [&_a]:text-accent">{handling}</span>}
+        {handling && <span className="ml-auto [&_a]:py-2 [&_a]:text-[var(--k-status-accent)]">{handling}</span>}
       </div>
     );
   }

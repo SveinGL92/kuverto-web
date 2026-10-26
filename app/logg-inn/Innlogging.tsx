@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useRef, useState, type FormEvent } from 'react';
 import { Symbol } from '@/components/layout/Logo';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Tabs } from '@/components/ui/Tabs';
@@ -129,7 +130,7 @@ export function Innlogging() {
         <p className="mb-0 mt-auto border-t border-border px-4 pb-7 pt-[18px] text-[15px] text-text-muted md:mx-auto md:mt-12 md:w-full md:max-w-[440px] md:border-0">
           {rolle === 'leverandor' ? (
             <>
-              Ny leverandør? <Link href="/logg-inn?rolle=leverandor" className="font-semibold">Registrer bedriften</Link>, så godkjenner vi den på org.nr.
+              Ny leverandør? Skriv inn e-posten til bedriften, så hjelper vi deg med registreringen. Vi godkjenner bedriften på org.nr.
             </>
           ) : (
             <>
@@ -137,6 +138,9 @@ export function Innlogging() {
             </>
           )}
         </p>
+        <div className="px-4 pb-6 md:mx-auto md:w-full md:max-w-[440px]">
+          <ThemeToggle />
+        </div>
       </div>
     </main>
   );

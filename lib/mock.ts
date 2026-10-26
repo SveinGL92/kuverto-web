@@ -1,13 +1,10 @@
 import type { Foresporsel, ForesporselKontakt, Leverandor, Melding, Opplasing, Tilbud } from './types';
 
-const iDag = () => new Date().toISOString().slice(0, 10);
-const omDager = (n: number) => {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-};
-
-export const naIso = iDag;
+/**
+ * Mock-klokke. Alle relative tekster («12 min», «I morgen», «Om 3 dager») regnes fra dette
+ * tidspunktet, så server og nettleser alltid viser det samme. Byttes mot ekte tid i fase 2.
+ */
+export const MOCK_NA = '2026-10-26T11:00:00Z';
 
 export const leverandor: Leverandor = {
   id: 'lev-gronn',
@@ -43,7 +40,7 @@ export const foresporsler: Foresporsel[] = [
     budsjett: '250_400',
     maksLeverandorer: 6,
     klippPris: 2,
-    opprettet: new Date(Date.now() - 12 * 60_000).toISOString(),
+    opprettet: '2026-10-26T10:48:00Z',
     omradeVisning: 'Oslo sentrum (01xx)',
   },
   {
@@ -66,7 +63,7 @@ export const foresporsler: Foresporsel[] = [
     budsjett: 'over_600',
     maksLeverandorer: 5,
     klippPris: 4,
-    opprettet: new Date(Date.now() - 3 * 3600_000).toISOString(),
+    opprettet: '2026-10-26T08:00:00Z',
     omradeVisning: 'Lillestrøm (20xx)',
   },
   {
@@ -75,7 +72,7 @@ export const foresporsler: Foresporsel[] = [
     status: 'aktiv',
     anledning: 'minnesamvaer',
     gjester: 40,
-    dato: omDager(3),
+    dato: '2026-10-29',
     klokkeslett: '13:00',
     varighet: '2–3 timer',
     fleksibelDato: false,
@@ -89,7 +86,7 @@ export const foresporsler: Foresporsel[] = [
     budsjett: '250_400',
     maksLeverandorer: 5,
     klippPris: 2,
-    opprettet: new Date(Date.now() - 26 * 3600_000).toISOString(),
+    opprettet: '2026-10-25T09:00:00Z',
     omradeVisning: 'Bærum (13xx)',
   },
   {
@@ -113,7 +110,7 @@ export const foresporsler: Foresporsel[] = [
     budsjett: 'vet_ikke',
     maksLeverandorer: 5,
     klippPris: 3,
-    opprettet: new Date(Date.now() - 2 * 86400_000).toISOString(),
+    opprettet: '2026-10-24T11:00:00Z',
     omradeVisning: 'Oslo (02xx)',
   },
 ];
@@ -161,7 +158,7 @@ export const tilbud: Tilbud[] = [
     levering: { inkludert: true },
     oppsettOgRydding: true,
     servise: 'Porselen',
-    gyldigTil: omDager(1),
+    gyldigTil: '2026-10-27',
     status: 'sendt',
     opprettet: '2026-10-26T10:40:00Z',
   },
@@ -193,7 +190,7 @@ export const opplaste: (Opplasing & { tittel: string; kunde: string; sted: strin
     metode: 'klipp',
     klipp: 4,
     status: 'aktiv',
-    svarfrist: omDager(1),
+    svarfrist: '2026-10-27',
     opprettet: '2026-10-24T09:00:00Z',
     tittel: 'Bryllup · 120',
     kunde: 'Ida og Jonas',
@@ -213,19 +210,6 @@ export const opplaste: (Opplasing & { tittel: string; kunde: string; sted: strin
     sted: 'Asker',
     dato: '2027-05-09',
     tilbudGodtatt: true,
-  },
-  {
-    id: 'o-firmalunsj',
-    foresporselId: 'f-firmalunsj',
-    leverandorId: 'lev-gronn',
-    metode: 'klipp',
-    klipp: 2,
-    status: 'aktiv',
-    opprettet: '2026-10-26T09:00:00Z',
-    tittel: 'Firmalunsj · 25',
-    kunde: 'Kari Nordmann',
-    sted: 'Oslo',
-    dato: '2026-11-12',
   },
 ];
 
