@@ -15,10 +15,10 @@ const browser = await chromium.launch(
   process.env.PLAYWRIGHT_CHROMIUM ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM } : {},
 );
 for (const bredde of bredder) {
-  const side = await browser.newPage({ viewport: { width: bredde, height: bredde < 600 ? 844 : 900 }, colorScheme: dark ? 'dark' : 'light', locale: 'nb-NO', timezoneId: 'Europe/Oslo' });
+  const side = await browser.newPage({ viewport: { width: bredde, height: bredde < 600 ? 844 : 900 }, colorScheme: dark ? 'dark' : 'light', reducedMotion: 'reduce', locale: 'nb-NO', timezoneId: 'Europe/Oslo' });
   for (const rute of ruter) {
     await side.goto(base + rute, { waitUntil: 'load' });
-    await side.waitForTimeout(1200);
+    await side.waitForTimeout(1800);
     const navn = (rute === '/' ? 'forside' : rute.slice(1).replaceAll('/', '_')) + `-${bredde}${dark ? '-mork' : ''}.png`;
     await side.screenshot({ path: `skjermbilder/${navn}`, fullPage: true });
     console.log('skjermbilder/' + navn);
