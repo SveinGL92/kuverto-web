@@ -6,7 +6,7 @@ import { mkdir } from 'node:fs/promises';
 const args = process.argv.slice(2);
 const dark = args.includes('--dark');
 const stier = args.filter((a) => a.startsWith('/'));
-const ruter = stier.length ? stier : ['/', '/foresporsel', '/logg-inn', '/foresporsler/f-firmalunsj', '/leverandor', '/komponenter'];
+const ruter = stier.length ? stier : ['/', '/foresporsel', '/logg-inn', '/foresporsler/f-firmalunsj', '/leverandor', '/tilstander', '/komponenter'];
 const base = process.env.BASE_URL ?? 'http://localhost:3000';
 const bredder = [390, 1440];
 

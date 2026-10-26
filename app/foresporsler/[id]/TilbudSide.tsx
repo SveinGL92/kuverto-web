@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from 'react';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { EmptyState } from '@/components/states/EmptyState';
-import { Alert } from '@/components/ui/Alert';
+import { BordetErDekket } from '@/components/states/BordetErDekket';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { PriceRing } from '@/components/ui/PriceRing';
 import { cn } from '@/lib/cn';
@@ -129,10 +129,16 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
 
       <main id="innhold" className="mx-auto max-w-[1200px] pb-16 md:px-6 md:pb-[72px] md:pt-10">
         {valgtTilbud && (
-          <div ref={kvittering} tabIndex={-1} className="mx-4 mt-4 flex flex-col gap-3 outline-none md:mx-0 md:mb-8 md:mt-0">
-            <Alert tone="status" handling={<Link href="#">Se avtalen</Link>}>
-              Du har valgt {valgtTilbud.leverandorNavn}. De tar kontakt for å avtale detaljene, og de andre får beskjed.
-            </Alert>
+          <div ref={kvittering} tabIndex={-1} role="status" className="mx-4 mt-4 outline-none md:mx-0 md:mb-8 md:mt-0">
+            <BordetErDekket
+              leverandor={valgtTilbud.leverandorNavn}
+              className="rounded-media md:flex-row md:flex-wrap md:items-center md:gap-x-8"
+              handling={
+                <ButtonLink href="#" variant="accent">
+                  Se avtalen
+                </ButtonLink>
+              }
+            />
           </div>
         )}
 

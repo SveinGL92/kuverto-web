@@ -48,9 +48,9 @@ export function OccasionChip({
     <Link
       href={href}
       className={cn(
-        'inline-flex items-center gap-2.5 rounded-pill font-semibold text-text no-underline transition-colors duration-200 hover:text-text',
+        'inline-flex items-center gap-2.5 rounded-pill font-semibold no-underline transition-colors duration-200',
         { lg: 'min-h-14 pl-3.5 pr-[22px] text-[17px]', md: 'min-h-12 pl-2.5 pr-4 text-base', responsive: 'min-h-12 pl-2.5 pr-4 text-base md:min-h-14 md:pl-3.5 md:pr-[22px] md:text-[17px]' }[size],
-        aktiv ? 'k-on-accent bg-accent text-accent-on hover:text-accent-on' : 'bg-surface hover:bg-surface-soft',
+        aktiv ? 'k-on-accent bg-accent text-accent-on hover:text-accent-on' : 'bg-surface text-text hover:bg-surface-soft hover:text-text',
       )}
     >
       {illustrasjon && (
