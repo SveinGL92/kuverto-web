@@ -73,8 +73,8 @@ export interface ForesporselKontakt {
   navn: string;
   firma?: string;
   epost: string;
-  telefon: string;
-  adresse: string;
+  telefon?: string;
+  adresse?: string; // hentes når kunden velger et tilbud
   melding?: string;
 }
 
