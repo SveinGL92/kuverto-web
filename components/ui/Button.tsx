@@ -6,12 +6,12 @@ type Variant = 'primary' | 'secondary' | 'text' | 'accent' | 'on-panel' | 'dange
 type Size = 'lg' | 'md' | 'sm';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-primary text-primary-on hover:bg-primary-hover border-0',
-  secondary: 'border-2 border-primary text-primary bg-transparent hover:bg-surface-soft',
+  primary: 'no-underline bg-primary text-primary-on hover:bg-primary-hover hover:text-primary-on border-0',
+  secondary: 'no-underline border-2 border-primary text-primary bg-transparent hover:bg-surface-soft',
   text: 'border-0 bg-transparent text-primary underline underline-offset-4 hover:text-primary-hover !px-2',
-  accent: 'bg-accent text-accent-on border-0 hover:brightness-95',
-  'on-panel': 'border-2 border-panel-on text-panel-on bg-transparent hover:bg-white/10',
-  danger: 'bg-error text-white border-0 hover:brightness-95',
+  accent: 'no-underline bg-accent text-accent-on hover:text-accent-on border-0 hover:brightness-95',
+  'on-panel': 'no-underline border-2 border-panel-on text-panel-on bg-transparent hover:bg-white/10',
+  danger: 'no-underline bg-error text-white border-0 hover:brightness-95',
 };
 
 const sizes: Record<Size, string> = {
@@ -21,7 +21,7 @@ const sizes: Record<Size, string> = {
 };
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-pill font-bold no-underline transition-colors duration-200 ease-kuverto text-center leading-tight py-2 disabled:bg-neutral-bg disabled:text-text-muted disabled:cursor-not-allowed aria-disabled:bg-neutral-bg aria-disabled:text-text-muted';
+  'inline-flex items-center justify-center gap-2 rounded-pill font-bold transition-colors duration-200 ease-kuverto text-center leading-tight py-2 disabled:bg-neutral-bg disabled:text-text-muted disabled:cursor-not-allowed aria-disabled:bg-neutral-bg aria-disabled:text-text-muted';
 
 interface Felles {
   variant?: Variant;

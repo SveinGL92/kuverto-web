@@ -17,7 +17,7 @@ const browser = await chromium.launch(
 for (const bredde of bredder) {
   const side = await browser.newPage({ viewport: { width: bredde, height: bredde < 600 ? 844 : 900 }, colorScheme: dark ? 'dark' : 'light' });
   for (const rute of ruter) {
-    await side.goto(base + rute, { waitUntil: 'networkidle' });
+    await side.goto(base + rute, { waitUntil: 'load' });
     await side.waitForTimeout(1200);
     const navn = (rute === '/' ? 'forside' : rute.slice(1).replaceAll('/', '_')) + `-${bredde}${dark ? '-mork' : ''}.png`;
     await side.screenshot({ path: `skjermbilder/${navn}`, fullPage: true });

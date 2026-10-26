@@ -35,13 +35,13 @@ export function OccasionChip({
   href,
   illustrasjon,
   aktiv,
-  size = 'lg',
+  size = 'responsive',
   children,
 }: {
   href: ComponentProps<typeof Link>['href'];
   illustrasjon?: string;
   aktiv?: boolean;
-  size?: 'lg' | 'md';
+  size?: 'responsive' | 'lg' | 'md';
   children: string;
 }) {
   return (
@@ -49,13 +49,13 @@ export function OccasionChip({
       href={href}
       className={cn(
         'inline-flex items-center gap-2.5 rounded-pill font-semibold text-text no-underline transition-colors duration-200 hover:text-text',
-        size === 'lg' ? 'min-h-14 pl-3.5 pr-[22px] text-[17px]' : 'min-h-12 pl-2.5 pr-4 text-base',
+        { lg: 'min-h-14 pl-3.5 pr-[22px] text-[17px]', md: 'min-h-12 pl-2.5 pr-4 text-base', responsive: 'min-h-12 pl-2.5 pr-4 text-base md:min-h-14 md:pl-3.5 md:pr-[22px] md:text-[17px]' }[size],
         aktiv ? 'k-on-accent bg-accent text-accent-on hover:text-accent-on' : 'bg-surface hover:bg-surface-soft',
       )}
     >
       {illustrasjon && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={illustrasjon} alt="" className={cn('k-ink w-auto', size === 'lg' ? 'h-[34px]' : 'h-7')} />
+        <img src={illustrasjon} alt="" className={cn('k-ink w-auto', { lg: 'h-[34px]', md: 'h-7', responsive: 'h-7 md:h-[34px]' }[size])} />
       )}
       {children}
     </Link>
