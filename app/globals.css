@@ -1,0 +1,117 @@
+@import '../design/tokens/tokens.css';
+
+/* Olivenpaneler (leverandørfelt, dashbordmeny, «Lager du maten?»). I mørk modus blir
+   primærfargen sitron, så panelene bruker en egen, mørk flate for at sitronknappene skal synes. */
+:root {
+  --k-panel: var(--k-primary);
+  --k-on-panel: var(--k-on-primary);
+  --k-on-panel-muted: var(--k-on-primary-muted);
+  --k-neutral-bg: #E6E4D6; /* «Låst» og deaktiverte knapper i artboardene */
+}
+:root[data-theme='dark'] {
+  --k-panel: #262D17;
+  --k-on-panel: #F1F0E3;
+  --k-on-panel-muted: #B7B9A4;
+  --k-neutral-bg: #3A4324;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --k-panel: #262D17;
+    --k-on-panel: #F1F0E3;
+    --k-on-panel-muted: #B7B9A4;
+    --k-neutral-bg: #3A4324;
+  }
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background: var(--k-bg);
+    color: var(--k-text);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    font-family: var(--font-albert), 'Albert Sans', system-ui, sans-serif;
+    font-size: var(--k-text-body);
+    line-height: 1.55;
+    background: var(--k-bg);
+    color: var(--k-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  a {
+    color: var(--k-primary);
+    text-underline-offset: 3px;
+  }
+  a:hover {
+    color: var(--k-primary-hover);
+  }
+  input,
+  textarea,
+  select {
+    caret-color: var(--k-primary);
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  .k-wrap {
+    max-width: 1360px;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 5vw, 72px);
+    box-sizing: border-box;
+  }
+  .k-heading {
+    font-family: var(--font-manrope), Manrope, system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.045em;
+  }
+  .k-num {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Tallerkenringen tegner seg selv opp én gang. */
+.k-ring {
+  animation: k-draw 700ms cubic-bezier(0.16, 1, 0.3, 1) 250ms both;
+}
+@keyframes k-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Strektegningene er tegnet i olivenblekk. I mørk modus blir blekket lyst. */
+:root[data-theme='dark'] .k-ink {
+  filter: invert(1) hue-rotate(180deg) brightness(1.25);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .k-ink {
+    filter: invert(1) hue-rotate(180deg) brightness(1.25);
+  }
+}
+/* På sitron-flater skal ringen alltid være mørk. */
+.k-on-accent .k-ink {
+  filter: none !important;
+}
+
+.k-scroll-snap {
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.k-scroll-snap::-webkit-scrollbar {
+  display: none;
+}
+.k-scroll-snap > * {
+  scroll-snap-align: start;
+}

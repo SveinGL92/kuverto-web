@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<title>Kuverto – tilbud desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500..800&amp;family=Albert+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+::selection{background:#E2E66A;color:#1C2210}
+:focus-visible{outline:3px solid #2E3A12;outline-offset:2px;box-shadow:0 0 0 2px #F6F4EA}
+input,textarea{caret-color:#2E3A12}
+.k-ring{animation:k-draw 700ms cubic-bezier(.16,1,.3,1) 250ms both}
+@keyframes k-draw{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@media (prefers-reduced-motion:reduce){.k-ring{animation:none}}
+a{color:#2E3A12;text-underline-offset:3px}a:hover{color:#1F280B}
+</style>
+</helmet>
+<div style="background: #F6F4EA; color: #1C2210; font-family: 'Albert Sans', system-ui, sans-serif; font-size: 16px; min-height: 100vh">
+  <header style="background: #2E3A12; color: #FFFFFF">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 14px 24px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+      <a href="#" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #FFFFFF">
+        <svg width="28" height="28" viewBox="0 0 48 48" aria-hidden="true"><rect x="3" y="11" width="5" height="26" rx="2.5" fill="#FFFFFF"></rect><rect x="40" y="11" width="5" height="26" rx="2.5" fill="#FFFFFF"></rect><circle cx="24" cy="24" r="10.5" fill="none" stroke="#FFFFFF" stroke-width="5"></circle></svg>
+        <span style="font-family: Manrope, sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.035em">kuverto</span>
+      </a>
+      <nav aria-label="Konto" style="display: flex; flex-wrap: wrap; gap: 4px; font-size: 16px; font-weight: 600">
+        <a href="#" aria-current="page" style="padding: 12px 14px; color: #FFFFFF; text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 2px">Mine forespørsler</a>
+        <a href="#" style="padding: 12px 14px; color: #DDE3C6; text-decoration: none">Meldinger</a>
+        <a href="#" style="padding: 12px 14px; color: #DDE3C6; text-decoration: none">Kari N.</a>
+      </nav>
+    </div>
+    <div style="max-width: 1200px; margin: 0 auto; padding: 24px 24px 40px; box-sizing: border-box; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h1 style="margin: 0; font-family: Manrope, sans-serif; font-size: 52px; line-height: 1; font-weight: 800; letter-spacing: -0.04em">3 tilbud på firmalunsj</h1>
+        <span style="font-size: 17px; color: #DDE3C6">25 kuverter · torsdag 14. november kl. 11:30 · 0150 Oslo · budsjett kr 250–400 per kuvert</span>
+      </div>
+      <div role="tablist" aria-label="Sorter" style="display: flex; gap: 20px">
+        <button type="button" role="tab" aria-selected="true" style="height: 44px; padding: 0; border: 0; border-bottom: 3px solid #E2E66A; background: transparent; font: inherit; font-size: 16px; font-weight: 700; color: #FFFFFF">Lavest pris</button>
+        <button type="button" role="tab" style="height: 44px; padding: 0; border: 0; border-bottom: 3px solid transparent; background: transparent; font: inherit; font-size: 16px; font-weight: 600; color: #DDE3C6">Mest inkludert</button>
+        <button type="button" role="tab" style="height: 44px; padding: 0; border: 0; border-bottom: 3px solid transparent; background: transparent; font: inherit; font-size: 16px; font-weight: 600; color: #DDE3C6">Nyeste</button>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width: 1200px; margin: 0 auto; padding: 40px 24px 72px; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px">
+    <div style="overflow-x: auto">
+      <table style="width: 100%; min-width: 860px; border-collapse: collapse; table-layout: fixed">
+        <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Tre tilbud side om side</caption>
+        <colgroup><col style="width: 22%"><col><col><col></colgroup>
+        <thead>
+          <tr>
+            <th scope="col" style="text-align: left; vertical-align: bottom; padding: 0 16px 16px 0; font-size: 15px; font-weight: 600; color: #5F6152">Tilbud</th>
+            <th scope="col" style="text-align: left; padding: 0 12px 16px; vertical-align: top"><div style="display: flex; flex-direction: column; gap: 12px"><div data-foto="tilbud-a" style="border-radius: 24px; overflow: hidden; height: 170px; position: relative; background: #D8D1C4"><img src="/_blob/f3adfea63862633af322921e8d3a0e30" alt="Eksempelbilde: smørbrød, salat og fruktfat" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block"></div><span style="font-size: 17px; font-weight: 700">[Leverandør A]</span></div></th>
+            <th scope="col" style="text-align: left; padding: 0 12px 16px; vertical-align: top"><div style="display: flex; flex-direction: column; gap: 12px"><div data-foto="tilbud-b" style="border-radius: 24px; overflow: hidden; height: 170px; position: relative; background: #D8D1C4"><img src="/_blob/348fe2fd3d8d799a4feb28818f3717c2" alt="Eksempelbilde: bakt laks med perlebygg og grønnsaker" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block"></div><span style="font-size: 17px; font-weight: 700">[Leverandør B]</span></div></th>
+            <th scope="col" style="text-align: left; padding: 0 12px 16px; vertical-align: top"><div style="display: flex; flex-direction: column; gap: 12px"><div data-foto="tilbud-c" style="border-radius: 24px; overflow: hidden; height: 170px; position: relative; background: #D8D1C4"><img src="/_blob/8598d9d7493b41b15406035c12ea73d2" alt="Eksempelbilde: tapas, brød og ostefat" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block"></div><span style="font-size: 17px; font-weight: 700">[Leverandør C]</span></div></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-top: 2px solid #1C2210"><th scope="row" style="text-align: left; padding: 20px 16px 20px 0; font-size: 15px; font-weight: 600; color: #5F6152">Pris per kuvert</th>
+            <td style="padding: 20px 12px"><span style="position: relative; font-family: Manrope, sans-serif; font-size: 44px; font-weight: 800; letter-spacing: -0.03em; padding: 0 8px; font-variant-numeric: tabular-nums">kr 289<img class="k-ring" src="/_blob/03f8a783c622a380bdef9822afdaaa7b" alt="" style="position: absolute; left: -20%; top: -30%; width: 140%; height: 160%; pointer-events: none"></span></td>
+            <td style="padding: 20px 12px"><span style="font-family: Manrope, sans-serif; font-size: 44px; font-weight: 800; letter-spacing: -0.03em; padding: 0 8px; font-variant-numeric: tabular-nums">kr 345</span></td>
+            <td style="padding: 20px 12px"><span style="font-family: Manrope, sans-serif; font-size: 44px; font-weight: 800; letter-spacing: -0.03em; padding: 0 8px; font-variant-numeric: tabular-nums">kr 395</span></td></tr>
+          <tr style="border-top: 1px solid #DEDCCB"><th scope="row" style="text-align: left; padding: 16px 16px 16px 0; font-size: 15px; font-weight: 600; color: #5F6152">Totalt inkl. mva</th><td style="padding: 16px 20px; font-weight: 700; font-variant-numeric: tabular-nums">kr 7 225</td><td style="padding: 16px 20px; font-weight: 700; font-variant-numeric: tabular-nums">kr 8 625</td><td style="padding: 16px 20px; font-weight: 700; font-variant-numeric: tabular-nums">kr 9 875</td></tr>
+          <tr style="border-top: 1px solid #DEDCCB"><th scope="row" style="text-align: left; padding: 16px 16px 16px 0; font-size: 15px; font-weight: 600; color: #5F6152; vertical-align: top">Meny</th><td style="padding: 16px 20px; line-height: 1.5; vertical-align: top">Smørbrød fra eget bakeri, grønn salat, fruktfat</td><td style="padding: 16px 20px; line-height: 1.5; vertical-align: top">Bakt laks, perlebygg, ovnsbakte grønnsaker, sjokoladekake</td><td style="padding: 16px 20px; line-height: 1.5; vertical-align: top">Tapas i seks retter, brød og dipp, ostefat</td></tr>
+          <tr style="border-top: 1px solid #DEDCCB"><th scope="row" style="text-align: left; padding: 16px 16px 16px 0; font-size: 15px; font-weight: 600; color: #5F6152">Vegetar 4 · nøttefritt 1</th><td style="padding: 16px 20px; color: #2C6E49; font-weight: 700">Begge dekket</td><td style="padding: 16px 20px; color: #2C6E49; font-weight: 700">Begge dekket</td><td style="padding: 16px 20px; font-weight: 700"><span style="color: #2C6E49">Vegetar dekket.</span> <span style="color: #8A5A00">Nøtter må avklares.</span></td></tr>
+          <tr style="border-top: 1px solid #DEDCCB"><th scope="row" style="text-align: left; padding: 16px 16px 16px 0; font-size: 15px; font-weight: 600; color: #5F6152">Levering</th><td style="padding: 16px 20px">Inkludert</td><td style="padding: 16px 20px">Inkludert</td><td style="padding: 16px 20px">kr 450</td></tr>
+          <tr style="border-top: 1px solid #DEDCCB"><th scope="row" style="text-align: left; padding: 16px 16px 16px 0; font-size: 15px; font-weight: 600; color: #5F6152">Oppsett og rydding</th><td style="padding: 16px 20px; color: #5F6152">Ikke inkludert</td><td style="padding: 16px 20px">Inkludert</td><td style="padding: 16px 20px">Inkludert</td></tr>
+          <tr style="border-top: 1px solid #DEDCCB"><th scope="row" style="text-align: left; padding: 16px 16px 16px 0; font-size: 15px; font-weight: 600; color: #5F6152">Servise</th><td style="padding: 16px 20px">Kompostérbart</td><td style="padding: 16px 20px">Porselen</td><td style="padding: 16px 20px">Porselen</td></tr>
+          <tr style="border-top: 1px solid #DEDCCB"><th scope="row" style="text-align: left; padding: 16px 16px 16px 0; font-size: 15px; font-weight: 600; color: #5F6152">Gjelder til</th><td style="padding: 16px 20px">8. november</td><td style="padding: 16px 20px; color: #8A5A00; font-weight: 700">I morgen</td><td style="padding: 16px 20px">10. november</td></tr>
+          <tr style="border-top: 1px solid #DEDCCB"><th scope="row" style="padding: 20px 0"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Velg</span></th>
+            <td style="padding: 20px 12px"><div style="display: flex; flex-direction: column; gap: 6px"><button type="button" style="min-height: 54px; border: 0; border-radius: 999px; background: #2E3A12; color: #FFFFFF; font: inherit; font-size: 16px; font-weight: 700">Velg dette tilbudet</button><a href="#" style="font-size: 15px; font-weight: 600; padding: 8px 0">Se hele tilbudet</a></div></td>
+            <td style="padding: 20px 12px"><div style="display: flex; flex-direction: column; gap: 6px"><button type="button" style="min-height: 54px; border: 2px solid #2E3A12; border-radius: 999px; background: transparent; color: #2E3A12; font: inherit; font-size: 16px; font-weight: 700">Velg dette tilbudet</button><a href="#" style="font-size: 15px; font-weight: 600; padding: 8px 0">Se hele tilbudet</a></div></td>
+            <td style="padding: 20px 12px"><div style="display: flex; flex-direction: column; gap: 6px"><button type="button" style="min-height: 54px; border: 2px solid #2E3A12; border-radius: 999px; background: transparent; color: #2E3A12; font: inherit; font-size: 16px; font-weight: 700">Velg dette tilbudet</button><a href="#" style="font-size: 15px; font-weight: 600; padding: 8px 0">Se hele tilbudet</a></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding-top: 20px; border-top: 1px solid #DEDCCB">
+      <img src="/_blob/bd6982678aa0ba752cb00b3b78b904a1" alt="" style="width: 100px">
+      <p style="margin: 0; flex: 1 1 360px; max-width: 60ch; line-height: 1.55; color: #3C4130">Du forplikter deg først når du velger. Leverandørene du ikke velger, får beskjed automatisk. Kuverto tar ingen provisjon.</p>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

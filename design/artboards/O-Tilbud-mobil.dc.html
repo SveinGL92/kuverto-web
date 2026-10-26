@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<title>Kuverto – tilbud mobil</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500..800&amp;family=Albert+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+::selection{background:#E2E66A;color:#1C2210}
+:focus-visible{outline:3px solid #2E3A12;outline-offset:2px;box-shadow:0 0 0 2px #F6F4EA}
+input,textarea{caret-color:#2E3A12}
+.k-ring{animation:k-draw 700ms cubic-bezier(.16,1,.3,1) 250ms both}
+@keyframes k-draw{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@media (prefers-reduced-motion:reduce){.k-ring{animation:none}}
+a{color:#2E3A12;text-underline-offset:3px}a:hover{color:#1F280B}
+</style>
+</helmet>
+<div style="width: 390px; height: 1300px; background: #F6F4EA; color: #1C2210; font-family: 'Albert Sans', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="background: #2E3A12; color: #FFFFFF; padding: 8px 16px 24px 4px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0">
+    <a href="#" style="display: flex; align-items: center; gap: 4px; color: #FFFFFF; text-decoration: none; font-size: 16px; font-weight: 600; min-height: 44px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>Mine forespørsler</a>
+    <div style="padding-left: 12px; display: flex; flex-direction: column; gap: 6px">
+      <h1 style="margin: 0; font-family: Manrope, sans-serif; font-size: 34px; line-height: 1.02; font-weight: 800; letter-spacing: -0.045em">3 tilbud på firmalunsj</h1>
+      <span style="font-size: 15px; color: #DDE3C6">25 kuverter · tor. 14. nov · 0150 Oslo</span>
+    </div>
+  </header>
+
+  <div style="padding: 16px 16px 8px; display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0">
+    <button type="button" aria-pressed="true" style="min-height: 40px; padding: 0 14px; border: 2px solid #2E3A12; border-radius: 999px; background: #2E3A12; color: #FFFFFF; font: inherit; font-size: 15px; font-weight: 700">Lavest pris</button>
+    <button type="button" style="min-height: 40px; padding: 0 14px; border: 1.5px solid #8A8770; border-radius: 999px; background: #FFFFFF; font: inherit; font-size: 15px; font-weight: 600; color: #1C2210">Mest inkludert</button>
+    <button type="button" style="min-height: 40px; padding: 0 14px; border: 1.5px solid #8A8770; border-radius: 999px; background: #FFFFFF; font: inherit; font-size: 15px; font-weight: 600; color: #1C2210">Nyeste</button>
+  </div>
+  <span style="padding: 0 16px 12px; font-size: 14px; color: #5F6152; flex-shrink: 0">Sveip for å se tilbud C</span>
+
+  <div style="overflow-x: auto; flex-shrink: 0">
+    <div style="display: grid; grid-template-columns: repeat(3, 172px); gap: 12px; padding: 0 16px 16px; width: max-content">
+
+      <article style="border-radius: 24px; display: flex; flex-direction: column; gap: 12px">
+        <div data-foto="tilbud-a" style="border-radius: 24px; overflow: hidden; height: 130px; position: relative; background: #D8D1C4"><img src="/_blob/f3adfea63862633af322921e8d3a0e30" alt="Eksempelbilde: smørbrød, salat og fruktfat" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block"></div>
+        <span style="font-size: 15px; font-weight: 700">[Leverandør A]</span>
+        <div style="min-height: 84px; display: flex; flex-direction: column; align-items: flex-start">
+          <span style="position: relative; font-family: Manrope, sans-serif; font-size: 36px; font-weight: 800; letter-spacing: -0.03em; padding: 0 6px; margin: 8px 0 6px 10px; font-variant-numeric: tabular-nums">kr 289<img class="k-ring" src="/_blob/03f8a783c622a380bdef9822afdaaa7b" alt="" style="position: absolute; left: -20%; top: -30%; width: 140%; height: 160%; pointer-events: none"></span>
+          <span style="font-size: 14px; font-weight: 600; padding-left: 6px">per kuvert · lavest</span>
+        </div>
+        <dl style="margin: 0; display: flex; flex-direction: column; gap: 12px; font-size: 15px">
+          <div style="min-height: 44px"><dt style="font-size: 14px; color: #5F6152">Totalt inkl. mva</dt><dd style="margin: 0; font-weight: 700; font-variant-numeric: tabular-nums">kr 7 225</dd></div>
+          <div style="min-height: 88px"><dt style="font-size: 14px; color: #5F6152">Meny</dt><dd style="margin: 0; line-height: 1.4">Smørbrød fra eget bakeri, grønn salat, fruktfat</dd></div>
+          <div style="min-height: 112px"><dt style="font-size: 14px; color: #5F6152">Inkludert</dt><dd style="margin: 0; line-height: 1.6"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C6E49" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-label="Inkludert" role="img" style="margin-right: 6px; vertical-align: -1px"><path d="M5 12l5 5 9-10"></path></svg>Levering<br><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C6E49" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-label="Inkludert" role="img" style="margin-right: 6px; vertical-align: -1px"><path d="M5 12l5 5 9-10"></path></svg>Vegetar og nøttefritt<br><span style="color: #5F6152">Uten oppsett</span></dd></div>
+          <div><dt style="font-size: 14px; color: #5F6152">Gjelder til</dt><dd style="margin: 0; font-weight: 600">8. november</dd></div>
+        </dl>
+        <button type="button" style="min-height: 52px; border: 0; border-radius: 999px; background: #2E3A12; color: #FFFFFF; font: inherit; font-size: 16px; font-weight: 700">Velg A</button>
+      </article>
+
+      <article style="border-radius: 24px; display: flex; flex-direction: column; gap: 12px">
+        <div data-foto="tilbud-b" style="border-radius: 24px; overflow: hidden; height: 130px; position: relative; background: #D8D1C4"><img src="/_blob/348fe2fd3d8d799a4feb28818f3717c2" alt="Eksempelbilde: bakt laks med perlebygg og grønnsaker" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block"></div>
+        <span style="font-size: 15px; font-weight: 700">[Leverandør B]</span>
+        <div style="min-height: 84px; display: flex; flex-direction: column; align-items: flex-start">
+          <span style="font-family: Manrope, sans-serif; font-size: 36px; font-weight: 800; letter-spacing: -0.03em; padding: 0 6px; font-variant-numeric: tabular-nums">kr 345</span>
+          <span style="font-size: 14px; font-weight: 600; padding-left: 6px">per kuvert</span>
+        </div>
+        <dl style="margin: 0; display: flex; flex-direction: column; gap: 12px; font-size: 15px">
+          <div style="min-height: 44px"><dt style="font-size: 14px; color: #5F6152">Totalt inkl. mva</dt><dd style="margin: 0; font-weight: 700; font-variant-numeric: tabular-nums">kr 8 625</dd></div>
+          <div style="min-height: 88px"><dt style="font-size: 14px; color: #5F6152">Meny</dt><dd style="margin: 0; line-height: 1.4">Bakt laks, perlebygg, ovnsbakte grønnsaker, sjokoladekake</dd></div>
+          <div style="min-height: 112px"><dt style="font-size: 14px; color: #5F6152">Inkludert</dt><dd style="margin: 0; line-height: 1.6"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C6E49" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-label="Inkludert" role="img" style="margin-right: 6px; vertical-align: -1px"><path d="M5 12l5 5 9-10"></path></svg>Levering<br><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C6E49" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-label="Inkludert" role="img" style="margin-right: 6px; vertical-align: -1px"><path d="M5 12l5 5 9-10"></path></svg>Vegetar og nøttefritt<br><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C6E49" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-label="Inkludert" role="img" style="margin-right: 6px; vertical-align: -1px"><path d="M5 12l5 5 9-10"></path></svg>Oppsett og rydding</dd></div>
+          <div><dt style="font-size: 14px; color: #5F6152">Gjelder til</dt><dd style="margin: 0; font-weight: 600; color: #8A5A00">I morgen</dd></div>
+        </dl>
+        <button type="button" style="min-height: 52px; border: 2px solid #2E3A12; border-radius: 999px; background: transparent; color: #2E3A12; font: inherit; font-size: 16px; font-weight: 700">Velg B</button>
+      </article>
+
+      <article style="border-radius: 24px; display: flex; flex-direction: column; gap: 12px">
+        <div data-foto="tilbud-c" style="border-radius: 24px; overflow: hidden; height: 130px; position: relative; background: #D8D1C4"><img src="/_blob/8598d9d7493b41b15406035c12ea73d2" alt="Eksempelbilde: tapas, brød og ostefat" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block"></div>
+        <span style="font-size: 15px; font-weight: 700">[Leverandør C]</span>
+        <div style="min-height: 84px; display: flex; flex-direction: column; align-items: flex-start">
+          <span style="font-family: Manrope, sans-serif; font-size: 36px; font-weight: 800; letter-spacing: -0.03em; padding: 0 6px; font-variant-numeric: tabular-nums">kr 395</span>
+          <span style="font-size: 14px; font-weight: 600; padding-left: 6px">per kuvert</span>
+        </div>
+        <dl style="margin: 0; display: flex; flex-direction: column; gap: 12px; font-size: 15px">
+          <div style="min-height: 44px"><dt style="font-size: 14px; color: #5F6152">Totalt inkl. mva</dt><dd style="margin: 0; font-weight: 700; font-variant-numeric: tabular-nums">kr 9 875</dd></div>
+          <div style="min-height: 88px"><dt style="font-size: 14px; color: #5F6152">Meny</dt><dd style="margin: 0; line-height: 1.4">Tapas i seks retter, brød og dipp, ostefat</dd></div>
+          <div style="min-height: 112px"><dt style="font-size: 14px; color: #5F6152">Inkludert</dt><dd style="margin: 0; line-height: 1.6"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C6E49" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-label="Inkludert" role="img" style="margin-right: 6px; vertical-align: -1px"><path d="M5 12l5 5 9-10"></path></svg>Oppsett og rydding<br><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C6E49" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-label="Inkludert" role="img" style="margin-right: 6px; vertical-align: -1px"><path d="M5 12l5 5 9-10"></path></svg>Vegetar<br><span style="color: #8A5A00; font-weight: 600">Nøtter må avklares</span></dd></div>
+          <div><dt style="font-size: 14px; color: #5F6152">Gjelder til</dt><dd style="margin: 0; font-weight: 600">10. november</dd></div>
+        </dl>
+        <button type="button" style="min-height: 52px; border: 2px solid #2E3A12; border-radius: 999px; background: transparent; color: #2E3A12; font: inherit; font-size: 16px; font-weight: 700">Velg C</button>
+      </article>
+    </div>
+  </div>
+
+  <div style="margin: 16px 16px 0; padding: 18px 0; border-top: 1px solid #DEDCCB; display: flex; gap: 14px; align-items: center">
+    <img src="/_blob/bd6982678aa0ba752cb00b3b78b904a1" alt="" style="width: 84px; flex-shrink: 0">
+    <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #3C4130">Du forplikter deg først når du velger. Leverandørene du ikke velger, får beskjed automatisk.</p>
+  </div>
+
+  <section style="margin: 24px 16px 0; display: flex; flex-direction: column; gap: 10px">
+    <h2 style="margin: 0; font-family: Manrope, sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.045em">Spørsmål til en leverandør?</h2>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #5F6152">Åpne tilbudet og send en melding. Svaret kommer her og på e-post.</p>
+    <a href="#" style="align-self: flex-start; font-weight: 600; padding: 10px 0">Se hele tilbudet fra A</a>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

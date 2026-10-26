@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<title>Kuverto – forside mobil</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500..800&amp;family=Albert+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2E3A12;text-underline-offset:3px}
+::selection{background:#E2E66A;color:#1C2210}
+:focus-visible{outline:3px solid #2E3A12;outline-offset:2px;box-shadow:0 0 0 2px #F6F4EA}
+input,textarea{caret-color:#2E3A12}
+.k-ring{animation:k-draw 700ms cubic-bezier(.16,1,.3,1) 250ms both}
+@keyframes k-draw{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@media (prefers-reduced-motion:reduce){.k-ring{animation:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 2820px; background: #F6F4EA; color: #1C2210; font-family: 'Albert Sans', system-ui, sans-serif; font-size: 17px; display: flex; flex-direction: column">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 12px 8px 12px 16px; flex-shrink: 0">
+    <a href="#" style="display: flex; align-items: center; gap: 8px; text-decoration: none">
+      <svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true"><rect x="3" y="11" width="5" height="26" rx="2.5" fill="#2E3A12"></rect><rect x="40" y="11" width="5" height="26" rx="2.5" fill="#2E3A12"></rect><circle cx="24" cy="24" r="10.5" fill="none" stroke="#2E3A12" stroke-width="5"></circle></svg>
+      <span style="font-family: Manrope, sans-serif; font-size: 25px; font-weight: 800; letter-spacing: -0.045em; color: #2E3A12">kuverto</span>
+    </a>
+    <div style="display: flex; align-items: center; gap: 4px">
+      <a href="#" style="display: flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1.5px solid #1C2210; color: #1C2210; font-size: 15px; font-weight: 700; text-decoration: none">Logg inn</a>
+      <button type="button" aria-label="Meny" style="width: 44px; height: 44px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1C2210" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 8h16M4 16h11"></path></svg></button>
+    </div>
+  </header>
+
+  <section style="padding: 20px 16px 0; display: flex; flex-direction: column; gap: 16px; flex-shrink: 0">
+    <h1 style="margin: 0; font-family: Manrope, sans-serif; font-size: 46px; line-height: 0.98; font-weight: 800; letter-spacing: -0.05em">Catering til hvert kuvert.</h1>
+    <p style="margin: 0; line-height: 1.5; color: #5F6152">Send én forespørsel. Godkjente leverandører nær deg svarer med meny og pris per kuvert. Gratis for deg.</p>
+  </section>
+
+  <form style="margin: 22px 16px 0; padding: 18px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 10px 30px rgba(28,34,16,0.10); display: flex; flex-direction: column; gap: 14px; flex-shrink: 0">
+    <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700; color: #5F6152">Anledning
+      <select style="height: 52px; border: 1.5px solid #8A8770; border-radius: 14px; background: #FFFFFF; padding: 0 14px; font: inherit; font-size: 17px; font-weight: 600; color: #1C2210"><option>Firmalunsj</option></select>
+    </label>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700; color: #5F6152">Gjester<input type="text" value="25" style="height: 52px; border: 1.5px solid #8A8770; border-radius: 14px; padding: 0 14px; font: inherit; font-size: 17px; font-weight: 600; color: #1C2210; width: 100%; box-sizing: border-box"></label>
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700; color: #5F6152">Postnummer<input type="text" value="0150" style="height: 52px; border: 1.5px solid #8A8770; border-radius: 14px; padding: 0 14px; font: inherit; font-size: 17px; font-weight: 600; color: #1C2210; width: 100%; box-sizing: border-box"></label>
+    </div>
+    <button type="button" style="height: 58px; border: 0; border-radius: 999px; background: #2E3A12; color: #FFFFFF; font: inherit; font-size: 17px; font-weight: 700">Send forespørsel</button>
+    <span style="font-size: 14px; color: #5F6152; text-align: center">Gratis · uforpliktende · ingen provisjon</span>
+  </form>
+
+  <div style="margin: 28px 16px 0; position: relative; height: 380px; flex-shrink: 0">
+    <div style="position: absolute; left: 34px; right: 0; top: 28px; bottom: 0; border-radius: 32px; background: #ECEBCF"></div>
+    <div data-foto="hero-langbord" style="position: absolute; left: 0; right: 30px; top: 0; bottom: 40px; border-radius: 32px; display: flex; align-items: flex-start; padding: 16px; box-sizing: border-box; overflow: hidden; background: #D8D1C4"><img src="/_blob/fa000a5c2062fe64cff36c61cb1b6081" alt="Langbord ovenfra i dagslys med smørbrød og salat" fetchpriority="high" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block"></div>
+    <div style="position: absolute; right: 0; bottom: 0; padding: 14px 18px; border-radius: 24px; background: #E2E66A; display: flex; flex-direction: column; box-shadow: 0 10px 24px rgba(28,34,16,0.14)">
+      <span style="font-size: 13px; font-weight: 600">Eksempel på tilbud</span>
+      <span style="position: relative; align-self: flex-start; margin: 8px 0 6px 12px; padding: 0 6px; font-family: Manrope, sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -0.04em">kr 289<img class="k-ring" src="/_blob/03f8a783c622a380bdef9822afdaaa7b" alt="" style="position: absolute; left: -20%; top: -30%; width: 140%; height: 160%"></span>
+      <span style="font-size: 13px; font-weight: 700">per kuvert</span>
+    </div>
+  </div>
+
+  <nav aria-label="Anledninger" style="padding: 36px 16px 0; display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0">
+    <a href="#" style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px 0 10px; border-radius: 999px; background: #E2E66A; color: #1C2210; font-size: 16px; font-weight: 600; text-decoration: none"><img src="/_blob/e1aec7e54b9b2ee0b44231e9a86a1b1c" alt="" style="height: 28px">Firmalunsj</a>
+    <a href="#" style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px 0 10px; border-radius: 999px; background: #FFFFFF; color: #1C2210; font-size: 16px; font-weight: 600; text-decoration: none"><img src="/_blob/ae0abeed72f6c2afeb7e4b15250c07e6" alt="" style="height: 28px">Møtemat</a>
+    <a href="#" style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px 0 10px; border-radius: 999px; background: #FFFFFF; color: #1C2210; font-size: 16px; font-weight: 600; text-decoration: none"><img src="/_blob/e4edced378ec39e4863a5ee51845b4a6" alt="" style="height: 28px">Julebord</a>
+    <a href="#" style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px 0 10px; border-radius: 999px; background: #FFFFFF; color: #1C2210; font-size: 16px; font-weight: 600; text-decoration: none"><img src="/_blob/20e3861eaa1e140661910b8a51db2eea" alt="" style="height: 28px">Bryllup</a>
+    <a href="#" style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px 0 10px; border-radius: 999px; background: #FFFFFF; color: #1C2210; font-size: 16px; font-weight: 600; text-decoration: none"><img src="/_blob/25e1dc3d68aafb8caac69367806ffa8c" alt="" style="height: 28px">Konfirmasjon</a>
+    <a href="#" style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px 0 10px; border-radius: 999px; background: #FFFFFF; color: #1C2210; font-size: 16px; font-weight: 600; text-decoration: none"><img src="/_blob/235974ead4ecce25c03ba9b0a3c70f11" alt="" style="height: 28px">Minnesamvær</a>
+    <a href="#" style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px 0 10px; border-radius: 999px; background: #FFFFFF; color: #1C2210; font-size: 16px; font-weight: 600; text-decoration: none"><img src="/_blob/910bef29d84a55de51a067d6c1d00142" alt="" style="height: 28px">Privat fest</a>
+  </nav>
+
+  <section style="margin: 40px 16px 0; padding: 28px 22px; border-radius: 32px; background: #ECEBCF; display: flex; flex-direction: column; gap: 18px; flex-shrink: 0">
+    <h2 style="margin: 0; font-family: Manrope, sans-serif; font-size: 32px; line-height: 1.02; font-weight: 800; letter-spacing: -0.045em">Én forespørsel. Flere bord dekket.</h2>
+    <div aria-hidden="true" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px">
+      <img src="/_blob/0637fcfb657d23f070ba5a5f097459bb" alt="" style="width: 130px">
+      <img src="/_blob/3d57df322bdcc034e19d37e2b51bc2d2" alt="" style="width: 64px; transform: rotate(70deg); margin-left: 50px">
+      <div style="display: flex; gap: 4px; align-items: flex-end">
+        <span style="display: flex; flex-direction: column; align-items: center; font-family: Manrope, sans-serif; font-size: 16px; font-weight: 800"><img src="/_blob/7241d7b8880e50decff8bc0a97a5b237" alt="" style="width: 86px">kr 289</span>
+        <span style="display: flex; flex-direction: column; align-items: center; font-family: Manrope, sans-serif; font-size: 16px; font-weight: 800"><img src="/_blob/7241d7b8880e50decff8bc0a97a5b237" alt="" style="width: 86px">kr 345</span>
+        <span style="display: flex; flex-direction: column; align-items: center; font-family: Manrope, sans-serif; font-size: 16px; font-weight: 800"><img src="/_blob/7241d7b8880e50decff8bc0a97a5b237" alt="" style="width: 86px">kr 395</span>
+      </div>
+      <img src="/_blob/3d57df322bdcc034e19d37e2b51bc2d2" alt="" style="width: 64px; transform: rotate(70deg); margin-left: 160px">
+      <img src="/_blob/bd6982678aa0ba752cb00b3b78b904a1" alt="" style="width: 130px; margin-left: 140px">
+    </div>
+    <p style="margin: 0; line-height: 1.55; color: #5F6152">Du beskriver selskapet én gang: dato, gjester, sted, allergier og budsjett. Leverandører i nærheten svarer med meny og pris per kuvert. Du velger ett tilbud, de andre får beskjed.</p>
+  </section>
+
+  <section style="padding: 40px 16px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; flex-shrink: 0">
+    <a href="#" style="position: relative; grid-column: span 2; height: 240px; border-radius: 28px; overflow: hidden; text-decoration: none; color: #1C2210"><div data-foto="julebord" style="position: absolute; inset: 0; overflow: hidden; background: #D8D1C4"><img src="/_blob/285dc83b59602637ee64d52eddaeb365" alt="Julemat med granbar og lys" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 60%; display: block"></div><span style="position: absolute; left: 14px; bottom: 14px; padding: 8px 16px; border-radius: 999px; background: #FFFFFF; font-family: Manrope, sans-serif; font-size: 18px; font-weight: 800">Julebord</span></a>
+    <a href="#" style="position: relative; height: 180px; border-radius: 28px; overflow: hidden; text-decoration: none; color: #1C2210"><div data-foto="bryllup" style="position: absolute; inset: 0; overflow: hidden; background: #D8D1C4"><img src="/_blob/74613d387534de502f1a185512ed936f" alt="Bryllupsbord i kveldslys" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 55%; display: block"></div><span style="position: absolute; left: 12px; bottom: 12px; padding: 6px 14px; border-radius: 999px; background: #FFFFFF; font-family: Manrope, sans-serif; font-size: 16px; font-weight: 800">Bryllup</span></a>
+    <a href="#" style="position: relative; height: 180px; border-radius: 28px; overflow: hidden; text-decoration: none; color: #1C2210"><div data-foto="kaffe-kake" style="position: absolute; inset: 0; overflow: hidden; background: #D8D1C4"><img src="/_blob/836f3eaa0771df8acfc05f63c2f8b8a0" alt="Kaffe og bløtkake" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 55%; display: block"></div><span style="position: absolute; left: 12px; bottom: 12px; padding: 6px 14px; border-radius: 999px; background: #FFFFFF; font-family: Manrope, sans-serif; font-size: 16px; font-weight: 800">Konfirmasjon</span></a>
+  </section>
+
+  <section style="margin: 40px 16px 0; padding: 28px 22px; border-radius: 32px; background: #2E3A12; color: #FFFFFF; display: flex; flex-direction: column; gap: 14px; flex-shrink: 0">
+    <h2 style="margin: 0; font-family: Manrope, sans-serif; font-size: 32px; line-height: 1; font-weight: 800; letter-spacing: -0.045em">Lager du maten?</h2>
+    <p style="margin: 0; line-height: 1.5; color: #DDE3C6">Se forespørsler i ditt område og lås opp dem du vil svare på. Ingen provisjon.</p>
+    <a href="#" style="align-self: flex-start; display: flex; align-items: center; min-height: 52px; padding: 0 22px; border-radius: 999px; background: #E2E66A; color: #1C2210; font-weight: 700; text-decoration: none">Bli leverandør</a>
+  </section>
+
+  <footer style="flex-grow: 1; padding: 40px 16px 32px; display: flex; flex-direction: column; gap: 12px; font-size: 15px; color: #5F6152">
+    <span style="font-family: Manrope, sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.045em; color: #2E3A12">kuverto</span>
+    <span>Om oss · Kundeservice · Personvern · Vilkår</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":2820}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

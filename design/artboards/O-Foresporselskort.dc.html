@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<title>Kuverto – forespørselskort</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500..800&amp;family=Albert+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+::selection{background:#E2E66A;color:#1C2210}
+:focus-visible{outline:3px solid #2E3A12;outline-offset:2px;box-shadow:0 0 0 2px #F6F4EA}
+input,textarea{caret-color:#2E3A12}
+.k-ring{animation:k-draw 700ms cubic-bezier(.16,1,.3,1) 250ms both}
+@keyframes k-draw{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@media (prefers-reduced-motion:reduce){.k-ring{animation:none}}
+a{color:#2E3A12;text-underline-offset:3px}a:hover{color:#1F280B}
+</style>
+</helmet>
+<div style="width: 1200px; height: 800px; box-sizing: border-box; padding: 48px; background: #EEECDD; color: #1C2210; font-family: 'Albert Sans', system-ui, sans-serif; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px">
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 15px; font-weight: 600; color: #5F6152">Før opplåsing · leverandøren ser ikke hvem kunden er</span>
+    <article style="flex-grow: 1; background: #FFFFFF; border-radius: 28px; border: 1px solid #DEDCCB; padding: 28px; display: flex; flex-direction: column; gap: 22px">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span style="align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: #E2E66A; font-size: 14px; font-weight: 700">Ny · 12 min siden</span>
+          <h2 style="margin: 0; font-family: Manrope, sans-serif; font-size: 34px; line-height: 1; font-weight: 800; letter-spacing: -0.045em">Firmalunsj for 25</h2>
+          <span style="font-size: 16px; color: #5F6152">Oslo sentrum (01xx) · ca. 2 km fra deg</span>
+        </div>
+        <img src="/_blob/e1aec7e54b9b2ee0b44231e9a86a1b1c" alt="" style="width: 120px; flex-shrink: 0">
+      </div>
+      <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; padding: 18px 0; border-top: 1px solid #DEDCCB; border-bottom: 1px solid #DEDCCB">
+        <div><dt style="font-size: 14px; font-weight: 600; color: #5F6152">Dato</dt><dd style="margin: 2px 0 0; font-size: 17px; font-weight: 600">Tor. 14. nov, kl. 11:30</dd></div>
+        <div><dt style="font-size: 14px; font-weight: 600; color: #5F6152">Budsjett per kuvert</dt><dd style="margin: 2px 0 0; font-size: 17px; font-weight: 600">kr 250–400</dd></div>
+        <div><dt style="font-size: 14px; font-weight: 600; color: #5F6152">Servering</dt><dd style="margin: 2px 0 0; font-size: 17px; font-weight: 600">Levert ferdig</dd></div>
+        <div><dt style="font-size: 14px; font-weight: 600; color: #5F6152">Kosthold</dt><dd style="margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 6px"><span style="padding: 2px 8px; border-radius: 999px; background: #ECEBCF; color: #2E3A12; font-size: 14px; font-weight: 700">Vegetar 4</span><span style="padding: 2px 8px; border-radius: 999px; background: #FBF0D9; color: #8A5A00; font-size: 14px; font-weight: 700">Nøtter 1, alvorlig</span></dd></div>
+      </dl>
+      <div style="display: flex; gap: 14px; align-items: center">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2E3A12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+        <span style="font-size: 16px; line-height: 1.45">Navn, firma, kontaktinfo, adresse og melding vises når du låser opp.</span>
+      </div>
+      <div style="margin-top: auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+        <button type="button" style="flex-grow: 1; min-height: 54px; border: 0; border-radius: 999px; background: #2E3A12; color: #FFFFFF; font: inherit; font-size: 17px; font-weight: 700">Lås opp for 2 klipp</button>
+        <button type="button" style="min-height: 54px; padding: 0 20px; border: 2px solid #2E3A12; border-radius: 999px; background: transparent; font: inherit; font-size: 16px; font-weight: 700; color: #2E3A12">Ikke aktuell</button>
+      </div>
+      <span style="font-size: 15px; color: #5F6152">Du har 12 klipp. Etter opplåsing: 10.</span>
+    </article>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 15px; font-weight: 600; color: #5F6152">Etter opplåsing · alt er synlig</span>
+    <article style="flex-grow: 1; background: #FFFFFF; border-radius: 28px; border: 1px solid #DEDCCB; padding: 28px; display: flex; flex-direction: column; gap: 22px">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; gap: 6px"><span style="padding: 4px 10px; border-radius: 999px; background: #ECEBCF; color: #2E3A12; font-size: 14px; font-weight: 700">Opplåst</span><span style="padding: 4px 10px; border-radius: 999px; background: #FBF0D9; color: #8A5A00; font-size: 14px; font-weight: 700">Svar innen i morgen</span></div>
+          <h2 style="margin: 0; font-family: Manrope, sans-serif; font-size: 34px; line-height: 1; font-weight: 800; letter-spacing: -0.045em">Firmalunsj for 25</h2>
+          <span style="font-size: 16px; color: #5F6152">Tor. 14. nov, kl. 11:30 · kr 250–400 per kuvert</span>
+        </div>
+        <img src="/_blob/e1aec7e54b9b2ee0b44231e9a86a1b1c" alt="" style="width: 120px; flex-shrink: 0">
+      </div>
+      <div style="padding: 18px 20px; border-radius: 20px; background: #2E3A12; color: #FFFFFF; display: flex; flex-direction: column; gap: 4px; font-size: 16px; line-height: 1.5">
+        <strong style="font-family: Manrope, sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">Kari Nordmann, [Firma AS]</strong>
+        <span>kari@firma.no · 400 00 000</span>
+        <span>Karl Johans gate 1, 0154 Oslo</span>
+      </div>
+      <blockquote style="margin: 0; position: relative; padding: 4px 0 4px 0; font-size: 17px; line-height: 1.55">«Gjerne mye grønt, og kaffe til slutt. 4 vegetarianere, 1 med alvorlig nøtteallergi.»<img src="/_blob/66621412f7c9679758537387af6db0c5" alt="" style="display: block; width: 220px; margin-top: 4px"></blockquote>
+      <div style="margin-top: auto; display: flex; flex-wrap: wrap; gap: 10px">
+        <button type="button" style="flex-grow: 1; min-height: 54px; border: 0; border-radius: 999px; background: #2E3A12; color: #FFFFFF; font: inherit; font-size: 17px; font-weight: 700">Lag tilbud</button>
+        <button type="button" style="min-height: 54px; padding: 0 20px; border: 2px solid #2E3A12; border-radius: 999px; background: transparent; font: inherit; font-size: 16px; font-weight: 700; color: #2E3A12">Send melding</button>
+      </div>
+    </article>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
