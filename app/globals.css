@@ -44,6 +44,7 @@
   }
   a {
     color: var(--k-primary);
+    text-decoration: underline;
     text-underline-offset: 3px;
   }
   a:hover {
