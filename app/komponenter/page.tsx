@@ -88,7 +88,7 @@ export default function Komponenter() {
       <section className="flex flex-col gap-3.5">
         <H>Varsler</H>
         <Alert tone="status" handling={<a href="#">Se den</a>}>
-          Forespørselen er sendt til 6 leverandører
+          Forespørselen er sendt til 5 leverandører
         </Alert>
         <Alert tone="feil">
           <strong>Endringene ble ikke lagret.</strong> Sjekk nettforbindelsen og prøv igjen. Det du skrev, ligger fortsatt i skjemaet.
