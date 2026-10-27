@@ -15,6 +15,40 @@ export const metadata: Metadata = {
     'Send én forespørsel om catering. Godkjente leverandører nær deg svarer med meny og pris per kuvert. Gratis og uforpliktende, uten provisjon.',
 };
 
+const strukturertData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': 'https://kuverto.no/#org',
+      name: 'Kuverto',
+      url: 'https://kuverto.no',
+      logo: 'https://kuverto.no/logo/kuverto-logo-farge.svg',
+      legalName: 'Puncheur AS',
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://kuverto.no/#nettsted',
+      name: 'Kuverto',
+      url: 'https://kuverto.no',
+      inLanguage: 'nb-NO',
+      publisher: { '@id': 'https://kuverto.no/#org' },
+    },
+    {
+      '@type': 'Service',
+      name: 'Tilbud på catering',
+      serviceType: 'Catering',
+      provider: { '@id': 'https://kuverto.no/#org' },
+      areaServed: [
+        { '@type': 'AdministrativeArea', name: 'Oslo' },
+        { '@type': 'AdministrativeArea', name: 'Akershus' },
+      ],
+      description: 'Send én forespørsel og få tilbud med meny og pris per kuvert fra godkjente cateringleverandører.',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'NOK', description: 'Gratis for kunden' },
+    },
+  ],
+};
+
 /* eslint-disable @next/next/no-img-element -- strektegningene er små SVG-er uten behov for bildeoptimalisering */
 function Flyt() {
   const priser = ['kr 289', 'kr 345', 'kr 395'];
@@ -39,6 +73,7 @@ function Flyt() {
 export default function Forside() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(strukturertData) }} />
       <SiteHeader />
       <main id="innhold">
         {/* Hero */}
