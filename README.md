@@ -59,7 +59,7 @@ design/         designpakken (fasit) – DESIGN.md, tokens, artboards, bilder, l
 - **Mørk modus:** olivenpaneler bruker en egen mørk flate (`--k-panel` i `app/globals.css`), fordi primærfargen blir sitron i mørk modus. Strektegningene inverteres med `.k-ink`.
 - **Strektegninger:** artboardene peker til lerretets ID-er. Koblingen til filene ligger i `design/blob-map.json`. Åtte av dem er koblet ved å se på tegningene.
 - **Mock-datoer:** forespørselen er satt til torsdag 12. november 2026 (artboardet sier «torsdag 14. november», men den datoen er en lørdag i 2026). Relative tekster som «12 min» og «I morgen» regnes fra en fast mock-klokke (`MOCK_NA` i `lib/mock.ts`), så server og nettleser alltid viser det samme. Byttes mot ekte tid i fase 2.
-- **Skjemaet** har fire steg (arrangement, mat, kontakt, oversikt) i stedet for sju. Utkastet lagres i `sessionStorage` uten kontaktopplysninger.
+- **Skjemaet** har to steg (arrangement og mat, deretter kontakt og innsending) i stedet for sju. Klokkeslettet foreslås etter anledning, og budsjett står som «Vet ikke ennå» til kunden velger. Utkastet lagres i `sessionStorage` uten kontaktopplysninger.
 - **Tabeller i scrollbokser** må ha `relative` på beholderen, ellers lekker skjult skjermlesertekst ut og gir horisontal scroll.
 - **Fokus på felt:** den globale 3 px olivenringen brukes også på felt (artboardet viste en lys ring som ikke har nok kontrast).
 
