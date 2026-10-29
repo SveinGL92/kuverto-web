@@ -8,7 +8,7 @@ type Rad = Record<string, any>;
 
 export const tilForesporsel = (r: Rad): Foresporsel => ({
   id: r.id,
-  kundeId: r.kunde_epost,
+  kundeId: '', // kundens e-post sendes aldri til nettleseren
   status: r.status,
   anledning: r.anledning as Anledning,
   gjester: r.gjester,

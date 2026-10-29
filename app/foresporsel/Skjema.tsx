@@ -288,10 +288,10 @@ export function Skjema() {
         <div className="bg-panel px-6 pb-8 pt-14 text-panel-on">
           <div className="mx-auto flex max-w-[640px] flex-col gap-4">
             <h1 ref={tittel} tabIndex={-1} className="k-heading m-0 text-[38px] leading-[1.02] outline-none md:text-h1">
-              Forespørselen er sendt
+              Sjekk e-posten din
             </h1>
             <p className="m-0 text-[17px] leading-[1.55] text-panel-on-muted">
-              Vi har sendt en bekreftelse til <strong className="text-panel-on">{u.epost}</strong>. Der finner du lenken du logger inn med for å se tilbudene.
+              Vi har sendt en e-post til <strong className="text-panel-on">{u.epost}</strong>. Trykk på «Bekreft og send» i e-posten, så går forespørselen til leverandørene.
             </p>
           </div>
         </div>
@@ -311,7 +311,7 @@ export function Skjema() {
             <ol className="m-0 flex list-none flex-col gap-3 p-0 text-base leading-normal">
               <li className="flex gap-3">
                 <Hake />
-                <span>Godkjente leverandører {sted ? `i ${sted}` : 'i nærheten'} får beskjed om forespørselen.</span>
+                <span>Når du har bekreftet, får godkjente leverandører {sted ? `i ${sted}` : 'i nærheten'} beskjed om forespørselen.</span>
               </li>
               <li className="flex gap-3">
                 <Hake />
@@ -324,10 +324,8 @@ export function Skjema() {
             </ol>
           </section>
           <div className="mt-auto flex flex-col gap-2">
-            <ButtonLink href={`/logg-inn?epost=${encodeURIComponent(u.epost)}`} size="lg">
-              Logg inn og følg forespørselen
-            </ButtonLink>
-            <ButtonLink href="/" variant="text">
+            <p className="m-0 text-[15px] text-text-muted">Finner du ikke e-posten? Sjekk søppelpost, eller skriv til hei@kuverto.no.</p>
+            <ButtonLink href="/" variant="secondary">
               Til forsiden
             </ButtonLink>
           </div>

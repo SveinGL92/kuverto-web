@@ -13,7 +13,8 @@ async function kravAdmin() {
 export async function godkjennLeverandor(id: string) {
   await kravAdmin();
   const s = db();
-  const { data: l } = await s.from('leverandorer').update({ status: 'godkjent', godkjent: new Date().toISOString() }).eq('id', id).select('navn, epost, kontaktperson').single();
+  const { data: l, error } = await s.from('leverandorer').update({ status: 'godkjent', godkjent: new Date().toISOString() }).eq('id', id).select('navn, epost, kontaktperson').single();
+  if (error) console.error('[admin] godkjenn', error.message);
   if (!l) return;
   // Gratis klipp én gang per leverandør (referansen er unik).
   await s.from('klipp_transaksjoner').upsert({ leverandor_id: id, endring: PILOT_GRATIS_KLIPP, grunn: 'gratis', referanse: `gratis:${id}` }, { onConflict: 'referanse', ignoreDuplicates: true });

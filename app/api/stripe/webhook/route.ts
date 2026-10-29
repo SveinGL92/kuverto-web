@@ -28,5 +28,23 @@ export async function POST(request: Request) {
       }
     }
   }
+  // Refusjon eller innsigelse: trekk tilbake klippene fra kjøpet.
+  if (hendelse.type === 'charge.refunded' || hendelse.type === 'charge.dispute.created') {
+    const charge =
+      hendelse.type === 'charge.refunded'
+        ? (hendelse.data.object as Stripe.Charge)
+        : await stripe().charges.retrieve(String((hendelse.data.object as Stripe.Dispute).charge));
+    const fullRefusjon = hendelse.type === 'charge.dispute.created' || charge.amount_refunded >= charge.amount;
+    if (fullRefusjon && charge.payment_intent) {
+      const pi = await stripe().paymentIntents.retrieve(String(charge.payment_intent));
+      const levId = pi.metadata?.leverandor_id;
+      const klipp = Number(pi.metadata?.klipp);
+      if (levId && klipp > 0) {
+        await db()
+          .from('klipp_transaksjoner')
+          .upsert({ leverandor_id: levId, endring: -klipp, grunn: 'admin', referanse: `stripe-tilbake:${charge.id}` }, { onConflict: 'referanse', ignoreDuplicates: true });
+      }
+    } else if (!fullRefusjon) console.warn('[webhook] delvis refusjon, klipp ikke justert', charge.id);
+  }
   return new Response('ok');
 }

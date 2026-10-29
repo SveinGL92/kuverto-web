@@ -81,7 +81,8 @@ export default async function LeverandorSide() {
   for (const o of alleOppl ?? []) telling.set(o.foresporsel_id, (telling.get(o.foresporsel_id) ?? 0) + 1);
   const nye = (kandidater ?? [])
     .filter((f) => !opplasteIder.includes(f.id) && (telling.get(f.id) ?? 0) < f.maks_leverandorer)
-    .map((f) => ({ ...tilForesporsel(f), andreOpplast: telling.get(f.id) ?? 0 }));
+    // Før opplåsing: bare område, ikke eksakt postnummer.
+    .map((f) => ({ ...tilForesporsel(f), postnummer: `${String(f.postnummer).slice(0, 2)}xx`, andreOpplast: telling.get(f.id) ?? 0 }));
 
   // Mine opplåste med kontaktinfo og eget tilbud.
   let opplaste: Opplast[] = [];

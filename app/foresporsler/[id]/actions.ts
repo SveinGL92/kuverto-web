@@ -104,18 +104,10 @@ export async function sporLeverandor(tilbudId: string, tekst: string): Promise<S
 
 export async function trekkForesporsel(foresporselId: string): Promise<Svar> {
   const epost = await innloggetEpost();
-  const s = db();
-  const { data: f } = await s.from('foresporsler').select('id, kunde_epost, status').eq('id', foresporselId).maybeSingle();
-  if (!f || f.kunde_epost !== epost) return { ok: false, feil: 'Fant ikke forespørselen.' };
-  if (f.status !== 'aktiv') return { ok: false, feil: 'Forespørselen er ikke aktiv.' };
-  await s.from('foresporsler').update({ status: 'trukket' }).eq('id', f.id);
-  // Klippene refunderes til leverandører som låste opp men ikke har fått noe ut av det.
-  const { data: oppl } = await s.from('opplasinger').select('id, leverandor_id, klipp').eq('foresporsel_id', f.id).eq('status', 'aktiv');
-  for (const o of oppl ?? []) {
-    await s.from('klipp_transaksjoner').upsert({ leverandor_id: o.leverandor_id, endring: o.klipp, grunn: 'refusjon', referanse: `refusjon:${o.id}` }, { onConflict: 'referanse', ignoreDuplicates: true });
-    await s.from('opplasinger').update({ status: 'refundert' }).eq('id', o.id);
-  }
-  revalidatePath(`/foresporsler/${f.id}`);
+  if (!epost) return { ok: false, feil: 'Du må være logget inn.' };
+  const { data, error } = await db().rpc('trekk_foresporsel', { p_foresporsel: foresporselId, p_epost: epost });
+  if (error || data !== 'ok') return { ok: false, feil: data === 'ikke_aktiv' ? 'Forespørselen er ikke aktiv.' : 'Fant ikke forespørselen.' };
+  revalidatePath(`/foresporsler/${foresporselId}`);
   revalidatePath('/mine-foresporsler');
   return { ok: true };
 }

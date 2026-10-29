@@ -66,10 +66,11 @@ export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
 
   const s = db();
   const [{ data: a }, { data: b }] = await Promise.all([
-    s.from('leverandorer').select('id').eq('orgnr', orgnr).limit(1),
+    s.from('leverandorer').select('id').eq('orgnr', orgnr).eq('status', 'godkjent').limit(1),
     s.from('leverandorer').select('id').eq('epost', epost).limit(1),
   ]);
-  if (a?.length || b?.length) return { ok: false, feil: 'Bedriften eller e-postadressen er allerede registrert. Logg inn med e-posten, eller skriv til hei@kuverto.no.' };
+  if (b?.length) return { ok: false, feil: 'E-postadressen er allerede registrert. Logg inn med den, eller skriv til hei@kuverto.no.' };
+  if (a?.length) return { ok: false, feil: 'Bedriften er allerede registrert og godkjent. Skriv til hei@kuverto.no hvis du skal ha tilgang.' };
 
   const { data: lev, error } = await s
     .from('leverandorer')
@@ -90,7 +91,12 @@ export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
     console.error('[registrering]', error);
     return { ok: false, feil: 'Vi fikk ikke lagret registreringen. Prøv igjen om litt.' };
   }
-  await s.from('dekning').insert(valgt.map((k) => ({ leverandor_id: lev.id, kommunenr: k.nr })));
+  const { error: dErr } = await s.from('dekning').insert(valgt.map((k) => ({ leverandor_id: lev.id, kommunenr: k.nr })));
+  if (dErr) {
+    console.error('[registrering] dekning', dErr);
+    await s.from('leverandorer').delete().eq('id', lev.id);
+    return { ok: false, feil: 'Vi fikk ikke lagret registreringen. Prøv igjen om litt.' };
+  }
 
   await sendEpost({
     til: epost,

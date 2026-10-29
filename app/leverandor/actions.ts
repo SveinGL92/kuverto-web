@@ -122,8 +122,12 @@ export async function sendMeldingTilKunde(foresporselId: string, tekst: string):
   const t = String(tekst ?? '').trim().slice(0, 2000);
   if (t.length < 2) return { ok: false, feil: 'Skriv en melding.' };
   const s = db();
-  const { data: f } = await s.from('foresporsler').select('id, kunde_epost, anledning').eq('id', foresporselId).single();
+  const { data: f } = await s.from('foresporsler').select('id, kunde_epost, anledning, status').eq('id', foresporselId).single();
   if (!f) return { ok: false, feil: 'Fant ikke forespørselen.' };
+  if (f.status !== 'aktiv') {
+    const { data: mitt } = await s.from('tilbud').select('status').eq('foresporsel_id', f.id).eq('leverandor_id', lev.id).maybeSingle();
+    if (mitt?.status !== 'godtatt') return { ok: false, feil: 'Kunden har valgt en annen leverandør, eller forespørselen er lukket.' };
+  }
   await s.from('meldinger').insert({ foresporsel_id: f.id, leverandor_id: lev.id, fra: 'leverandor', tekst: t });
   await sendEpost({
     til: f.kunde_epost,
