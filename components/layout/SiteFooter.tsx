@@ -57,7 +57,7 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
-        <span>Kuverto drives av Puncheur AS.</span>
+        <span>© 2026 Puncheur AS · Org.nr. 999 552 536</span>
         <ThemeToggle />
       </div>
     </footer>

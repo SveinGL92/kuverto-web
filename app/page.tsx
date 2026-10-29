@@ -29,6 +29,7 @@ const strukturertData = {
       url: 'https://kuverto.no',
       logo: 'https://kuverto.no/logo/kuverto-logo-farge.svg',
       legalName: 'Puncheur AS',
+      taxID: '999552536',
     },
     {
       '@type': 'WebSite',

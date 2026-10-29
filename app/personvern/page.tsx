@@ -36,7 +36,7 @@ export default function Personvern() {
 
           <Del tittel="Hvem er ansvarlig?">
             <p>
-              Puncheur AS er behandlingsansvarlig for opplysningene i Kuverto. Spørsmål om personvern sender du til{' '}
+              Puncheur AS (org.nr. 999 552 536) er behandlingsansvarlig for opplysningene i Kuverto. Spørsmål om personvern sender du til{' '}
               <a href="mailto:hei@kuverto.no">hei@kuverto.no</a>.
             </p>
           </Del>
