@@ -18,7 +18,7 @@ const ANTALL_STEG = 4;
 const titler = ['Om arrangementet', 'Maten du ønsker', 'Kontaktinformasjon', 'Se over og send'];
 const hint = [
   'Hva, når, hvor mange og hvor. Et omtrentlig antall gjester holder.',
-  'Alt her kan leverandørene foreslå alternativer til.',
+  'Leverandørene kan foreslå alternativer til meny og servering.',
   'Du trenger ikke lage konto. Vi sender lenke til tilbudene på e-post.',
   'Sjekk at alt stemmer. Du kan endre hver del.',
 ];
@@ -136,20 +136,29 @@ export function Skjema() {
   const [fraOversikt, setFraOversikt] = useState(false);
   const tittel = useRef<HTMLHeadingElement>(null);
   const forsteGang = useRef(true);
+  /** Felt som skal få fokus etter neste stegbytte (brukes når siste kontroll sender kunden tilbake). */
+  const fokusFelt = useRef<string | null>(null);
 
-  // Hent lagret utkast fra denne fanen, men la verdier fra forsiden vinne.
+  // Kommer kunden med valg fra forsiden, starter vi et nytt utkast med dem og fjerner dem fra adressen,
+  // så en omlasting henter utkastet. Ellers hentes lagret utkast fra denne fanen.
   useEffect(() => {
+    if (lastet) return;
     try {
-      const lagret = sessionStorage.getItem(LAGER);
-      if (lagret && !q.get('anledning')) {
-        const data = JSON.parse(lagret) as { u: Partial<Utkast>; steg: number };
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- engangs gjenoppretting fra sessionStorage
-        setU((v) => ({ ...v, ...data.u }));
-        setSteg(Math.min(ANTALL_STEG, Math.max(1, data.steg)));
+      if (q.get('anledning') || q.get('gjester') || q.get('postnummer')) {
+        sessionStorage.removeItem(LAGER);
+        router.replace('/foresporsel', { scroll: false });
+      } else {
+        const lagret = sessionStorage.getItem(LAGER);
+        if (lagret) {
+          const data = JSON.parse(lagret) as { u: Partial<Utkast>; steg: number };
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- engangs gjenoppretting fra sessionStorage
+          setU((v) => ({ ...v, ...data.u }));
+          setSteg(Math.min(ANTALL_STEG, Math.max(1, data.steg)));
+        }
       }
     } catch {}
     setLastet(true);
-  }, [q]);
+  }, [q, lastet, router]);
 
   useEffect(() => {
     if (!lastet) return;
@@ -168,8 +177,13 @@ export function Skjema() {
       forsteGang.current = false;
       return;
     }
-    tittel.current?.focus();
-    window.scrollTo({ top: 0 });
+    if (fokusFelt.current) {
+      document.getElementById(fokusFelt.current)?.focus();
+      fokusFelt.current = null;
+    } else {
+      tittel.current?.focus();
+      window.scrollTo({ top: 0 });
+    }
   }, [steg]);
 
   const sett = <K extends keyof Utkast>(k: K, v: Utkast[K]) => {
@@ -189,8 +203,9 @@ export function Skjema() {
     const f: Feil = {};
     if (s === 1) {
       if (u.gjester < 1) f.gjester = 'Skriv antall gjester, minst 1.';
-      if (!u.dato) f.dato = 'Velg en dato.';
-      else if (u.dato < iDag()) f.dato = 'Datoen har passert. Velg en dato fra i dag og fremover.';
+      if (!u.dato) {
+        if (!u.fleksibel) f.dato = 'Velg en dato, eller kryss av for at datoen er fleksibel.';
+      } else if (u.dato < iDag()) f.dato = 'Datoen har passert. Velg en dato fra i dag og fremover.';
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(u.klokkeslett)) f.klokkeslett = 'Skriv klokkeslett som tt:mm, for eksempel 11:30.';
       if (!gyldigPostnummer(u.postnummer))
         f.postnummer = u.postnummer.length === 4 ? 'Vi finner ikke dette postnummeret.' : 'Skriv postnummeret med fire siffer, for eksempel 0150.';
@@ -216,8 +231,10 @@ export function Skjema() {
       for (const s of [1, 3]) {
         const f = validerSteg(s);
         if (Object.keys(f).length) {
-          setSteg(s);
+          fokusFelt.current = `felt-${Object.keys(f)[0]}`;
+          setFraOversikt(true);
           setFeil(f);
+          setSteg(s);
           return;
         }
       }
@@ -313,7 +330,7 @@ export function Skjema() {
           <span className="text-[15px] font-semibold" aria-hidden="true">
             Steg {steg} av {ANTALL_STEG}
           </span>
-          <Link href="/" aria-label="Lukk skjemaet. Valgene dine blir lagret i denne fanen." className="flex h-11 w-11 items-center justify-center rounded-pill text-text">
+          <Link href="/" aria-label="Lukk skjemaet. Valgene om arrangementet og maten blir lagret i denne fanen." className="flex h-11 w-11 items-center justify-center rounded-pill text-text">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
@@ -402,7 +419,7 @@ export function Skjema() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
-                  <Input id="felt-dato" label="Dato" type="date" min={iDag()} value={u.dato} onChange={(e) => sett('dato', e.target.value)} feil={feil.dato} required />
+                  <Input id="felt-dato" label="Dato" type="date" min={iDag()} value={u.dato} onChange={(e) => sett('dato', e.target.value)} feil={feil.dato} required={!u.fleksibel} />
                   <Input
                     id="felt-klokkeslett"
                     label="Maten skal stå klar kl."
@@ -415,8 +432,16 @@ export function Skjema() {
                   />
                 </div>
                 <label className="-mt-3 flex min-h-touch cursor-pointer items-center gap-3 text-base font-semibold">
-                  <input type="checkbox" checked={u.fleksibel} onChange={(e) => sett('fleksibel', e.target.checked)} className="h-6 w-6 accent-[var(--k-primary)]" />
-                  Datoen er fleksibel
+                  <input
+                    type="checkbox"
+                    checked={u.fleksibel}
+                    onChange={(e) => {
+                      sett('fleksibel', e.target.checked);
+                      if (e.target.checked) setFeil((f) => ({ ...f, dato: undefined }));
+                    }}
+                    className="h-6 w-6 shrink-0 accent-[var(--k-primary)]"
+                  />
+                  Datoen er fleksibel eller ikke bestemt
                 </label>
 
                 <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
@@ -529,7 +554,7 @@ export function Skjema() {
                                 type="checkbox"
                                 checked={v.alvorlig}
                                 onChange={(e) => settKosthold(type, { ...v, alvorlig: e.target.checked })}
-                                className="h-6 w-6 accent-[var(--k-primary)]"
+                                className="h-6 w-6 shrink-0 accent-[var(--k-primary)]"
                               />
                               Alvorlig allergi
                             </label>
@@ -599,8 +624,7 @@ export function Skjema() {
                   <Rad navn="Anledning">{anledningNavn(u.anledning)}</Rad>
                   <Rad navn="Gjester">{u.gjester}</Rad>
                   <Rad navn="Dato">
-                    {u.dato ? stor(datoKort(u.dato)) : '–'} kl. {u.klokkeslett}
-                    {u.fleksibel ? ' (fleksibel)' : ''}
+                    {u.dato ? `${stor(datoKort(u.dato))} kl. ${u.klokkeslett}${u.fleksibel ? ' (fleksibel)' : ''}` : 'Fleksibel dato'}
                   </Rad>
                   <Rad navn="Sted">
                     {[u.postnummer, sted].filter(Boolean).join(' ')} · {leveringer.find((l) => l.id === u.levering)?.navn}

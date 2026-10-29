@@ -82,7 +82,7 @@ const sporsmal: SporsmalSvar[] = [
   },
   {
     sporsmal: 'Hvem ser forespørselen min?',
-    svar: 'Bare godkjente leverandører som dekker området ditt. Før de svarer, ser de anledning, dato, antall gjester, område og kosthold. Navn og e-post ser bare leverandørene som låser opp forespørselen, og full adresse deles først når du velger et tilbud.',
+    svar: `Bare godkjente leverandører som dekker området ditt. Før de låser opp, ser de anledning, dato, antall gjester, område, budsjett og kosthold. Navn, kontaktinfo og meldingen din ser bare leverandørene som låser opp forespørselen, høyst ${MAKS_LEVERANDORER}. Full adresse deles først når du velger et tilbud.`,
   },
   {
     sporsmal: 'Må jeg takke ja til et tilbud?',
@@ -90,7 +90,7 @@ const sporsmal: SporsmalSvar[] = [
   },
   {
     sporsmal: 'Hvem har ansvaret for maten?',
-    svar: 'Avtalen inngås direkte mellom deg og leverandøren du velger. Leverandøren har ansvaret for maten, leveransen og betalingen. Kuverto formidler kontakten.',
+    svar: 'Avtalen inngås direkte mellom deg og leverandøren du velger, og du betaler leverandøren direkte. Leverandøren har ansvaret for maten og leveransen. Kuverto formidler kontakten.',
   },
   {
     sporsmal: 'Hvilke områder dekker dere?',
@@ -156,7 +156,7 @@ export default function Forside() {
             <h2 id="steg-tittel" className="k-heading m-0 text-[30px] leading-[1.05] md:text-[clamp(32px,3.2vw,44px)]">
               Slik fungerer Kuverto
             </h2>
-            <p className="m-0 max-w-[52ch] text-base text-text-muted md:text-[17px]">Du beskriver selskapet én gang. Leverandørene gjør resten av jobben.</p>
+            <p className="m-0 max-w-[52ch] text-base text-text-muted md:text-[17px]">Du beskriver arrangementet én gang. Leverandørene gjør resten av jobben.</p>
           </div>
           <StegListe steg={steg} />
           <div className="mt-6 md:mt-8">

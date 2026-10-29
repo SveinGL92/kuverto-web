@@ -12,11 +12,11 @@ const punkter = [
   },
   {
     tittel: 'Kontaktinfoen din er skjermet',
-    tekst: 'Leverandørene ser behovet og området. Navn og e-post ser bare de som låser opp forespørselen for å svare, og full adresse deles først når du velger et tilbud.',
+    tekst: 'Leverandørene ser behovet og området. Navn og kontaktinfo ser bare de som låser opp forespørselen for å svare, og full adresse deles først når du velger et tilbud.',
   },
   {
     tittel: `Høyst ${MAKS_LEVERANDORER} tilbud`,
-    tekst: `Maks ${MAKS_LEVERANDORER} leverandører kan svare på samme forespørsel. Du får nok å velge mellom, uten å bli nedringt.`,
+    tekst: `Maks ${MAKS_LEVERANDORER} leverandører kan svare på samme forespørsel, så du får et oversiktlig antall tilbud å sammenligne.`,
   },
 ];
 

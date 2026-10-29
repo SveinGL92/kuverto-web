@@ -16,6 +16,8 @@ export function TilbudDetalj({
   tilbud: t,
   foresporsel: f,
   valgtId,
+  startMedBekreftelse = false,
+  utlopt = false,
   avslatt,
   onVelg,
   onAvsla,
@@ -24,6 +26,9 @@ export function TilbudDetalj({
   tilbud: Tilbud;
   foresporsel: Foresporsel;
   valgtId?: string;
+  /** Åpnet fra «Velg»-knappen: vis bekreftelsen med en gang. */
+  startMedBekreftelse?: boolean;
+  utlopt?: boolean;
   avslatt: boolean;
   onVelg: () => void;
   onAvsla: () => void;
@@ -33,6 +38,7 @@ export function TilbudDetalj({
   const [sendt, setSendt] = useState(false);
   const [sporsmalFeil, setSporsmalFeil] = useState<string>();
   const [bekreftAvslag, setBekreftAvslag] = useState(false);
+  const [bekreftValg, setBekreftValg] = useState(startMedBekreftelse);
   const erValgt = valgtId === t.id;
   const levering = t.levering.inkludert ? 'Inkludert' : t.levering.pris ? `${kr(t.levering.pris)} i tillegg` : 'Ikke inkludert';
 
@@ -98,9 +104,7 @@ export function TilbudDetalj({
             <h3 id={`sporsmal-tittel-${t.id}`} className="m-0 text-[17px] font-bold">
               Spørsmål til leverandøren
             </h3>
-            {sendt && (
-              <Alert tone="status">Spørsmålet er sendt. Svaret kommer her og på e-post.</Alert>
-            )}
+            <div aria-live="polite">{sendt && <Alert tone="status">Spørsmålet er sendt. Svaret kommer på e-post.</Alert>}</div>
             <Textarea
               id={`sporsmal-${t.id}`}
               label="Ditt spørsmål"
@@ -130,11 +134,30 @@ export function TilbudDetalj({
             </>
           ) : erValgt ? (
             <p className="m-0 font-bold text-success">Du har valgt dette tilbudet.</p>
+          ) : utlopt ? (
+            <p className="m-0 font-semibold text-warning">Tilbudet har gått ut. Send leverandøren et spørsmål hvis du vil ha et nytt.</p>
           ) : (
             <>
-              <Button size="lg" onClick={onVelg} disabled={!!valgtId}>
-                Velg dette tilbudet
-              </Button>
+              {bekreftValg && !valgtId ? (
+                <div role="group" aria-labelledby={`bekreft-${t.id}`} className="flex flex-col gap-3 rounded-alert border-2 border-primary p-4">
+                  <p id={`bekreft-${t.id}`} className="m-0 text-base font-semibold leading-normal">
+                    Vil du velge {t.leverandorNavn} for {kr(t.totalInklMva)}?
+                  </p>
+                  <p className="m-0 text-[15px] leading-normal text-text-muted">
+                    Leverandøren får adressen din og tar kontakt for å avtale detaljene. De andre leverandørene får beskjed om at du har valgt.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={onVelg}>Ja, velg tilbudet</Button>
+                    <Button variant="secondary" onClick={() => setBekreftValg(false)}>
+                      Avbryt
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button size="lg" onClick={() => setBekreftValg(true)} disabled={!!valgtId}>
+                  Velg dette tilbudet
+                </Button>
+              )}
               {!valgtId &&
                 (bekreftAvslag ? (
                   <div role="group" aria-label="Bekreft avslag" className="flex flex-col gap-2 rounded-alert border border-border p-4">

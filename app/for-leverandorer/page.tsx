@@ -49,7 +49,7 @@ const trinnTekst = (i: number) => {
 const sporsmal: SporsmalSvar[] = [
   {
     sporsmal: 'Hva ser jeg før jeg låser opp en forespørsel?',
-    svar: 'Anledning, dato og klokkeslett, antall gjester, område (postnummer og kommune), servering, budsjett per kuvert og kosthold. Kundens navn, kontaktinfo og meldingen deres ser du etter opplåsing.',
+    svar: 'Anledning, dato og klokkeslett, antall gjester, område (for eksempel «Oslo sentrum, 01xx»), servering, budsjett per kuvert og kosthold. Kundens navn, kontaktinfo og melding ser du etter opplåsing. Adressen får du når kunden velger tilbudet ditt.',
   },
   {
     sporsmal: 'Hvor mange leverandører kan svare på samme forespørsel?',
@@ -143,9 +143,9 @@ export default function ForLeverandorer() {
           </div>
           <div className="grid gap-4 md:grid-cols-2 md:gap-6">
             <div className="rounded-card bg-surface p-5 md:p-7">
-              <h3 className="m-0 mb-4 text-xl font-bold">Klipppakker</h3>
+              <h3 className="m-0 mb-4 text-xl font-bold">Klippakker</h3>
               <table className="w-full border-collapse text-left text-[15px] md:text-base">
-                <caption className="sr-only">Klipppakker med pris eks. mva</caption>
+                <caption className="sr-only">Klippakker med pris eks. mva</caption>
                 <thead>
                   <tr className="border-b border-border text-small text-text-muted">
                     <th scope="col" className="py-2 font-semibold">Pakke</th>

@@ -31,6 +31,7 @@ const kortnavn = (t: Tilbud) => t.leverandorNavn.match(/\b([A-ZÆØÅ])\]?$/)?.[
 
 function gjelderTil(iso: string) {
   const d = dagerTil(iso);
+  if (d < 0) return { tekst: 'Utløpt', haster: true, utlopt: true };
   if (d === 0) return { tekst: 'I dag', haster: true };
   if (d === 1) return { tekst: 'I morgen', haster: true };
   return { tekst: dagMndLang(iso), haster: false };
@@ -47,6 +48,8 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
   const [valgt, setValgt] = useState<string>();
   const [avslatte, setAvslatte] = useState<string[]>([]);
   const [apent, setApent] = useState<string>();
+  /** Tilbudet kunden har trykket «Velg» på, og som venter på bekreftelse i dialogen. */
+  const [bekreftVelg, setBekreftVelg] = useState(false);
   const kvittering = useRef<HTMLDivElement>(null);
 
   const lavest = useMemo(() => [...tilbud].sort((a, b) => a.prisPerKuvert - b.prisPerKuvert)[0]?.id, [tilbud]);
@@ -81,7 +84,15 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
   };
 
   const seHele = (t: Tilbud, className?: string) => (
-    <Button variant="text" size="sm" onClick={() => setApent(t.id)} className={cn('font-semibold', className)}>
+    <Button
+      variant="text"
+      size="sm"
+      onClick={() => {
+        setBekreftVelg(false);
+        setApent(t.id);
+      }}
+      className={cn('font-semibold', className)}
+    >
       Se hele tilbudet<span className="sr-only"> fra {t.leverandorNavn}</span>
     </Button>
   );
@@ -94,7 +105,15 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
         <Hake /> Valgt
       </span>
     ) : (
-      <Button variant={t.id === fremhevet && !valgt ? 'primary' : 'secondary'} onClick={() => velg(t.id)} disabled={!!valgt} className={className}>
+      <Button
+        variant={t.id === fremhevet && !valgt ? 'primary' : 'secondary'}
+        onClick={() => {
+          setBekreftVelg(true);
+          setApent(t.id);
+        }}
+        disabled={!!valgt || !!gjelderTil(t.gyldigTil).utlopt}
+        className={className}
+      >
         {tekst}
       </Button>
     );
@@ -157,7 +176,13 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
               leverandor={valgtTilbud.leverandorNavn}
               className="rounded-media md:flex-row md:flex-wrap md:items-center md:gap-x-8"
               handling={
-                <Button variant="accent" onClick={() => setApent(valgtTilbud.id)}>
+                <Button
+                  variant="accent"
+                  onClick={() => {
+                    setBekreftVelg(false);
+                    setApent(valgtTilbud.id);
+                  }}
+                >
                   Se tilbudet
                 </Button>
               }
@@ -410,7 +435,7 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
 
             <section className="mx-4 mt-6 flex flex-col gap-2.5 md:hidden">
               <h2 className="k-heading m-0 text-2xl">Spørsmål til en leverandør?</h2>
-              <p className="m-0 text-[15px] text-text-muted">Trykk «Se hele tilbudet» og send en melding. Svaret kommer her og på e-post.</p>
+              <p className="m-0 text-[15px] text-text-muted">Trykk «Se hele tilbudet» og send et spørsmål. Svaret kommer på e-post.</p>
             </section>
           </>
         )}
@@ -421,6 +446,8 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
             tilbud={apentTilbud}
             foresporsel={f}
             valgtId={valgt}
+            startMedBekreftelse={bekreftVelg}
+            utlopt={!!gjelderTil(apentTilbud.gyldigTil).utlopt}
             avslatt={avslatte.includes(apentTilbud.id)}
             onVelg={() => velg(apentTilbud.id)}
             onAvsla={() => avsla(apentTilbud.id)}

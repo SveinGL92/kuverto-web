@@ -78,7 +78,7 @@ export default function Personvern() {
 
           <Del tittel="Informasjonskapsler">
             <p>
-              Vi bruker ingen informasjonskapsler til sporing eller annonser. Nettleseren lagrer et utkast av skjemaet i fanen du har åpen, uten kontaktopplysninger, og valget ditt av lyst eller mørkt tema. Dette slettes når du lukker fanen eller tømmer nettleseren.
+              Vi bruker ingen informasjonskapsler til sporing eller annonser. Nettleseren lagrer et utkast av skjemaet i fanen du har åpen, uten kontaktopplysninger. Utkastet slettes når du lukker fanen. Velger du lyst eller mørkt tema, husker nettleseren valget til du tømmer nettleserdataene.
             </p>
           </Del>
 

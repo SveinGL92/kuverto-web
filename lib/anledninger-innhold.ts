@@ -35,9 +35,9 @@ export const anledningerInnhold: AnledningInnhold[] = [
       'Få tilbud på firmalunsj fra godkjente cateringleverandører. Send én forespørsel, sammenlign meny og pris per kuvert, og velg det som passer. Gratis og uforpliktende.',
     h1: 'Catering til firmalunsj',
     ingress:
-      'Enten det er én lunsj til teamet eller fast levering hver uke: beskriv behovet én gang, så sender leverandører i nærheten deg meny og pris per kuvert.',
+      'Enten det er én lunsj til teamet eller noe dere vil gjenta: beskriv behovet én gang, så sender leverandører i nærheten deg meny og pris per kuvert.',
     oppgi: [
-      'Antall personer og om det er en enkeltlunsj eller fast avtale',
+      'Antall personer, og om dere ønsker fast levering (skriv det under «Andre ønsker»)',
       'Når maten skal stå klar, og om den skal leveres eller hentes',
       'Allergier og kosthold, med antall for hver',
       'Budsjett per kuvert, hvis du har et',
@@ -55,12 +55,12 @@ export const anledningerInnhold: AnledningInnhold[] = [
       'Bestill møtemat til styremøte, kurs eller seminar. Send én forespørsel og få tilbud med meny og pris per kuvert fra leverandører i nærheten.',
     h1: 'Møtemat til møter, kurs og seminarer',
     ingress:
-      'Frokost, lunsj eller noe å bite i underveis. Fortell oss hvor mange som kommer og når, så kommer tilbudene til deg.',
+      'Frokost, lunsj eller noe å bite i underveis. Fortell hvor mange dere blir og når, så sender leverandørene deg tilbud.',
     oppgi: [
       'Tidspunkt for servering, og om det er flere måltider samme dag',
       'Antall deltakere og om noen spiser vegetar eller har allergier',
       'Om maten skal leveres ferdig eller settes opp',
-      'Leveringsadresse eller postnummer',
+      'Postnummer der maten skal serveres',
     ],
     standardGjester: 15,
   },
@@ -140,7 +140,7 @@ export const anledningerInnhold: AnledningInnhold[] = [
       'Dato og tidspunkt, også om det er kort tid til',
       'Omtrent hvor mange som kommer',
       'Om du ønsker smørbrød, kaffe og kaker eller noe annet',
-      'Hvor maten skal leveres',
+      'Postnummer der maten skal serveres',
     ],
     standardGjester: 40,
     rolig: true,
