@@ -1,7 +1,5 @@
 /** «12 min», «1 t», «i går», «3 dager». */
-import { MOCK_NA } from '@/lib/mock';
-
-const naMs = () => Date.parse(MOCK_NA);
+const naMs = () => Date.now();
 
 export function tidSiden(iso: string, na = naMs()) {
   const min = Math.max(1, Math.round((na - Date.parse(iso)) / 60_000));
@@ -14,7 +12,9 @@ export function tidSiden(iso: string, na = naMs()) {
 
 /** Dager fra i dag til en dato (YYYY-MM-DD). */
 export function dagerTil(iso: string, na = new Date(naMs())) {
-  const idag = Date.UTC(na.getUTCFullYear(), na.getUTCMonth(), na.getUTCDate());
+  // Dagens dato i norsk tid.
+  const [ny, nm, nd] = na.toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' }).split('-').map(Number);
+  const idag = Date.UTC(ny, nm - 1, nd);
   const [y, m, d] = iso.split('-').map(Number);
   return Math.round((Date.UTC(y, m - 1, d) - idag) / 86_400_000);
 }

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Alert } from '@/components/ui/Alert';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { Input, Textarea, feltKlasse } from '@/components/ui/Input';
@@ -12,6 +13,7 @@ import { MAKS_LEVERANDORER } from '@/lib/klipp';
 import { anledninger, anledningNavn, budsjetter, budsjettNavn, kostholdNavn, kostholdstyper, leveringer, serveringer } from '@/lib/labels';
 import { gyldigPostnummer, poststed, rensPostnummer } from '@/lib/postnummer';
 import type { Anledning, Budsjett, Kostholdstype, Levering, Servering } from '@/lib/types';
+import { sendForesporsel } from './actions';
 
 /**
  * Forespørselsskjemaet i to steg: 1) arrangementet og maten, 2) kontakt og innsending.
@@ -134,6 +136,13 @@ export function Skjema() {
   const [u, setU] = useState<Utkast>(() => startverdi(new URLSearchParams(q.toString())));
   const [feil, setFeil] = useState<Feil>({});
   const [lastet, setLastet] = useState(false);
+  const [sender, setSender] = useState(false);
+  const [sendeFeil, setSendeFeil] = useState<string>();
+  const [nettside, setNettside] = useState('');
+  const startet = useRef(0);
+  useEffect(() => {
+    startet.current = Date.now();
+  }, []);
   const tittel = useRef<HTMLHeadingElement>(null);
   const forsteGang = useRef(true);
   /** Felt som skal få fokus etter neste stegbytte (når innsendingen sender kunden tilbake til steg 1). */
@@ -217,9 +226,9 @@ export function Skjema() {
     return f;
   };
 
-  const neste = () => {
+  const neste = async () => {
+    if (sender) return;
     if (steg === ANTALL_STEG) {
-      // Fase 2: server action som validerer på nytt på serveren.
       const f1 = validerSteg(1);
       if (Object.keys(f1).length) {
         fokusFelt.current = `felt-${Object.keys(f1)[0]}`;
@@ -235,7 +244,34 @@ export function Skjema() {
       document.getElementById(`felt-${forste}`)?.focus();
       return;
     }
-    setSteg((s) => s + 1);
+    if (steg < ANTALL_STEG) {
+      setSteg((s) => s + 1);
+      return;
+    }
+    setSender(true);
+    setSendeFeil(undefined);
+    try {
+      const svar = await sendForesporsel({ ...u, nettside, startet: startet.current });
+      if (svar.ok) {
+        setSteg(ANTALL_STEG + 1);
+        return;
+      }
+      const felt = svar.felt as Felt | undefined;
+      if (felt && ['gjester', 'dato', 'klokkeslett', 'postnummer'].includes(felt)) {
+        fokusFelt.current = `felt-${felt}`;
+        setFeil({ [felt]: svar.feil });
+        setSteg(1);
+      } else if (felt) {
+        setFeil({ [felt]: svar.feil });
+        document.getElementById(`felt-${felt}`)?.focus();
+      } else {
+        setSendeFeil(svar.feil);
+      }
+    } catch {
+      setSendeFeil('Vi fikk ikke kontakt. Sjekk nettforbindelsen og prøv igjen. Det du har fylt ut, er tatt vare på.');
+    } finally {
+      setSender(false);
+    }
   };
   const tilbake = () => (steg === 1 ? router.push('/') : setSteg(1));
 
@@ -255,7 +291,7 @@ export function Skjema() {
               Forespørselen er sendt
             </h1>
             <p className="m-0 text-[17px] leading-[1.55] text-panel-on-muted">
-              Vi har sendt en bekreftelse til <strong className="text-panel-on">{u.epost}</strong> med lenke til forespørselen.
+              Vi har sendt en bekreftelse til <strong className="text-panel-on">{u.epost}</strong>. Der finner du lenken du logger inn med for å se tilbudene.
             </p>
           </div>
         </div>
@@ -288,8 +324,8 @@ export function Skjema() {
             </ol>
           </section>
           <div className="mt-auto flex flex-col gap-2">
-            <ButtonLink href="/foresporsler/f-firmalunsj" size="lg">
-              Se forespørselen
+            <ButtonLink href={`/logg-inn?epost=${encodeURIComponent(u.epost)}`} size="lg">
+              Logg inn og følg forespørselen
             </ButtonLink>
             <ButtonLink href="/" variant="text">
               Til forsiden
@@ -608,9 +644,16 @@ export function Skjema() {
             )}
           </div>
 
+          <div aria-hidden="true" className="absolute left-[-9999px] h-px w-px overflow-hidden">
+            <label>
+              Nettside
+              <input tabIndex={-1} autoComplete="off" value={nettside} onChange={(e) => setNettside(e.target.value)} />
+            </label>
+          </div>
           <div className="sticky bottom-0 flex shrink-0 flex-col gap-2 border-t border-border bg-bg px-4 pb-6 pt-3">
-            <Button type="submit" className="min-h-14 w-full text-[17px]">
-              {steg === 1 ? 'Neste: kontaktinfo' : 'Send forespørsel'}
+            {sendeFeil && <Alert tone="feil">{sendeFeil}</Alert>}
+            <Button type="submit" className="min-h-14 w-full text-[17px]" busy={sender} disabled={sender}>
+              {steg === 1 ? 'Neste: kontaktinfo' : sender ? 'Sender' : 'Send forespørsel'}
             </Button>
             <span className="text-center text-small text-text-muted">{steg === 1 ? 'Ingenting sendes før neste steg.' : 'Gratis og uforpliktende.'}</span>
           </div>

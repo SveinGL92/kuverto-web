@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { BordetErDekket } from '@/components/states/BordetErDekket';
 import { EmptyState } from '@/components/states/EmptyState';
@@ -12,6 +13,8 @@ const celle = 'flex flex-col gap-3 border-border p-0 py-8 md:p-8';
 
 /** Oversikt over tomme tilstander, lasting, feil og bekreftelser (O-Tilstander). */
 export default function Tilstander() {
+  // Demoside med eksempeldata. Skjult i produksjon.
+  if (process.env.VERCEL_ENV === 'production') notFound();
   return (
     <main id="innhold" className="mx-auto max-w-[1200px] p-4 md:p-12">
       <h1 className="sr-only">Tilstander</h1>

@@ -34,9 +34,12 @@ export function AppHeader({
           <span className="sr-only">, til forsiden</span>
         </Link>
         <nav aria-label="Konto" className="flex flex-wrap gap-1 text-base font-semibold">
-          {lenke('/foresporsler/f-firmalunsj', 'Mine forespørsler', 'foresporsler')}
-          {lenke('#', 'Meldinger', 'meldinger')}
-          {lenke('#', 'Kari N.', 'konto')}
+          {lenke('/mine-foresporsler', 'Mine forespørsler', 'foresporsler')}
+          <form action="/logg-ut" method="post">
+            <button type="submit" className="px-3.5 py-3 font-semibold text-panel-on-muted hover:text-panel-on">
+              Logg ut
+            </button>
+          </form>
         </nav>
       </div>
       <div className="px-1 pt-2 md:hidden">

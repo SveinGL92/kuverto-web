@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Alert } from '@/components/ui/Alert';
 import { Badge, DietTag } from '@/components/ui/Badge';
@@ -12,6 +13,8 @@ export const metadata: Metadata = { title: 'Komponenter', description: 'Oversikt
 const H = ({ children }: { children: string }) => <h2 className="k-heading m-0 text-2xl">{children}</h2>;
 
 export default function Komponenter() {
+  // Demoside med eksempeldata. Skjult i produksjon.
+  if (process.env.VERCEL_ENV === 'production') notFound();
   return (
     <main id="innhold" className="mx-auto grid max-w-[1200px] grid-cols-1 content-start gap-x-14 gap-y-12 p-6 md:grid-cols-2 md:p-12">
       <section className="flex flex-col gap-3.5">

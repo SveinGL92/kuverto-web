@@ -3,6 +3,7 @@ import { Badge, DietTag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { datoKort, stor } from '@/lib/format';
 import { anledningIllustrasjon, anledningNavn, budsjettNavn, kostholdNavn, serveringNavn } from '@/lib/labels';
+import type { ReactNode } from 'react';
 import type { Foresporsel, ForesporselKontakt } from '@/lib/types';
 import { tidSiden } from './tid';
 
@@ -23,6 +24,11 @@ export function ForesporselKort({
   onIkkeAktuell,
   onLagTilbud,
   onSendMelding,
+  onKjopKlipp,
+  svarfrist,
+  tilbudStatus,
+  lagTilbudTekst = 'Lag tilbud',
+  opptatt,
 }: {
   foresporsel: Foresporsel;
   kontakt?: ForesporselKontakt;
@@ -31,10 +37,17 @@ export function ForesporselKort({
   onIkkeAktuell?: () => void;
   onLagTilbud?: () => void;
   onSendMelding?: () => void;
+  onKjopKlipp?: () => void;
+  /** Tekst i merket for opplåste forespørsler, f.eks. «Svar innen i morgen». */
+  svarfrist?: string;
+  /** Vises over knappene når et tilbud er sendt. */
+  tilbudStatus?: ReactNode;
+  lagTilbudTekst?: string;
+  opptatt?: boolean;
 }) {
   const opplast = !!kontakt;
   const tittel = `${anledningNavn(f.anledning)} for ${f.gjester}`;
-  const dato = `${stor(datoKort(f.dato))}, kl. ${f.klokkeslett}`;
+  const dato = f.dato ? `${stor(datoKort(f.dato))}, kl. ${f.klokkeslett}` : 'Fleksibel dato';
   const nokKlipp = klippsaldo >= f.klippPris;
   const mangler = f.klippPris - klippsaldo;
 
@@ -46,7 +59,7 @@ export function ForesporselKort({
             {opplast ? (
               <>
                 <Badge tone="opplast">Opplåst</Badge>
-                <Badge tone="advarsel">Svar innen i morgen</Badge>
+                {svarfrist && <Badge tone="advarsel">{svarfrist}</Badge>}
               </>
             ) : (
               <Badge tone="ny">Ny · {nyTekst(f.opprettet)}</Badge>
@@ -88,10 +101,13 @@ export function ForesporselKort({
               <img src="/illustrasjoner/understrek.svg" alt="" className="k-ink mt-1 block w-[220px]" />
             </blockquote>
           )}
+          {tilbudStatus}
           <div className="flex flex-wrap gap-2.5">
-            <Button onClick={onLagTilbud} className="min-h-[54px] flex-grow text-[17px]">
-              Lag tilbud
-            </Button>
+            {onLagTilbud && (
+              <Button onClick={onLagTilbud} className="min-h-[54px] flex-grow text-[17px]">
+                {lagTilbudTekst}
+              </Button>
+            )}
             <Button variant="secondary" onClick={onSendMelding} className="min-h-[54px] px-5">
               Send melding
             </Button>
@@ -138,7 +154,7 @@ export function ForesporselKort({
           {nokKlipp ? (
             <>
               <div className="flex flex-wrap items-center gap-2.5">
-                <Button onClick={onLasOpp} className="min-h-[54px] flex-grow text-[17px]">
+                <Button onClick={onLasOpp} busy={opptatt} disabled={opptatt} className="min-h-[54px] flex-grow text-[17px]">
                   Lås opp for {f.klippPris} klipp
                 </Button>
                 <Button variant="secondary" onClick={onIkkeAktuell} className="min-h-[54px] px-5">
@@ -155,7 +171,7 @@ export function ForesporselKort({
                 Denne forespørselen koster <strong>{f.klippPris} klipp</strong>. Du har <strong>{klippsaldo}</strong>. Du trenger {mangler} klipp til.
               </Alert>
               <div className="flex flex-wrap items-center gap-4">
-                <Button>Kjøp klipp</Button>
+                <Button onClick={onKjopKlipp}>Kjøp klipp</Button>
                 <Button variant="text" onClick={onIkkeAktuell}>
                   Ikke nå
                 </Button>

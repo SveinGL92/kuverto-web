@@ -2,7 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
+import { Alert } from '@/components/ui/Alert';
+import { avslaTilbud, sporLeverandor, trekkForesporsel, velgTilbud } from './actions';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { EmptyState } from '@/components/states/EmptyState';
@@ -45,8 +48,12 @@ const Hake = () => (
 
 export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporsel; tilbud: Tilbud[] }) {
   const [sortering, setSortering] = useState<Sortering>('pris');
-  const [valgt, setValgt] = useState<string>();
-  const [avslatte, setAvslatte] = useState<string[]>([]);
+  const router = useRouter();
+  const valgt = tilbud.find((t) => t.status === 'godtatt')?.id;
+  const avslatte = tilbud.filter((t) => t.status === 'avslatt' && !valgt).map((t) => t.id);
+  const aktiv = f.status === 'aktiv';
+  const [feil, setFeil] = useState<string>();
+  const [bekreftTrekk, setBekreftTrekk] = useState(false);
   const [apent, setApent] = useState<string>();
   /** Tilbudet kunden har trykket «Velg» på, og som venter på bekreftelse i dialogen. */
   const [bekreftVelg, setBekreftVelg] = useState(false);
@@ -73,14 +80,25 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
     const tekst = ord.length > 1 ? `${ord.slice(0, -1).join(', ')} og ${ord.at(-1)}` : (ord[0] ?? '');
     return tekst.charAt(0).toUpperCase() + tekst.slice(1);
   })();
-  const velg = (id: string) => {
+  const velg = async (id: string, adresse: string) => {
+    const svar = await velgTilbud(id, adresse);
+    if (!svar.ok) return svar.feil;
     setApent(undefined);
-    setValgt(id);
-    requestAnimationFrame(() => kvittering.current?.focus());
+    router.refresh();
+    setTimeout(() => kvittering.current?.focus(), 400);
+    return undefined;
   };
-  const avsla = (id: string) => {
-    setAvslatte((l) => [...l, id]);
-    setApent(undefined);
+  const avsla = async (id: string, angre = false) => {
+    const svar = await avslaTilbud(id, angre);
+    if (!svar.ok) setFeil(svar.feil);
+    if (!angre) setApent(undefined);
+    router.refresh();
+  };
+  const trekk = async () => {
+    const svar = await trekkForesporsel(f.id);
+    if (!svar.ok) setFeil(svar.feil);
+    setBekreftTrekk(false);
+    router.refresh();
   };
 
   const seHele = (t: Tilbud, className?: string) => (
@@ -111,7 +129,7 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
           setBekreftVelg(true);
           setApent(t.id);
         }}
-        disabled={!!valgt || !!gjelderTil(t.gyldigTil).utlopt}
+        disabled={!!valgt || !aktiv || !!gjelderTil(t.gyldigTil).utlopt}
         className={className}
       >
         {tekst}
@@ -152,17 +170,17 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
 
   return (
     <>
-      <AppHeader tilbake={{ href: '/', navn: 'Mine forespørsler' }} aktiv="foresporsler">
+      <AppHeader tilbake={{ href: '/mine-foresporsler', navn: 'Mine forespørsler' }} aktiv="foresporsler">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-1.5 md:gap-2">
             <h1 className="k-heading m-0 text-[34px] leading-[1.02] md:text-[52px] md:leading-none md:tracking-[-0.04em]">
               {tilbud.length === 0 ? `Ingen tilbud ennå på ${anledning}` : `${tilbud.length} tilbud på ${anledning}`}
             </h1>
             <p className="m-0 text-[15px] text-panel-on-muted md:hidden">
-              {f.gjester} kuverter · {datoKort(f.dato)} · {f.postnummer} {f.poststed}
+              {f.gjester} kuverter · {f.dato ? datoKort(f.dato) : 'fleksibel dato'} · {f.postnummer} {f.poststed}
             </p>
             <p className="m-0 hidden text-[17px] text-panel-on-muted md:block">
-              {f.gjester} kuverter · {datoLang(f.dato)} kl. {f.klokkeslett} · {f.postnummer} {f.poststed} · budsjett {budsjettNavn(f.budsjett)} per kuvert
+              {f.gjester} kuverter · {f.dato ? `${datoLang(f.dato)} kl. ${f.klokkeslett}` : 'fleksibel dato'} · {f.postnummer} {f.poststed} · budsjett {budsjettNavn(f.budsjett)}{f.budsjett === 'vet_ikke' ? '' : ' per kuvert'}
             </p>
           </div>
           {tilbud.length > 1 && <div className="hidden md:block">{sorteringsknapper('panel')}</div>}
@@ -170,6 +188,16 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
       </AppHeader>
 
       <main id="innhold" className="mx-auto max-w-[1200px] pb-16 md:px-6 md:pb-[72px] md:pt-10">
+        {feil && (
+          <div className="mx-4 mt-4 md:mx-0 md:mb-6 md:mt-0" aria-live="polite">
+            <Alert tone="feil">{feil}</Alert>
+          </div>
+        )}
+        {!aktiv && !valgt && (
+          <div className="mx-4 mt-4 md:mx-0 md:mb-6 md:mt-0">
+            <Alert tone="advarsel">{f.status === 'trukket' ? 'Du har trukket denne forespørselen. Leverandørene har fått beskjed.' : 'Forespørselen er ikke lenger aktiv.'}</Alert>
+          </div>
+        )}
         {valgtTilbud && (
           <div ref={kvittering} tabIndex={-1} role="status" className="mx-4 mt-4 outline-none md:mx-0 md:mb-8 md:mt-0">
             <BordetErDekket
@@ -439,6 +467,27 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
             </section>
           </>
         )}
+        {aktiv && (
+          <div className="mx-4 mt-8 flex flex-col gap-3 border-t border-border pt-6 md:mx-0">
+            {bekreftTrekk ? (
+              <div role="group" aria-label="Bekreft at du vil trekke forespørselen" className="flex flex-col gap-3 rounded-alert border border-border p-4">
+                <p className="m-0 text-[15px]">Leverandørene får beskjed, og du kan ikke velge noen av tilbudene etterpå.</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="danger" size="sm" onClick={trekk}>
+                    Trekk forespørselen
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => setBekreftTrekk(false)}>
+                    Avbryt
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button variant="text" size="sm" onClick={() => setBekreftTrekk(true)} className="self-start !px-0 font-semibold">
+                Trekk forespørselen
+              </Button>
+            )}
+          </div>
+        )}
       </main>
       <Dialog apen={!!apentTilbud} onLukk={() => setApent(undefined)} label={apentTilbud ? `Tilbud fra ${apentTilbud.leverandorNavn}` : 'Tilbud'} className="max-w-[600px]">
         {apentTilbud && (
@@ -449,9 +498,12 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
             startMedBekreftelse={bekreftVelg}
             utlopt={!!gjelderTil(apentTilbud.gyldigTil).utlopt}
             avslatt={avslatte.includes(apentTilbud.id)}
-            onVelg={() => velg(apentTilbud.id)}
+            levering={f.levering === 'levering'}
+            aktiv={aktiv}
+            onVelg={(adresse) => velg(apentTilbud.id, adresse)}
             onAvsla={() => avsla(apentTilbud.id)}
-            onAngreAvslag={() => setAvslatte((l) => l.filter((x) => x !== apentTilbud.id))}
+            onAngreAvslag={() => avsla(apentTilbud.id, true)}
+            onSporsmal={(tekst) => sporLeverandor(apentTilbud.id, tekst)}
           />
         )}
       </Dialog>

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
-import { Textarea } from '@/components/ui/Input';
+import { Input, Textarea } from '@/components/ui/Input';
 import { dagMndLang, kr } from '@/lib/format';
 import type { Foresporsel, Tilbud } from '@/lib/types';
 
@@ -22,6 +22,9 @@ export function TilbudDetalj({
   onVelg,
   onAvsla,
   onAngreAvslag,
+  onSporsmal,
+  levering = true,
+  aktiv = true,
 }: {
   tilbud: Tilbud;
   foresporsel: Foresporsel;
@@ -30,25 +33,50 @@ export function TilbudDetalj({
   startMedBekreftelse?: boolean;
   utlopt?: boolean;
   avslatt: boolean;
-  onVelg: () => void;
+  /** Returnerer en feilmelding hvis valget ikke gikk gjennom. */
+  onVelg: (adresse: string) => Promise<string | undefined>;
   onAvsla: () => void;
   onAngreAvslag: () => void;
+  onSporsmal: (tekst: string) => Promise<{ ok: true } | { ok: false; feil: string }>;
+  /** Om maten skal leveres. Da må kunden oppgi adresse ved valg. */
+  levering?: boolean;
+  aktiv?: boolean;
 }) {
   const [sporsmal, setSporsmal] = useState('');
   const [sendt, setSendt] = useState(false);
   const [sporsmalFeil, setSporsmalFeil] = useState<string>();
   const [bekreftAvslag, setBekreftAvslag] = useState(false);
   const [bekreftValg, setBekreftValg] = useState(startMedBekreftelse);
+  const [adresse, setAdresse] = useState('');
+  const [adresseFeil, setAdresseFeil] = useState<string>();
+  const [velgFeil, setVelgFeil] = useState<string>();
+  const [opptatt, setOpptatt] = useState(false);
+  const velg = async () => {
+    if (levering && adresse.trim().length < 5) {
+      setAdresseFeil('Skriv adressen maten skal leveres til.');
+      document.getElementById(`adresse-${t.id}`)?.focus();
+      return;
+    }
+    setOpptatt(true);
+    const feil = await onVelg(adresse.trim());
+    setOpptatt(false);
+    if (feil) setVelgFeil(feil);
+  };
   const erValgt = valgtId === t.id;
-  const levering = t.levering.inkludert ? 'Inkludert' : t.levering.pris ? `${kr(t.levering.pris)} i tillegg` : 'Ikke inkludert';
+  const leveringTekst = t.levering.inkludert ? 'Inkludert' : t.levering.pris ? `${kr(t.levering.pris)} i tillegg` : 'Ikke inkludert';
 
-  const send = () => {
+  const send = async () => {
     if (sporsmal.trim().length < 3) {
       setSporsmalFeil('Skriv spørsmålet ditt før du sender.');
       document.getElementById(`sporsmal-${t.id}`)?.focus();
       return;
     }
     setSporsmalFeil(undefined);
+    const svar = await onSporsmal(sporsmal);
+    if (!svar.ok) {
+      setSporsmalFeil(svar.feil);
+      return;
+    }
     setSendt(true);
     setSporsmal('');
   };
@@ -84,7 +112,7 @@ export function TilbudDetalj({
             {t.kosthold.merknad && <span className="font-semibold text-warning"> {t.kosthold.merknad}</span>}
           </dd>
           <dt className="font-semibold text-text-muted">Levering</dt>
-          <dd className="m-0 -mt-3 min-[480px]:mt-0">{levering}</dd>
+          <dd className="m-0 -mt-3 min-[480px]:mt-0">{leveringTekst}</dd>
           <dt className="font-semibold text-text-muted">Oppsett og rydding</dt>
           <dd className="m-0 -mt-3 min-[480px]:mt-0">{t.oppsettOgRydding ? 'Inkludert' : 'Ikke inkludert'}</dd>
           <dt className="font-semibold text-text-muted">Servise</dt>
@@ -144,21 +172,39 @@ export function TilbudDetalj({
                     Vil du velge {t.leverandorNavn} for {kr(t.totalInklMva)}?
                   </p>
                   <p className="m-0 text-[15px] leading-normal text-text-muted">
-                    Leverandøren får adressen din og tar kontakt for å avtale detaljene. De andre leverandørene får beskjed om at du har valgt.
+                    Leverandøren får {levering ? 'adressen din' : 'beskjed'} og tar kontakt for å avtale detaljene. De andre leverandørene får beskjed om at du har valgt.
                   </p>
+                  {levering && (
+                    <Input
+                      id={`adresse-${t.id}`}
+                      label="Leveringsadresse"
+                      autoComplete="street-address"
+                      value={adresse}
+                      onChange={(e) => {
+                        setAdresse(e.target.value);
+                        setAdresseFeil(undefined);
+                      }}
+                      feil={adresseFeil}
+                      required
+                    />
+                  )}
+                  {velgFeil && <Alert tone="feil">{velgFeil}</Alert>}
                   <div className="flex flex-wrap gap-2">
-                    <Button onClick={onVelg}>Ja, velg tilbudet</Button>
+                    <Button onClick={velg} busy={opptatt} disabled={opptatt}>
+                      Ja, velg tilbudet
+                    </Button>
                     <Button variant="secondary" onClick={() => setBekreftValg(false)}>
                       Avbryt
                     </Button>
                   </div>
                 </div>
               ) : (
-                <Button size="lg" onClick={() => setBekreftValg(true)} disabled={!!valgtId}>
+                <Button size="lg" onClick={() => setBekreftValg(true)} disabled={!!valgtId || !aktiv}>
                   Velg dette tilbudet
                 </Button>
               )}
               {!valgtId &&
+                aktiv &&
                 (bekreftAvslag ? (
                   <div role="group" aria-label="Bekreft avslag" className="flex flex-col gap-2 rounded-alert border border-border p-4">
                     <p className="m-0 text-[15px]">Leverandøren får beskjed om at du ikke ønsker tilbudet. Du kan angre senere.</p>

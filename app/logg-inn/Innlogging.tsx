@@ -9,14 +9,16 @@ import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Tabs } from '@/components/ui/Tabs';
+import { Alert } from '@/components/ui/Alert';
 import type { Rolle } from '@/lib/types';
+import { sendInnloggingslenke } from './actions';
 
 const epostOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 
 export function Innlogging() {
   const q = useSearchParams();
   const [rolle, setRolle] = useState<Rolle>(q.get('rolle') === 'leverandor' ? 'leverandor' : 'kunde');
-  const [epost, setEpost] = useState('');
+  const [epost, setEpost] = useState(q.get('epost') ?? '');
   const [feil, setFeil] = useState<string>();
   const [status, setStatus] = useState<'klar' | 'sender' | 'sendt'>('klar');
   const kvittering = useRef<HTMLHeadingElement>(null);
@@ -29,8 +31,13 @@ export function Innlogging() {
       return;
     }
     setStatus('sender');
-    // Fase 2: Supabase signInWithOtp({ email, options: { data: { rolle } } })
-    await new Promise((r) => setTimeout(r, 600));
+    const svar = await sendInnloggingslenke(epost);
+    if (!svar.ok) {
+      setFeil(svar.feil);
+      setStatus('klar');
+      document.getElementById('felt-epost')?.focus();
+      return;
+    }
     setStatus('sendt');
     requestAnimationFrame(() => kvittering.current?.focus());
   };
@@ -75,7 +82,7 @@ export function Innlogging() {
                 Sjekk e-posten din
               </h1>
               <p className="m-0 text-[17px] text-text-muted">
-                Vi har sendt en innloggingslenke til <strong className="text-text">{epost.trim()}</strong>. Lenken virker i 15 minutter.
+                Vi har sendt en innloggingslenke til <strong className="text-text">{epost.trim()}</strong>. Lenken virker i én time.
               </p>
               <p className="m-0 text-[15px] text-text-muted">Finner du den ikke? Sjekk søppelpost, eller prøv igjen.</p>
               <Button variant="secondary" onClick={() => setStatus('klar')} className="self-start">
@@ -85,7 +92,12 @@ export function Innlogging() {
           ) : (
             <>
               <div className="flex flex-col gap-2 px-4 pt-7">
-                <h1 className="k-heading m-0 text-[36px] leading-[1.02]">Velkommen tilbake</h1>
+                <h1 className="k-heading m-0 text-[36px] leading-[1.02]">Logg inn</h1>
+                {q.get('feil') === 'lenke' && (
+                  <Alert tone="feil" className="mt-2">
+                    Innloggingslenken er brukt eller utløpt. Be om en ny under.
+                  </Alert>
+                )}
                 <p className="m-0 text-[17px] text-text-muted">Vi sender en innloggingslenke til e-posten din. Ingen passord å huske.</p>
               </div>
               <Tabs
@@ -130,11 +142,11 @@ export function Innlogging() {
         <p className="mb-0 mt-auto border-t border-border px-4 pb-7 pt-[18px] text-[15px] text-text-muted md:mx-auto md:mt-12 md:w-full md:max-w-[440px] md:border-0">
           {rolle === 'leverandor' ? (
             <>
-              Ny leverandør? Skriv inn e-posten til bedriften, så hjelper vi deg med registreringen. Vi godkjenner bedriften på org.nr.
+              Ny leverandør? <Link href="/bli-leverandor" className="font-semibold">Registrer bedriften</Link> først. Vi godkjenner bedriften på org.nr.
             </>
           ) : (
             <>
-              Ny her? <Link href="/foresporsel" className="font-semibold">Send en forespørsel</Link>, så lager vi kontoen for deg.
+              Ny her? <Link href="/foresporsel" className="font-semibold">Send en forespørsel</Link>. Du logger inn med e-posten du oppga.
             </>
           )}
         </p>

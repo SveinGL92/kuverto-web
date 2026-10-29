@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/`, lastModified: sist, changeFrequency: 'weekly', priority: 1 },
     { url: `${BASE}/foresporsel`, lastModified: sist, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE}/for-leverandorer`, lastModified: sist, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/bli-leverandor`, lastModified: sist, changeFrequency: 'monthly', priority: 0.6 },
     ...anledningerInnhold.map((a) => ({
       url: `${BASE}/catering/${a.slug}`,
       lastModified: sist,

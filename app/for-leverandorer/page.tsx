@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/for-leverandorer' },
 };
 
-const REGISTRER = '/logg-inn?rolle=leverandor';
+const REGISTRER = '/bli-leverandor';
 
 const steg: Steg[] = [
   {

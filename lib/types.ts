@@ -47,7 +47,7 @@ export interface Foresporsel {
   status: ForesporselStatus;
   anledning: Anledning;
   gjester: number;
-  dato: string; // YYYY-MM-DD
+  dato: string; // YYYY-MM-DD, tom når datoen er fleksibel
   klokkeslett: string; // HH:MM
   varighet: string;
   fleksibelDato: boolean;

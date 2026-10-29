@@ -4,7 +4,7 @@ import type { MetadataRoute } from 'next';
 // fordi Google må kunne lese siden for å se noindex.
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: '*', allow: '/', disallow: ['/api/'] },
+    rules: { userAgent: '*', allow: '/', disallow: ['/api/', '/admin', '/leverandor', '/mine-foresporsler', '/min-side', '/auth/'] },
     sitemap: 'https://kuverto.no/sitemap.xml',
     host: 'https://kuverto.no',
   };

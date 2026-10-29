@@ -14,7 +14,7 @@ const kolonner = [
   {
     tittel: 'For leverandører',
     lenker: [
-      { href: '/for-leverandorer', navn: 'Bli leverandør' },
+      { href: '/bli-leverandor', navn: 'Bli leverandør' },
       { href: '/for-leverandorer#priser', navn: 'Priser' },
       { href: '/logg-inn?rolle=leverandor', navn: 'Logg inn' },
     ],
