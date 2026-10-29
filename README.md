@@ -18,7 +18,9 @@ Sjekk av skjermbilder og tilgjengelighet. Kjør `npm run build && npm start` fø
 ```bash
 npm run skjermbilder                 # 390 og 1440 px til skjermbilder/
 npm run skjermbilder -- --dark       # mørk modus
+BREDDER=320,768 npm run skjermbilder # andre bredder
 node scripts/tilgjengelighet.mjs     # axe-core, WCAG 2.2 AA, lys og mørk
+node scripts/layoutsjekk.mjs         # horisontal scroll, trykkflater og konsollfeil i 320–1440 px
 ```
 
 ## Sider
@@ -30,6 +32,9 @@ node scripts/tilgjengelighet.mjs     # axe-core, WCAG 2.2 AA, lys og mørk
 | `/logg-inn` | O-Innlogging |
 | `/foresporsler/[id]` | O-Tilbud-mobil, O-Tilbud-desktop |
 | `/leverandor` | O-Dashbord-mobil, O-Dashbord-desktop, O-Foresporselskort (i dialog) |
+| `/for-leverandorer` | Leverandørside med prismodell fra `lib/klipp.ts` |
+| `/catering/[slug]` | Landingssider per anledning, innhold i `lib/anledninger-innhold.ts` |
+| `/personvern` | Personvern (utkast, ikke indeksert før juridisk gjennomgang) |
 | `/tilstander` | O-Tilstander (oversikt, ikke indeksert) |
 | `/komponenter` | O-Komponenter (oversikt, ikke indeksert) |
 
@@ -39,9 +44,10 @@ node scripts/tilgjengelighet.mjs     # axe-core, WCAG 2.2 AA, lys og mørk
 app/            sider, layout, error.tsx, not-found.tsx, lokale fonter
 components/ui/      Button, Chip, Input, Select, Badge, Alert, Card, PriceRing, Progress, Tabs, Dialog
 components/layout/  Logo, SiteHeader, SiteFooter, ThemeToggle, AppHeader, LeverandorShell
-components/kuverto/ HeroForm, PhotoTile, ForesporselKort
+components/kuverto/ HeroForm, PhotoTile, ForesporselKort, TilbudDetalj
+components/innhold/ StegListe, AnledningKort, Trygghet, Sporsmal (innholdsseksjoner)
 components/states/  EmptyState, LoadingState, ErrorState, BordetErDekket
-lib/            types.ts (datamodell), mock.ts, labels.ts, format.ts, postnummer.ts
+lib/            types.ts (datamodell), mock.ts, labels.ts, format.ts, postnummer.ts, klipp.ts (priser), anledninger-innhold.ts
 design/         designpakken (fasit) – DESIGN.md, tokens, artboards, bilder, logoer
 ```
 
@@ -53,6 +59,8 @@ design/         designpakken (fasit) – DESIGN.md, tokens, artboards, bilder, l
 - **Mørk modus:** olivenpaneler bruker en egen mørk flate (`--k-panel` i `app/globals.css`), fordi primærfargen blir sitron i mørk modus. Strektegningene inverteres med `.k-ink`.
 - **Strektegninger:** artboardene peker til lerretets ID-er. Koblingen til filene ligger i `design/blob-map.json`. Åtte av dem er koblet ved å se på tegningene.
 - **Mock-datoer:** forespørselen er satt til torsdag 12. november 2026 (artboardet sier «torsdag 14. november», men den datoen er en lørdag i 2026). Relative tekster som «12 min» og «I morgen» regnes fra en fast mock-klokke (`MOCK_NA` i `lib/mock.ts`), så server og nettleser alltid viser det samme. Byttes mot ekte tid i fase 2.
+- **Skjemaet** har fire steg (arrangement, mat, kontakt, oversikt) i stedet for sju. Utkastet lagres i `sessionStorage` uten kontaktopplysninger.
+- **Tabeller i scrollbokser** må ha `relative` på beholderen, ellers lekker skjult skjermlesertekst ut og gir horisontal scroll.
 - **Fokus på felt:** den globale 3 px olivenringen brukes også på felt (artboardet viste en lys ring som ikke har nok kontrast).
 
 ## Fase 2
