@@ -7,7 +7,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const axe = await readFile(require.resolve('axe-core/axe.min.js'), 'utf8');
 const base = process.env.BASE_URL ?? 'http://localhost:3000';
-const ruter = ['/', '/foresporsel', '/logg-inn', '/foresporsler/f-firmalunsj', '/leverandor', '/tilstander'];
+const ruter = ['/', '/foresporsel', '/logg-inn', '/foresporsler/f-firmalunsj', '/leverandor', '/tilstander', '/for-leverandorer', '/catering/firmalunsj', '/catering/minnesamvaer', '/personvern'];
 const browser = await chromium.launch();
 let feil = 0;
 for (const colorScheme of ['light', 'dark']) {

@@ -8,7 +8,9 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { EmptyState } from '@/components/states/EmptyState';
 import { dagerTil } from '@/components/kuverto/tid';
 import { BordetErDekket } from '@/components/states/BordetErDekket';
-import { Button, ButtonLink } from '@/components/ui/Button';
+import { TilbudDetalj } from '@/components/kuverto/TilbudDetalj';
+import { Dialog } from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
 import { PriceRing } from '@/components/ui/PriceRing';
 import { cn } from '@/lib/cn';
 import { dagMndLang, datoKort, datoLang, kr } from '@/lib/format';
@@ -43,6 +45,8 @@ const Hake = () => (
 export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporsel; tilbud: Tilbud[] }) {
   const [sortering, setSortering] = useState<Sortering>('pris');
   const [valgt, setValgt] = useState<string>();
+  const [avslatte, setAvslatte] = useState<string[]>([]);
+  const [apent, setApent] = useState<string>();
   const kvittering = useRef<HTMLDivElement>(null);
 
   const lavest = useMemo(() => [...tilbud].sort((a, b) => a.prisPerKuvert - b.prisPerKuvert)[0]?.id, [tilbud]);
@@ -54,8 +58,9 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
     return l;
   }, [tilbud, sortering]);
   // Ringen og den fylte knappen går til tilbudet kunden bør se først: det valgte, ellers det billigste.
-  const fremhevet = valgt ?? lavest;
+  const fremhevet = valgt ?? (avslatte.includes(lavest ?? '') ? undefined : lavest);
   const valgtTilbud = tilbud.find((t) => t.id === valgt);
+  const apentTilbud = tilbud.find((t) => t.id === apent);
 
   const anledning = anledningNavn(f.anledning).toLowerCase();
   const kostholdTekst = f.kosthold.map((k) => `${k.type === 'notter' ? 'nøttefritt' : kostholdNavn(k.type).toLowerCase()} ${k.antall}`).join(' · ');
@@ -66,12 +71,25 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
     return tekst.charAt(0).toUpperCase() + tekst.slice(1);
   })();
   const velg = (id: string) => {
+    setApent(undefined);
     setValgt(id);
     requestAnimationFrame(() => kvittering.current?.focus());
   };
+  const avsla = (id: string) => {
+    setAvslatte((l) => [...l, id]);
+    setApent(undefined);
+  };
+
+  const seHele = (t: Tilbud, className?: string) => (
+    <Button variant="text" size="sm" onClick={() => setApent(t.id)} className={cn('font-semibold', className)}>
+      Se hele tilbudet<span className="sr-only"> fra {t.leverandorNavn}</span>
+    </Button>
+  );
 
   const velgKnapp = (t: Tilbud, tekst: string, className?: string) =>
-    valgt === t.id ? (
+    avslatte.includes(t.id) ? (
+      <span className={cn('inline-flex min-h-[52px] items-center justify-center rounded-pill bg-neutral-bg px-4 font-bold text-text-muted', className)}>Avslått</span>
+    ) : valgt === t.id ? (
       <span className={cn('inline-flex min-h-[52px] items-center justify-center gap-2 rounded-pill bg-success-bg px-4 font-bold text-success', className)}>
         <Hake /> Valgt
       </span>
@@ -139,9 +157,9 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
               leverandor={valgtTilbud.leverandorNavn}
               className="rounded-media md:flex-row md:flex-wrap md:items-center md:gap-x-8"
               handling={
-                <ButtonLink href="#" variant="accent">
-                  Se avtalen
-                </ButtonLink>
+                <Button variant="accent" onClick={() => setApent(valgtTilbud.id)}>
+                  Se tilbudet
+                </Button>
               }
             />
           </div>
@@ -175,13 +193,13 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
                 tabIndex={0}
                 aria-label="Tilbud"
                 aria-describedby={sortert.length > 2 ? 'sveip-hint' : undefined}
-                className="k-scroll-snap m-0 flex list-none gap-3 overflow-x-auto px-4 pb-4 [scroll-padding-inline:16px]"
+                className="k-scroll-snap relative m-0 flex list-none gap-3 overflow-x-auto px-4 pb-4 [scroll-padding-inline:16px]"
               >
                 {sortert.map((t) => {
                   const g = gjelderTil(t.gyldigTil);
                   return (
                     <li key={t.id} className="flex w-[172px] shrink-0 flex-col gap-3">
-                      <article aria-label={t.leverandorNavn} className="flex flex-grow flex-col gap-3">
+                      <article aria-label={t.leverandorNavn} className={cn('flex flex-grow flex-col gap-3', avslatte.includes(t.id) && 'opacity-60')}>
                         <div className="relative h-[130px] overflow-hidden rounded-card bg-[var(--k-photo-placeholder)]">
                           <Image src={t.bilde.src} alt={t.bilde.alt} fill sizes="172px" className="object-cover" />
                         </div>
@@ -190,7 +208,7 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
                           <PriceRing ringed={t.id === fremhevet} className={cn('text-[36px]', t.id === fremhevet && 'mb-1.5 ml-2.5 mt-2')}>
                             {kr(t.prisPerKuvert)}
                           </PriceRing>
-                          <span className="pl-1.5 text-small font-semibold">per kuvert{t.id === lavest ? ' · lavest' : ''}</span>
+                          <span className="pl-1.5 text-small font-semibold">per kuvert inkl. mva{t.id === lavest ? ' · lavest' : ''}</span>
                         </div>
                         <dl className="m-0 flex flex-col gap-3 text-[15px]">
                           <div className="min-h-touch">
@@ -243,7 +261,10 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
                             <dd className={cn('m-0 font-semibold', g.haster && 'text-warning')}>{g.tekst}</dd>
                           </div>
                         </dl>
-                        <div className="mt-auto">{velgKnapp(t, `Velg ${kortnavn(t)}`, 'w-full')}</div>
+                        <div className="mt-auto flex flex-col items-center gap-1">
+                          {velgKnapp(t, `Velg ${kortnavn(t)}`, 'w-full')}
+                          {seHele(t)}
+                        </div>
                       </article>
                     </li>
                   );
@@ -252,7 +273,7 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
             </div>
 
             {/* Desktop: tabell */}
-            <div className="hidden overflow-x-auto md:block">
+            <div className="relative hidden overflow-x-auto md:block">
               <table className="w-full min-w-[860px] table-fixed border-collapse">
                 <caption className="sr-only">
                   {tilbud.length} tilbud side om side, sortert etter {sorteringer.find((s) => s.id === sortering)?.navn.toLowerCase()}
@@ -275,6 +296,7 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
                             <Image src={t.bilde.src} alt={t.bilde.alt} fill sizes="(min-width: 1200px) 300px, 25vw" className="object-cover" />
                           </div>
                           <span className="text-[17px] font-bold">{t.leverandorNavn}</span>
+                          {t.leverandorBeskrivelse && <span className="line-clamp-2 text-[15px] font-normal leading-snug text-text-muted">{t.leverandorBeskrivelse}</span>}
                         </div>
                       </th>
                     ))}
@@ -284,9 +306,10 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
                   <tr>
                     <th scope="row" className="!align-middle">
                       Pris per kuvert
+                      <span className="block text-small font-normal">inkl. mva</span>
                     </th>
                     {sortert.map((t) => (
-                      <td key={t.id} className="!py-3">
+                      <td key={t.id} className={cn('!py-3', avslatte.includes(t.id) && 'opacity-60')}>
                         <PriceRing ringed={t.id === fremhevet} className="px-2 text-[44px]">
                           {kr(t.prisPerKuvert)}
                         </PriceRing>
@@ -340,6 +363,16 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
                       <td key={t.id}>{t.servise}</td>
                     ))}
                   </tr>
+                  {sortert.some((t) => t.betingelser) && (
+                    <tr>
+                      <th scope="row">Betingelser</th>
+                      {sortert.map((t) => (
+                        <td key={t.id} className="text-[15px] leading-normal text-text-muted">
+                          {t.betingelser ?? '–'}
+                        </td>
+                      ))}
+                    </tr>
+                  )}
                   <tr>
                     <th scope="row">Gjelder til</th>
                     {sortert.map((t) => {
@@ -357,9 +390,7 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
                       <td key={t.id} className="!pt-5">
                         <div className="flex flex-col items-start gap-1.5">
                           {velgKnapp(t, 'Velg dette tilbudet', 'min-h-[54px] w-full')}
-                          <Link href="#" className="py-2 text-[15px] font-semibold">
-                            Se hele tilbudet<span className="sr-only"> fra {t.leverandorNavn}</span>
-                          </Link>
+                          {seHele(t, '!px-0')}
                         </div>
                       </td>
                     ))}
@@ -379,14 +410,24 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
 
             <section className="mx-4 mt-6 flex flex-col gap-2.5 md:hidden">
               <h2 className="k-heading m-0 text-2xl">Spørsmål til en leverandør?</h2>
-              <p className="m-0 text-[15px] text-text-muted">Åpne tilbudet og send en melding. Svaret kommer her og på e-post.</p>
-              <ButtonLink href="#" variant="text" className="self-start !px-0 font-semibold">
-                Se hele tilbudet fra {kortnavn(sortert[0])}
-              </ButtonLink>
+              <p className="m-0 text-[15px] text-text-muted">Trykk «Se hele tilbudet» og send en melding. Svaret kommer her og på e-post.</p>
             </section>
           </>
         )}
       </main>
+      <Dialog apen={!!apentTilbud} onLukk={() => setApent(undefined)} label={apentTilbud ? `Tilbud fra ${apentTilbud.leverandorNavn}` : 'Tilbud'} className="max-w-[600px]">
+        {apentTilbud && (
+          <TilbudDetalj
+            tilbud={apentTilbud}
+            foresporsel={f}
+            valgtId={valgt}
+            avslatt={avslatte.includes(apentTilbud.id)}
+            onVelg={() => velg(apentTilbud.id)}
+            onAvsla={() => avsla(apentTilbud.id)}
+            onAngreAvslag={() => setAvslatte((l) => l.filter((x) => x !== apentTilbud.id))}
+          />
+        )}
+      </Dialog>
       <SiteFooter />
     </>
   );

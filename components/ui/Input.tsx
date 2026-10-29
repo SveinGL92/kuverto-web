@@ -48,6 +48,8 @@ export function Textarea({ label, hint, feil, className, id, ...rest }: FeltProp
   const auto = useId();
   const feltId = id ?? auto;
   const hintId = `${feltId}-hint`;
+  const feilId = `${feltId}-feil`;
+  const beskrevet = [hint ? hintId : null, feil ? feilId : null].filter(Boolean).join(' ') || undefined;
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       <label htmlFor={feltId} className="text-[15px] font-semibold">
@@ -55,13 +57,19 @@ export function Textarea({ label, hint, feil, className, id, ...rest }: FeltProp
       </label>
       <textarea
         id={feltId}
-        aria-describedby={hint ? hintId : undefined}
+        aria-invalid={feil ? true : undefined}
+        aria-describedby={beskrevet}
         className={cn(feltKlasse(!!feil), 'min-h-[84px] py-3 leading-snug')}
         {...rest}
       />
       {hint && (
         <span id={hintId} className="text-small font-medium text-text-muted">
           {hint}
+        </span>
+      )}
+      {feil && (
+        <span id={feilId} className="text-small font-semibold text-error">
+          {feil}
         </span>
       )}
     </div>

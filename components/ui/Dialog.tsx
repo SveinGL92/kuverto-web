@@ -39,6 +39,7 @@ export function Dialog({
         <button
           type="button"
           aria-label="Lukk"
+          autoFocus
           onClick={onLukk}
           className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-pill bg-bg text-text"
         >

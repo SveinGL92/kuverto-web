@@ -8,7 +8,7 @@ const dark = args.includes('--dark');
 const stier = args.filter((a) => a.startsWith('/'));
 const ruter = stier.length ? stier : ['/', '/foresporsel', '/logg-inn', '/foresporsler/f-firmalunsj', '/leverandor', '/tilstander', '/komponenter'];
 const base = process.env.BASE_URL ?? 'http://localhost:3000';
-const bredder = [390, 1440];
+const bredder = (process.env.BREDDER ?? '390,1440').split(',').map(Number);
 
 await mkdir('skjermbilder', { recursive: true });
 const browser = await chromium.launch(

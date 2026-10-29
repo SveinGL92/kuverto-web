@@ -98,6 +98,8 @@ export interface Tilbud {
   foresporselId: string;
   leverandorId: string;
   leverandorNavn: string;
+  /** Kort presentasjon av leverandøren, hentes fra leverandørprofilen. */
+  leverandorBeskrivelse?: string;
   bilde: { src: string; alt: string };
   prisPerKuvert: number; // øre
   totalInklMva: number; // øre
@@ -107,6 +109,8 @@ export interface Tilbud {
   oppsettOgRydding: boolean;
   servise: string;
   gyldigTil: string; // YYYY-MM-DD
+  /** Betingelser leverandøren vil at kunden skal se, f.eks. avbestilling og betaling. */
+  betingelser?: string;
   status: TilbudStatus;
   opprettet: string;
 }

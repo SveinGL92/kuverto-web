@@ -6,26 +6,29 @@ import { Logo } from './Logo';
 
 const lenker = [
   { href: '/#slik-fungerer-det', navn: 'Slik fungerer det' },
-  { href: '/#anledninger', navn: 'Anledninger' },
-  { href: '/logg-inn?rolle=leverandor', navn: 'For leverandører' },
+  { href: '/#anledninger', navn: 'Finn catering' },
+  { href: '/for-leverandorer', navn: 'For leverandører' },
 ];
 
 export function SiteHeader() {
   const [apen, setApen] = useState(false);
   return (
-    <header className="k-wrap flex flex-wrap items-center justify-between gap-3 py-3 pl-4 pr-2 md:py-6 md:pl-[clamp(16px,5vw,72px)] md:pr-[clamp(16px,5vw,72px)]">
+    <header className="k-wrap flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3 md:py-6">
       <Logo />
       <nav aria-label="Hovedmeny" className="flex items-center gap-1 text-base font-semibold">
         {lenker.map((l) => (
-          <Link key={l.href} href={l.href} className="hidden px-3.5 py-3 text-text no-underline hover:text-primary md:block">
+          <Link key={l.href} href={l.href} className="hidden px-3 py-3 text-text no-underline hover:text-primary lg:block">
             {l.navn}
           </Link>
         ))}
-        <Link
-          href="/logg-inn"
-          className="ml-1.5 flex min-h-touch items-center rounded-pill border-[1.5px] border-text px-4 text-[15px] font-bold text-text no-underline hover:bg-surface hover:text-text md:min-h-[46px] md:px-[22px] md:text-base md:font-semibold"
-        >
+        <Link href="/logg-inn" className="hidden px-3 py-3 text-text no-underline hover:text-primary md:block">
           Logg inn
+        </Link>
+        <Link
+          href="/foresporsel"
+          className="ml-1 flex min-h-touch items-center whitespace-nowrap rounded-pill bg-primary px-4 text-[15px] font-bold text-primary-on no-underline hover:bg-primary-hover hover:text-primary-on md:ml-2 md:min-h-[48px] md:px-6 md:text-base"
+        >
+          Få tilbud
         </Link>
         <button
           type="button"
@@ -33,7 +36,7 @@ export function SiteHeader() {
           aria-expanded={apen}
           aria-controls="mobilmeny"
           onClick={() => setApen((v) => !v)}
-          className="flex h-11 w-11 items-center justify-center md:hidden"
+          className="-mr-2 flex h-11 w-11 items-center justify-center lg:hidden"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
             {apen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 8h16M4 16h11" />}
@@ -41,9 +44,9 @@ export function SiteHeader() {
         </button>
       </nav>
       {apen && (
-        <nav id="mobilmeny" aria-label="Meny" className="w-full pb-2 md:hidden">
+        <nav id="mobilmeny" aria-label="Meny" className="w-full pb-2 lg:hidden">
           <ul className="m-0 flex list-none flex-col p-0">
-            {lenker.map((l) => (
+            {[...lenker, { href: '/logg-inn', navn: 'Logg inn' }].map((l) => (
               <li key={l.href}>
                 <Link
                   href={l.href}

@@ -3,8 +3,9 @@ import { Suspense } from 'react';
 import { Skjema } from './Skjema';
 
 export const metadata: Metadata = {
-  title: 'Send forespørsel',
-  description: 'Beskriv selskapet ditt i sju korte steg. Godkjente cateringleverandører i nærheten svarer med meny og pris per kuvert.',
+  title: 'Få cateringtilbud',
+  description: 'Beskriv arrangementet i fire korte steg. Godkjente cateringleverandører i nærheten svarer med meny og pris per kuvert. Gratis og uforpliktende.',
+  alternates: { canonical: '/foresporsel' },
 };
 
 export default function ForesporselSide() {

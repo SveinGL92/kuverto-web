@@ -133,7 +133,7 @@ export function ForesporselKort({
               <rect x="5" y="11" width="14" height="10" rx="2" />
               <path d="M8 11V8a4 4 0 0 1 8 0v3" />
             </svg>
-            <span className="text-base leading-[1.45]">Navn, firma, kontaktinfo, adresse og melding vises når du låser opp.</span>
+            <span className="text-base leading-[1.45]">Navn, firma, kontaktinfo og melding vises når du låser opp. Adressen deles når kunden velger tilbudet ditt.</span>
           </div>
           {nokKlipp ? (
             <>
@@ -146,7 +146,7 @@ export function ForesporselKort({
                 </Button>
               </div>
               <span className="text-[15px] text-text-muted">
-                Du har {klippsaldo} klipp. Etter opplåsing: {klippsaldo - f.klippPris}.
+                Du har {klippsaldo} klipp. Etter opplåsing: {klippsaldo - f.klippPris}. Høyst {f.maksLeverandorer} leverandører kan låse opp denne forespørselen.
               </span>
             </>
           ) : (

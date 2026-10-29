@@ -36,7 +36,7 @@ const ANSLATT_PER_KUVERT: Record<Budsjett, number> = {
 };
 
 /** Trinn: anslått verdi i øre (øvre grense, ikke inkludert) → klipp. */
-const TRINN: { under: number; klipp: number }[] = [
+export const TRINN: { under: number; klipp: number }[] = [
   { under: 1_000_000, klipp: 2 },
   { under: 3_000_000, klipp: 4 },
   { under: 7_500_000, klipp: 7 },
@@ -52,3 +52,10 @@ export function klippForForesporsel(gjester: number, budsjett: Budsjett): number
   const verdi = anslattVerdi(gjester, budsjett);
   return TRINN.find((t) => verdi < t.under)!.klipp;
 }
+
+/** Laveste og høyeste pris per klipp i øre, eks. mva (største og minste pakke). */
+export const prisPerKlipp = (p: Klippakke) => p.prisEksMva / p.klipp;
+export const KLIPP_PRIS_SPENN = {
+  min: Math.min(...KLIPPAKKER.map(prisPerKlipp)),
+  maks: Math.max(...KLIPPAKKER.map(prisPerKlipp)),
+};

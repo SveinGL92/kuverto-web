@@ -206,7 +206,7 @@ export function Dashbord() {
                 Vi varsler deg så snart noen i området ditt sender en forespørsel. Et større område gir flere å velge mellom.
               </EmptyState>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="relative overflow-x-auto">
                 <table className="w-full min-w-[600px] border-collapse">
                   <thead>
                     <tr className="text-left text-small text-text-muted">
