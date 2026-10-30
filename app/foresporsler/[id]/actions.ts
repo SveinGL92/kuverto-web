@@ -17,7 +17,7 @@ async function eget(tilbudId: string) {
   if (!t) return null;
   const { data: f } = await s.from('foresporsler').select('id, kunde_epost, status, anledning, gjester').eq('id', t.foresporsel_id).single();
   if (!f || f.kunde_epost !== epost) return null;
-  const { data: l } = await s.from('leverandorer').select('navn, epost').eq('id', t.leverandor_id).single();
+  const { data: l } = await s.from('leverandorer').select('navn, epost, telefon, kontaktperson').eq('id', t.leverandor_id).single();
   return { epost, t, f, l: l! };
 }
 
@@ -52,6 +52,21 @@ export async function velgTilbud(tilbudId: string, adresse: string): Promise<Sva
         'Du kan svare direkte på denne e-posten.',
       ],
       knapp: { tekst: 'Åpne oversikten', sti: '/leverandor' },
+    }),
+  });
+  // Kvittering til kunden med leverandørens kontaktinfo
+  await sendEpost({
+    til: e.epost,
+    svarTil: e.l.epost,
+    emne: `Du har valgt ${e.l.navn}`,
+    html: mal({
+      tittel: 'Bordet er dekket',
+      avsnitt: [
+        `Du har valgt tilbudet fra ${e.l.navn} til ${hva}. De tar kontakt for å avtale detaljene, og de andre leverandørene har fått beskjed.`,
+        [`Kontakt: ${e.l.kontaktperson}`, `E-post: ${e.l.epost}`, e.l.telefon ? `Telefon: ${e.l.telefon}` : ''].filter(Boolean).join('\n'),
+        'Avtalen og betalingen gjør du direkte med leverandøren. Svar på denne e-posten, så går svaret til dem.',
+      ],
+      knapp: { tekst: 'Se tilbudet', sti: `/foresporsler/${e.f.id}` },
     }),
   });
   // Leverandørene som ikke ble valgt

@@ -177,3 +177,40 @@ export async function kjopKlipp(pakkeId: string): Promise<{ ok: true; url: strin
     return { ok: false, feil: 'Betaling er ikke tilgjengelig akkurat nå. Skriv til hei@kuverto.no, så hjelper vi deg.' };
   }
 }
+
+export interface ProfilInn {
+  kontaktperson: string;
+  telefon: string;
+  nettside: string;
+  beskrivelse: string;
+  kommuner: string[];
+}
+
+/** Leverandøren endrer egne opplysninger og dekningsområde. Navn, org.nr. og e-post endres via Kuverto. */
+export async function oppdaterProfil(inn: ProfilInn): Promise<Svar> {
+  const lev = await godkjentLeverandor();
+  if (!lev) return { ok: false, feil: 'Du må være logget inn som godkjent leverandør.' };
+  const kontaktperson = String(inn.kontaktperson ?? '').trim().slice(0, 120);
+  if (!kontaktperson) return { ok: false, feil: 'Skriv navnet på kontaktpersonen.' };
+  const s = db();
+  const { data: gyldige } = await s.from('postnummer').select('kommunenr, kommunenavn').in('kommunenr', (inn.kommuner ?? []).slice(0, 100));
+  const unike = new Map((gyldige ?? []).map((k) => [k.kommunenr, k.kommunenavn as string]));
+  if (!unike.size) return { ok: false, feil: 'Velg minst én kommune dere leverer til.' };
+  const navn = [...unike.entries()].sort((a, b) => (a[0] === '0301' ? -1 : b[0] === '0301' ? 1 : a[1].localeCompare(b[1], 'nb'))).map(([, n]) => n);
+  const visning = navn.length <= 3 ? navn.join(', ') : `${navn.slice(0, 2).join(', ')} og ${navn.length - 2} til`;
+  const { error } = await s
+    .from('leverandorer')
+    .update({
+      kontaktperson,
+      telefon: String(inn.telefon ?? '').trim().slice(0, 30) || null,
+      nettside: String(inn.nettside ?? '').trim().slice(0, 200) || null,
+      beskrivelse: String(inn.beskrivelse ?? '').trim().slice(0, 300) || null,
+      dekning_visning: visning,
+    })
+    .eq('id', lev.id);
+  if (error) return { ok: false, feil: 'Vi fikk ikke lagret endringene. Prøv igjen.' };
+  await s.from('dekning').delete().eq('leverandor_id', lev.id);
+  await s.from('dekning').insert([...unike.keys()].map((nr) => ({ leverandor_id: lev.id, kommunenr: nr })));
+  revalidatePath('/leverandor');
+  return { ok: true, melding: 'Endringene er lagret.' };
+}

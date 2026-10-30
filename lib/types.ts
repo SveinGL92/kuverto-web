@@ -21,6 +21,7 @@ export type Budsjett = 'under_250' | '250_400' | '400_600' | 'over_600' | 'vet_i
 
 export type ForesporselStatus =
   | 'utkast'
+  | 'venter_bekreftelse'
   | 'til_godkjenning'
   | 'aktiv'
   | 'tildelt'

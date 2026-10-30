@@ -89,16 +89,26 @@ export function Oversikt({ firma, dekning, saldo, nye, opplaste }: { firma: stri
             <span className="k-heading text-[26px] leading-none tracking-[-0.035em]">kuverto</span>
             <span className="sr-only">, til forsiden</span>
           </Link>
-          <form action="/logg-ut" method="post">
-            <button type="submit" className="min-h-touch px-2 text-[15px] font-semibold text-panel-on-muted hover:text-panel-on">
-              Logg ut
-            </button>
-          </form>
+          <div className="flex items-center gap-2">
+            <Link href="/leverandor/profil" className="inline-flex min-h-touch items-center px-2 text-[15px] font-semibold text-panel-on-muted no-underline hover:text-panel-on">
+              Profil og område
+            </Link>
+            <form action="/logg-ut" method="post">
+              <button type="submit" className="min-h-touch px-2 text-[15px] font-semibold text-panel-on-muted hover:text-panel-on">
+                Logg ut
+              </button>
+            </form>
+          </div>
         </div>
         <div className="k-wrap flex flex-wrap items-end justify-between gap-5 pb-8 pt-4">
           <div className="flex flex-col gap-1.5">
             <h1 className="k-heading m-0 text-[34px] leading-none md:text-[48px]">{firma}</h1>
-            <p className="m-0 text-[15px] text-panel-on-muted">Leverer til {dekning}</p>
+            <p className="m-0 text-[15px] text-panel-on-muted">
+              Leverer til {dekning} ·{' '}
+              <Link href="/leverandor/profil" className="text-panel-on">
+                endre
+              </Link>
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-end">

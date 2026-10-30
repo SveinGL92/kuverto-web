@@ -193,9 +193,18 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
             <Alert tone="feil">{feil}</Alert>
           </div>
         )}
-        {!aktiv && !valgt && (
+        {f.status === 'venter_bekreftelse' && (
           <div className="mx-4 mt-4 md:mx-0 md:mb-6 md:mt-0">
-            <Alert tone="advarsel">{f.status === 'trukket' ? 'Du har trukket denne forespørselen. Leverandørene har fått beskjed.' : 'Forespørselen er ikke lenger aktiv.'}</Alert>
+            <Alert tone="advarsel">
+              Forespørselen er ikke sendt ennå. Trykk «Bekreft og send» i e-posten vi sendte deg, så får leverandørene beskjed.
+            </Alert>
+          </div>
+        )}
+        {!aktiv && !valgt && f.status !== 'venter_bekreftelse' && (
+          <div className="mx-4 mt-4 md:mx-0 md:mb-6 md:mt-0">
+            <Alert tone="advarsel">
+              {f.status === 'trukket' ? 'Du har trukket denne forespørselen. Leverandørene har fått beskjed.' : f.status === 'avvist' ? 'Forespørselen er stoppet av Kuverto. Ta kontakt på hei@kuverto.no hvis du har spørsmål.' : 'Forespørselen er ikke lenger aktiv.'}
+            </Alert>
           </div>
         )}
         {valgtTilbud && (
@@ -224,12 +233,14 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
               illustrasjon="/illustrasjoner/tom-tallerken.svg"
               tittel="Ingen tilbud ennå"
               handling={
-                <Link href="/foresporsel" className="font-semibold">
-                  Endre forespørselen
+                <Link href="/mine-foresporsler" className="font-semibold">
+                  Til mine forespørsler
                 </Link>
               }
             >
-              Leverandørene har fått forespørselen. Du får en e-post når det første tilbudet kommer.
+              {aktiv
+                ? `Leverandørene i området har fått forespørselen. Du får en e-post hver gang et tilbud kommer, og høyst ${f.maksLeverandorer} kan svare. Er noe feil, kan du trekke forespørselen nederst på siden og sende en ny.`
+                : 'Det har ikke kommet noen tilbud på denne forespørselen.'}
             </EmptyState>
           </div>
         ) : (
