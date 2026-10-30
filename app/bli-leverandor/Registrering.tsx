@@ -44,7 +44,9 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
       (acc[k.nr.slice(0, 2)] ??= []).push(k);
       return acc;
     }, {}),
-  ).map(([nr, liste]) => ({ nr, navn: FYLKER[nr] ?? nr, kommuner: liste }));
+  )
+    .map(([nr, liste]) => ({ nr, navn: FYLKER[nr] ?? nr, kommuner: liste }))
+    .sort((a, b) => a.nr.localeCompare(b.nr));
   const vekslKommune = (nr: string) => sett('kommuner', v.kommuner.includes(nr) ? v.kommuner.filter((x) => x !== nr) : [...v.kommuner, nr]);
   const vekslFylke = (liste: Kommune[], alle: boolean) => {
     const nr = liste.map((k) => k.nr);
