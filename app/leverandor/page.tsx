@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ButtonLink } from '@/components/ui/Button';
 import { signerVedlegg, tilForesporsel, tilKontakt } from '@/lib/server/data';
-import type { VedleggFil } from '@/lib/types';
+import { anledningNavn } from '@/lib/labels';
+import type { Anledning, VedleggFil } from '@/lib/types';
 import { db, innloggetEpost } from '@/lib/server/supabase';
 import { Oversikt, type Opplast } from './Oversikt';
 
@@ -131,5 +132,35 @@ export default async function LeverandorSide() {
     });
   }
 
-  return <Oversikt firma={lev.navn} dekning={lev.dekning_visning} saldo={(saldo as number) ?? 0} nye={nye} opplaste={opplaste} />;
+  // Klipphistorikk med forklaring på hver linje.
+  const { data: trans } = await s.from('klipp_transaksjoner').select('id, endring, grunn, referanse, opprettet').eq('leverandor_id', lev.id).order('opprettet', { ascending: false }).limit(200);
+  const oppIder = (trans ?? []).map((t) => t.referanse?.match(/^refusjon(?:-7d)?:([0-9a-f-]{36})$/)?.[1]).filter(Boolean) as string[];
+  const { data: oppRader } = oppIder.length ? await s.from('opplasinger').select('id, foresporsel_id').in('id', oppIder) : { data: [] };
+  const fIder = [
+    ...new Set([
+      ...(oppRader ?? []).map((o) => o.foresporsel_id),
+      ...((trans ?? []).map((t) => t.referanse?.match(/^opplasing:([0-9a-f-]{36}):/)?.[1]).filter(Boolean) as string[]),
+    ]),
+  ];
+  const { data: fNavn } = fIder.length ? await s.from('foresporsler').select('id, anledning, gjester, poststed').in('id', fIder) : { data: [] };
+  const hva = (fid?: string) => {
+    const f = fNavn?.find((x) => x.id === fid);
+    return f ? `${anledningNavn(f.anledning as Anledning)} for ${f.gjester} i ${f.poststed}` : 'forespørsel';
+  };
+  const historikk = (trans ?? []).map((t) => {
+    const ref = t.referanse ?? '';
+    let tekst = 'Justert av Kuverto';
+    if (t.grunn === 'kjop') tekst = t.endring > 0 ? 'Kjøpt' : 'Kjøp refundert';
+    else if (t.grunn === 'gratis') tekst = 'Gratis klipp ved godkjenning';
+    else if (t.grunn === 'opplasing') tekst = `Låste opp: ${hva(ref.split(':')[1])}`;
+    else if (t.grunn === 'refusjon') {
+      const fid = oppRader?.find((o) => ref.endsWith(o.id))?.foresporsel_id;
+      tekst = ref.startsWith('refusjon-7d:')
+        ? `Tilbake: kunden svarte ikke innen 7 dager (${hva(fid)})`
+        : `Tilbake: forespørselen ble trukket eller stoppet (${hva(fid)})`;
+    }
+    return { id: t.id, endring: t.endring, tekst, dato: t.opprettet };
+  });
+
+  return <Oversikt firma={lev.navn} dekning={lev.dekning_visning} saldo={(saldo as number) ?? 0} nye={nye} opplaste={opplaste} historikk={historikk} />;
 }

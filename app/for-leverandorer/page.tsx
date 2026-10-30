@@ -6,7 +6,7 @@ import { StegListe, type Steg } from '@/components/innhold/StegListe';
 import { Sporsmal, type SporsmalSvar } from '@/components/innhold/Sporsmal';
 import { ButtonLink } from '@/components/ui/Button';
 import { kr } from '@/lib/format';
-import { KLIPP_PRIS_SPENN, KLIPPAKKER, MAKS_LEVERANDORER, PILOT_GRATIS_KLIPP, REFUSJON_ETTER_DAGER, TRINN, prisPerKlipp } from '@/lib/klipp';
+import { KLIPP_PRIS_SPENN, KLIPPAKKER, MAKS_LEVERANDORER, PILOT_GRATIS_KLIPP, REFUSJON_KORT, REFUSJON_LANG, TRINN, prisPerKlipp } from '@/lib/klipp';
 
 export const metadata: Metadata = {
   title: 'For cateringleverandører – flere oppdrag uten provisjon',
@@ -56,8 +56,8 @@ const sporsmal: SporsmalSvar[] = [
     svar: `Høyst ${MAKS_LEVERANDORER}. Når ${MAKS_LEVERANDORER} har låst opp, forsvinner forespørselen fra oversikten til de andre, så du konkurrerer aldri mot flere enn ${MAKS_LEVERANDORER - 1} andre.`,
   },
   {
-    sporsmal: 'Hva skjer hvis kunden ikke svarer?',
-    svar: `Trekker kunden forespørselen, eller svarer ikke innen ${REFUSJON_ETTER_DAGER} dager, får du klippene tilbake.`,
+    sporsmal: 'Når får jeg klippene tilbake?',
+    svar: REFUSJON_LANG,
   },
   {
     sporsmal: 'Er det abonnement eller bindingstid?',
@@ -194,7 +194,7 @@ export default function ForLeverandorer() {
           </div>
           <ul className="m-0 mt-6 grid list-none gap-3 p-0 text-base text-text-muted md:grid-cols-3 md:gap-6">
             <li>Høyst {MAKS_LEVERANDORER} leverandører per forespørsel.</li>
-            <li>Klippene tilbake hvis kunden trekker forespørselen eller ikke svarer innen {REFUSJON_ETTER_DAGER} dager.</li>
+            <li>{REFUSJON_KORT}</li>
             <li>Ingen provisjon, abonnement eller bindingstid.</li>
           </ul>
         </section>

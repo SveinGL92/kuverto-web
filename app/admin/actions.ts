@@ -51,6 +51,8 @@ export async function giKlipp(id: string, antall: number) {
 export async function settForesporselStatus(id: string, status: 'avvist' | 'aktiv' | 'lukket') {
   await kravAdmin();
   await db().from('foresporsler').update({ status }).eq('id', id);
+  // Stopper Kuverto forespørselen, får leverandørene som har låst opp, klippene tilbake.
+  if (status === 'avvist') await db().rpc('refunder_opplasinger', { p_foresporsel: id });
   revalidatePath('/admin', 'layout');
 }
 

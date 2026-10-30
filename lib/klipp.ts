@@ -25,6 +25,9 @@ export const MAKS_LEVERANDORER = 5;
 export const PILOT_GRATIS_KLIPP = 20;
 /** Klippene refunderes hvis kunden trekker forespørselen eller ikke svarer innen så mange dager. */
 export const REFUSJON_ETTER_DAGER = 7;
+/** Refusjonsregelen slik den vises for leverandører. Samme regel kjøres i databasen (trekk_foresporsel og daglig_vedlikehold). */
+export const REFUSJON_KORT = `Klippene tilbake hvis kunden trekker forespørselen, eller ikke svarer innen ${REFUSJON_ETTER_DAGER} dager etter at du sendte tilbudet.`;
+export const REFUSJON_LANG = `Du får klippene tilbake hvis kunden trekker forespørselen, eller Kuverto stopper den. Du får dem også tilbake hvis kunden ikke svarer innen ${REFUSJON_ETTER_DAGER} dager etter at du sendte tilbudet. Å svare betyr å velge tilbudet, avslå det eller skrive til deg. Sender du ikke tilbud, beholder vi klippene.`;
 
 /** Typisk pris per kuvert i øre for hvert budsjettvalg, brukt til å anslå oppdragets verdi. */
 const ANSLATT_PER_KUVERT: Record<Budsjett, number> = {

@@ -16,7 +16,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Input, Textarea, feltKlasse } from '@/components/ui/Input';
 import { Tabs } from '@/components/ui/Tabs';
 import { kr } from '@/lib/format';
-import { KLIPPAKKER, MVA_SATS, prisPerKlipp } from '@/lib/klipp';
+import { KLIPPAKKER, MVA_SATS, prisPerKlipp, REFUSJON_LANG } from '@/lib/klipp';
 import { anledningNavn } from '@/lib/labels';
 import type { Foresporsel, ForesporselKontakt } from '@/lib/types';
 import { Samtale } from '@/components/kuverto/Samtale';
@@ -44,7 +44,28 @@ function svarfristTekst(iso: string | null) {
   return `Svar innen ${d} dager`;
 }
 
-export function Oversikt({ firma, dekning, saldo, nye, opplaste }: { firma: string; dekning: string; saldo: number; nye: (Foresporsel & { andreOpplast: number })[]; opplaste: Opplast[] }) {
+export interface KlippLinje {
+  id: string;
+  endring: number;
+  tekst: string;
+  dato: string;
+}
+
+export function Oversikt({
+  firma,
+  dekning,
+  saldo,
+  nye,
+  opplaste,
+  historikk,
+}: {
+  firma: string;
+  dekning: string;
+  saldo: number;
+  nye: (Foresporsel & { andreOpplast: number })[];
+  opplaste: Opplast[];
+  historikk: KlippLinje[];
+}) {
   const router = useRouter();
   const q = useSearchParams();
   const [fane, setFane] = useState(q.get('samtale') || (nye.length === 0 && opplaste.length > 0) ? 'opplaste' : 'nye');
@@ -141,6 +162,7 @@ export function Oversikt({ firma, dekning, saldo, nye, opplaste }: { firma: stri
           faner={[
             { id: 'nye', navn: `Nye i området (${synlige.length})` },
             { id: 'opplaste', navn: `Opplåste (${opplaste.length})` },
+            { id: 'klipp', navn: 'Klipp' },
           ]}
         />
 
@@ -211,6 +233,30 @@ export function Oversikt({ firma, dekning, saldo, nye, opplaste }: { firma: stri
           </div>
         )}
 
+        {fane === 'klipp' && (
+          <div role="tabpanel" id="klipp-panel" aria-labelledby="klipp-fane" className="flex flex-col gap-4">
+            <p className="m-0 max-w-[70ch] rounded-alert bg-surface-soft px-4 py-3 text-[15px]">{REFUSJON_LANG}</p>
+            {historikk.length === 0 ? (
+              <p className="m-0 text-text-muted">Ingen klipp ennå.</p>
+            ) : (
+              <ul className="m-0 flex list-none flex-col rounded-card bg-surface p-0">
+                {historikk.map((h) => (
+                  <li key={h.id} className="flex items-center justify-between gap-4 border-b border-border px-4 py-3 last:border-0 md:px-6">
+                    <span className="flex min-w-0 flex-col">
+                      <span className="text-base">{h.tekst}</span>
+                      <span className="text-small text-text-muted">{new Date(h.dato).toLocaleString('nb-NO', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Oslo' })}</span>
+                    </span>
+                    <strong className={`k-num shrink-0 text-[17px] ${h.endring < 0 ? 'text-text' : 'text-success'}`}>
+                      {h.endring > 0 ? `+${h.endring}` : h.endring}
+                      <span className="sr-only"> klipp</span>
+                    </strong>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         <div className="pt-4">
           <ThemeToggle />
         </div>
@@ -271,6 +317,7 @@ function KjopKlipp() {
     <div className="flex flex-col gap-4 bg-bg p-6 md:p-7">
       <h2 className="k-heading m-0 pr-10 text-[28px]">Kjøp klipp</h2>
       <p className="m-0 text-[15px] text-text-muted">Du betaler med kort hos Stripe. Kvittering og faktura kommer på e-post. Prisene er eks. mva.</p>
+      <p className="m-0 rounded-alert bg-surface-soft px-4 py-3 text-[15px]">{REFUSJON_LANG}</p>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {KLIPPAKKER.map((p) => (
           <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
