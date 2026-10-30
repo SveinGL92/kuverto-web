@@ -8,8 +8,6 @@ export interface Kommune {
   fylke: string;
 }
 
-const AKTIVE = ['03', '32'];
-
 interface Fylke {
   nr: string;
   navn: string;
@@ -84,35 +82,14 @@ export function DekningVelger({
   }
   const fylker = [...perFylke.values()];
   for (const f of fylker) f.kommuner.sort((a, b) => a.navn.localeCompare(b.navn, 'nb'));
-  const aktive = AKTIVE.map((nr) => perFylke.get(nr)).filter((f): f is Fylke => !!f);
-  const andre = fylker.filter((f) => !AKTIVE.includes(f.nr)).sort((a, b) => a.navn.localeCompare(b.navn, 'nb'));
-  const valgteAndre = andre.reduce((s, f) => s + f.kommuner.filter((k) => valgt.includes(k.nr)).length, 0);
+  fylker.sort((a, b) => a.navn.localeCompare(b.navn, 'nb'));
 
   return (
     <fieldset id="felt-kommuner" tabIndex={-1} aria-describedby={feilId} className="m-0 flex flex-col gap-3 border-0 p-0 outline-none">
       <legend className="sr-only">Fylker og kommuner</legend>
-      {aktive.map((fy) => (
+      {fylker.map((fy) => (
         <FylkeRad key={fy.nr} fy={fy} valgt={valgt} onChange={onChange} />
       ))}
-      {andre.length > 0 && (
-        <details className="group/andre mt-2 flex flex-col rounded-alert bg-surface-soft" open={valgteAndre > 0 || undefined}>
-          <summary className="flex min-h-14 cursor-pointer list-none items-center gap-2 px-4 text-base font-bold [&::-webkit-details-marker]:hidden">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open/andre:rotate-90 motion-reduce:transition-none">
-              <path d="M9 6l6 6-6 6" />
-            </svg>
-            <span className="flex-grow">Resten av landet</span>
-            {valgteAndre > 0 && <span className="text-small font-semibold text-text-muted">{valgteAndre} kommuner valgt</span>}
-          </summary>
-          <div className="flex flex-col gap-3 px-3 pb-3">
-            <p className="m-0 px-1 text-[15px] text-text-muted">Vi starter i Oslo og Akershus. Velger dere andre fylker, får dere forespørsler derfra når vi åpner der.</p>
-            {andre.map((fy) => (
-              <div key={fy.nr} className="bg-surface rounded-alert">
-                <FylkeRad fy={fy} valgt={valgt} onChange={onChange} />
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
     </fieldset>
   );
 }

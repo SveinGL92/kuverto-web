@@ -115,7 +115,7 @@ export default function ForLeverandorer() {
                 Hvem passer det for?
               </h2>
               <p className="m-0 text-base leading-normal text-text-muted md:text-[17px]">
-                Alle som lager mat til selskaper og kan levere i Oslo eller Akershus. Du velger selv kommunene du dekker, og ser bare forespørsler derfra.
+                Alle som lager mat til selskaper, i hele Norge. Du velger selv fylkene og kommunene du dekker, og ser bare forespørsler derfra.
               </p>
             </div>
             <ul className="m-0 flex list-none flex-col gap-3 p-0">

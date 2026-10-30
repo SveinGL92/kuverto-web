@@ -30,7 +30,7 @@ export const anledningerInnhold: AnledningInnhold[] = [
     navn: 'Firmalunsj',
     kortnavn: 'Firmalunsj',
     bilde: { src: '/bilder/smorbrod.webp', alt: 'Smørbrød med reker og egg på et skjærebrett' },
-    tittel: 'Catering til firmalunsj i Oslo og Akershus',
+    tittel: 'Catering til firmalunsj – få tilbud fra flere leverandører',
     beskrivelse:
       'Få tilbud på firmalunsj fra godkjente cateringleverandører. Send én forespørsel, sammenlign meny og pris per kuvert, og velg det som passer. Gratis og uforpliktende.',
     h1: 'Catering til firmalunsj',
@@ -72,7 +72,7 @@ export const anledningerInnhold: AnledningInnhold[] = [
     bilde: { src: '/bilder/julebord.webp', alt: 'Julebord med ribbe, rødkål og tilbehør', posisjon: '50% 60%' },
     tittel: 'Julebord catering – få tilbud på julemat',
     beskrivelse:
-      'Få tilbud på julebordsmat fra cateringleverandører i Oslo og Akershus. Sammenlign meny, pris per kuvert og hva som er inkludert.',
+      'Få tilbud på julebordsmat fra cateringleverandører der du bor. Sammenlign meny, pris per kuvert og hva som er inkludert.',
     h1: 'Catering til julebord',
     ingress:
       'Ribbe, pinnekjøtt eller noe helt annet. Beskriv julebordet én gang, så sender leverandørene deg forslag til meny og pris per kuvert.',

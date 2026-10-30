@@ -8,9 +8,6 @@ export interface Kommune {
   fylke: string;
 }
 
-/** Fylkene kunder kan sende forespørsler fra nå. Leverandører kan velge dekning i hele landet. */
-export const AKTIVE_FYLKER = ['03', '32'];
-
 /** Alle kommuner i Norge med fylke, sortert alfabetisk. */
 export async function hentKommuner(): Promise<Kommune[]> {
   const { data } = await db().from('kommuner').select('kommunenr, kommunenavn, fylkesnr, fylkesnavn').order('kommunenavn');

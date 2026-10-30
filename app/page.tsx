@@ -13,7 +13,7 @@ import { anledningerInnhold } from '@/lib/anledninger-innhold';
 import { MAKS_LEVERANDORER } from '@/lib/klipp';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Kuverto – få tilbud på catering i Oslo og Akershus' },
+  title: { absolute: 'Kuverto – få tilbud på catering i hele Norge' },
   description:
     'Send én forespørsel om catering. Godkjente leverandører nær deg svarer med meny og pris per kuvert. Sammenlign og velg selv. Gratis og uforpliktende.',
   alternates: { canonical: '/' },
@@ -44,10 +44,7 @@ const strukturertData = {
       name: 'Tilbud på catering',
       serviceType: 'Catering',
       provider: { '@id': 'https://kuverto.no/#org' },
-      areaServed: [
-        { '@type': 'AdministrativeArea', name: 'Oslo' },
-        { '@type': 'AdministrativeArea', name: 'Akershus' },
-      ],
+      areaServed: { '@type': 'Country', name: 'Norge' },
       description: 'Send én forespørsel og få tilbud med meny og pris per kuvert fra godkjente cateringleverandører.',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'NOK', description: 'Gratis for kunden' },
     },
@@ -95,7 +92,7 @@ const sporsmal: SporsmalSvar[] = [
   },
   {
     sporsmal: 'Hvilke områder dekker dere?',
-    svar: 'Vi starter i Oslo og Akershus. Flere områder kommer senere.',
+    svar: 'Kuverto er åpent i hele Norge. Du får bare tilbud fra leverandører som har oppgitt at de leverer i området ditt, og vi rekrutterer stadig flere.',
   },
 ];
 

@@ -6,6 +6,7 @@ import { klippForForesporsel, MAKS_LEVERANDORER } from '@/lib/klipp';
 import { anledninger, budsjetter, erAllergen, kostholdstyper, leveringer } from '@/lib/labels';
 import { mal, sendEpost } from '@/lib/server/epost';
 import { fullstendigeLinjer, type KostholdRad } from '@/lib/server/formatering';
+import { finnPostnummer, leverandorerIKommune } from '@/lib/server/postnummer';
 import { db } from '@/lib/server/supabase';
 import type { Budsjett } from '@/lib/types';
 
@@ -32,7 +33,16 @@ export interface ForesporselInn {
   startet?: number;
 }
 
-type Svar = { ok: true; poststed: string } | { ok: false; feil: string; felt?: string };
+type Svar = { ok: true; poststed: string; leverandorer: number } | { ok: false; feil: string; felt?: string };
+
+export type PostnummerSvar = { ok: true; poststed: string; kommune: string; leverandorer: number } | { ok: false; feil: string };
+
+/** Slår opp postnummeret mens kunden skriver: poststed, kommune og om noen leverandører leverer der. */
+export async function sjekkPostnummer(nr: string): Promise<PostnummerSvar> {
+  const pn = await finnPostnummer(String(nr ?? '').trim());
+  if (!pn) return { ok: false, feil: 'Vi finner ikke dette postnummeret.' };
+  return { ok: true, poststed: pn.poststed, kommune: pn.kommunenavn, leverandorer: await leverandorerIKommune(pn.kommunenr) };
+}
 
 const epostOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
 const iDagOslo = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
@@ -40,7 +50,7 @@ const tekst = (v: unknown, maks: number) => (typeof v === 'string' ? v.trim().sl
 
 export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
   // Robotsjekk: stille avvisning som ser vellykket ut.
-  if (inn.nettside || (inn.startet && Date.now() - inn.startet < 3000)) return { ok: true, poststed: '' };
+  if (inn.nettside || (inn.startet && Date.now() - inn.startet < 3000)) return { ok: true, poststed: '', leverandorer: 1 };
 
   const anledning = anledninger.find((a) => a.id === inn.anledning)?.id;
   const levering = leveringer.find((l) => l.id === inn.levering)?.id;
@@ -66,13 +76,9 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
   const adresse = levering === 'levering' ? tekst(inn.adresse, 200) || null : null;
 
   const s = db();
-  const { data: pn } = await s.from('postnummer').select('poststed, kommunenr, kommunenavn, fylkesnr').eq('postnummer', postnummer).maybeSingle();
-  if (!pn)
-    return {
-      ok: false,
-      felt: 'postnummer',
-      feil: `Vi dekker foreløpig bare Oslo og Akershus, og postnummer ${postnummer} er utenfor området. Skriv til hei@kuverto.no, så sier vi fra når vi kommer dit.`,
-    };
+  const pn = await finnPostnummer(postnummer);
+  if (!pn) return { ok: false, felt: 'postnummer', feil: 'Vi finner ikke dette postnummeret. Sjekk at det har fire siffer.' };
+  const antallLev = await leverandorerIKommune(pn.kommunenr);
 
   // Begrensning: høyst 5 forespørsler per e-post og 10 per IP-adresse i timen.
   const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'ukjent';
@@ -144,6 +150,9 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
         `Hei ${navn.split(' ')[0]}! Se over forespørselen under. Stemmer alt, trykker du på knappen. Da sender vi den til godkjente leverandører i området.`,
         linjer.join('\n'),
         'Leverandørene ser først området og behovet. Navn, kontaktinfo og ønskene dine ser bare de som låser opp forespørselen, og gateadressen deles først når du velger et tilbud.',
+        antallLev
+          ? 'Du får bare tilbud fra leverandører som har oppgitt at de leverer i ditt område.'
+          : `Ingen leverandører har oppgitt at de leverer i ${pn.kommunenavn} ennå. Bekrefter du, ligger forespørselen klar, og leverandører som begynner å levere i området, ser den.`,
         'Er noe feil? Ikke bekreft. Send heller en ny forespørsel på kuverto.no.',
       ],
       knapp: { tekst: 'Bekreft og send', sti: `/foresporsel/bekreft?t=${token}` },
@@ -151,6 +160,6 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
     }),
   });
 
-  return { ok: true, poststed: pn.poststed };
+  return { ok: true, poststed: pn.poststed, leverandorer: antallLev };
 }
 

@@ -37,7 +37,7 @@ export function SiteFooter() {
             <Symbol size={22} />
             <span className="k-heading text-xl leading-none">kuverto</span>
           </span>
-          <p className="m-0 leading-normal">Én forespørsel, flere cateringtilbud. Foreløpig i Oslo og Akershus.</p>
+          <p className="m-0 leading-normal">Én forespørsel, flere tilbud, i hele Norge. Du får tilbud fra leverandørene som leverer i området ditt.</p>
         </div>
         <nav aria-label="Bunnmeny" className="grid grid-cols-1 gap-6 min-[420px]:grid-cols-2 md:flex md:gap-14">
           {kolonner.map((k) => (

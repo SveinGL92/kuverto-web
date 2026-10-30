@@ -12,9 +12,9 @@ import { cn } from '@/lib/cn';
 import { datoKort, stor } from '@/lib/format';
 import { MAKS_LEVERANDORER } from '@/lib/klipp';
 import { anledninger, anledningNavn, budsjetter, budsjettNavn, erAllergen, kostholdLinje, kostholdNavn, kostholdstyper, leveringer } from '@/lib/labels';
-import { gyldigPostnummer, poststed, rensPostnummer } from '@/lib/postnummer';
+import { gyldigPostnummer, rensPostnummer } from '@/lib/postnummer';
 import type { Anledning, Budsjett, Kostholdstype, Levering } from '@/lib/types';
-import { sendForesporsel } from './actions';
+import { sendForesporsel, sjekkPostnummer, type PostnummerSvar } from './actions';
 
 /**
  * Forespørselsskjemaet i to steg: 1) arrangementet og maten, 2) kontakt og innsending.
@@ -143,6 +143,25 @@ export function Skjema() {
   const [sender, setSender] = useState(false);
   const [sendeFeil, setSendeFeil] = useState<string>();
   const [nettside, setNettside] = useState('');
+  const [pn, setPn] = useState<{ nr: string; svar: PostnummerSvar }>();
+  const [ingenLev, setIngenLev] = useState(false);
+
+  // Slå opp postnummeret når det har fire siffer.
+  useEffect(() => {
+    const nr = u.postnummer;
+    if (!/^\d{4}$/.test(nr)) return;
+    let aktiv = true;
+    const t = setTimeout(async () => {
+      try {
+        const svar = await sjekkPostnummer(nr);
+        if (aktiv) setPn({ nr, svar });
+      } catch {}
+    }, 200);
+    return () => {
+      aktiv = false;
+      clearTimeout(t);
+    };
+  }, [u.postnummer]);
   const startet = useRef(0);
   useEffect(() => {
     startet.current = Date.now();
@@ -221,6 +240,7 @@ export function Skjema() {
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(u.klokkeslett)) f.klokkeslett = 'Velg et klokkeslett.';
       if (!gyldigPostnummer(u.postnummer))
         f.postnummer = u.postnummer.length === 4 ? 'Vi finner ikke dette postnummeret.' : 'Skriv postnummeret med fire siffer, for eksempel 0150.';
+      else if (pn?.nr === u.postnummer && !pn.svar.ok) f.postnummer = 'Vi finner ikke dette postnummeret. Sjekk at det stemmer.';
     }
     if (s === 2) {
       if (!u.navn.trim()) f.navn = 'Skriv navnet ditt.';
@@ -257,6 +277,7 @@ export function Skjema() {
     try {
       const svar = await sendForesporsel({ ...u, nettside, startet: startet.current });
       if (svar.ok) {
+        setIngenLev(svar.leverandorer === 0);
         setSteg(ANTALL_STEG + 1);
         return;
       }
@@ -279,8 +300,18 @@ export function Skjema() {
   };
   const tilbake = () => (steg === 1 ? router.push('/') : setSteg(1));
 
-  const sted = poststed(u.postnummer);
+  const pnSvar = pn?.nr === u.postnummer ? pn.svar : undefined;
+  const sted = pnSvar?.ok ? pnSvar.poststed : undefined;
   const postOk = gyldigPostnummer(u.postnummer);
+  const postHint = !postOk
+    ? 'Du får tilbud fra leverandører som leverer i området ditt.'
+    : !pnSvar
+      ? 'Sjekker postnummeret …'
+      : !pnSvar.ok
+        ? 'Vi finner ikke dette postnummeret.'
+        : pnSvar.leverandorer > 0
+          ? `${pnSvar.poststed}${pnSvar.kommune !== pnSvar.poststed ? `, ${pnSvar.kommune}` : ''}. Du får tilbud fra leverandørene som leverer her.`
+          : `${pnSvar.poststed}${pnSvar.kommune !== pnSvar.poststed ? `, ${pnSvar.kommune}` : ''}. Ingen leverandører har oppgitt at de leverer her ennå, men du kan sende forespørselen likevel.`;
   const kostholdValgt = (Object.entries(u.kosthold) as [Kostholdstype, KostholdValg][]).sort(
     (a, b) => kostholdstyper.findIndex((k) => k.id === a[0]) - kostholdstyper.findIndex((k) => k.id === b[0]),
   );
@@ -330,7 +361,11 @@ export function Skjema() {
             <ol className="m-0 flex list-none flex-col gap-3 p-0 text-base leading-normal">
               <li className="flex gap-3">
                 <Hake />
-                <span>Når du har bekreftet, får godkjente leverandører {sted ? `i ${sted}` : 'i nærheten'} beskjed om forespørselen.</span>
+                <span>
+                  {ingenLev
+                    ? `Ingen leverandører har oppgitt at de leverer ${sted ? `i ${sted}` : 'i området ditt'} ennå. Når du har bekreftet, ligger forespørselen klar, og leverandører som begynner å levere der, ser den.`
+                    : `Når du har bekreftet, får godkjente leverandører som leverer ${sted ? `i ${sted}` : 'i området ditt'} beskjed om forespørselen.`}
+                </span>
               </li>
               <li className="flex gap-3">
                 <Hake />
@@ -532,7 +567,7 @@ export function Skjema() {
                       maxLength={4}
                       value={u.postnummer}
                       onChange={(e) => sett('postnummer', rensPostnummer(e.target.value))}
-                      hint={postOk ? (sted ?? `Postnummer ${u.postnummer}`) : 'Leverandørene ser bare området.'}
+                      hint={postHint}
                       feil={feil.postnummer}
                       required
                     />
