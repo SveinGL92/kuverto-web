@@ -25,7 +25,7 @@ export async function finnPostnummer(nr: string): Promise<Postnummer | null> {
   const s = db();
   const { data: finnes } = await s.from('postnummer').select('postnummer, poststed, kommunenr, kommunenavn, fylkesnr').eq('postnummer', nr).maybeSingle();
   if (finnes) return finnes as Postnummer;
-  const treff = (postnumre as Record<string, [string, string]>)[nr];
+  const treff = (postnumre as unknown as Record<string, [string, string]>)[nr];
   if (!treff) return null;
   const j = { kommunenummer: treff[0], poststed: treff[1] };
   const { data: k } = await s.from('kommuner').select('kommunenr, kommunenavn, fylkesnr').eq('kommunenr', j.kommunenummer).maybeSingle();
