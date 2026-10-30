@@ -32,13 +32,22 @@ export async function varsleOmForesporsel(id: string) {
       }),
     ),
   );
+  const ingen = !lev?.length;
   await sendEpost({
     til: ADMIN_VARSEL,
-    emne: `[Kuverto] Ny forespørsel: ${anledning} ${f.gjester} i ${f.poststed}`,
+    emne: ingen
+      ? `[Kuverto] REKRUTTER: ingen leverandører i ${f.poststed} – ${anledning} ${f.gjester}`
+      : `[Kuverto] Ny forespørsel: ${anledning} ${f.gjester} i ${f.poststed}`,
     html: mal({
-      tittel: 'Ny bekreftet forespørsel',
-      avsnitt: [...(k ? fullstendigeLinjer(f, k) : linjer), `Varslet ${lev?.length ?? 0} godkjente leverandører i kommunen.`],
-      knapp: { tekst: 'Åpne admin', sti: '/admin' },
+      tittel: ingen ? `Ingen leverandører dekker ${f.poststed}` : 'Ny bekreftet forespørsel',
+      avsnitt: [
+        ...(ingen
+          ? [`Ingen godkjente leverandører har oppgitt at de leverer i kommunen (${f.kommunenr}). Kunden har fått beskjed om det. Finn en lokal leverandør og be dem registrere seg, så ser de forespørselen med en gang de er godkjent og har lagt til kommunen.`]
+          : []),
+        ...(k ? fullstendigeLinjer(f, k) : linjer),
+        `Varslet ${lev?.length ?? 0} godkjente leverandører i kommunen.`,
+      ],
+      knapp: { tekst: 'Åpne i admin', sti: `/admin/foresporsler/${f.id}` },
     }),
   });
 }

@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { AnledningKort } from '@/components/innhold/AnledningKort';
+import { KategoriLenker } from '@/components/innhold/KategoriLenker';
 import { StegListe, type Steg } from '@/components/innhold/StegListe';
 import { Sporsmal, type SporsmalSvar } from '@/components/innhold/Sporsmal';
 import { Trygghet } from '@/components/innhold/Trygghet';
@@ -142,7 +143,7 @@ export default function Forside() {
               <img src="/illustrasjoner/smorbrod.svg" alt="" className="k-ink w-[88px]" />
               <span className="flex flex-col">
                 <strong className="text-base">Firmalunsj · 25 kuverter</strong>
-                <span className="text-small text-text-muted">Vegetar 4 · nøtter 1</span>
+                <span className="text-small text-text-muted">Vegetar 4 · Allergi: nøtter 1</span>
               </span>
             </div>
           </div>
@@ -159,7 +160,7 @@ export default function Forside() {
           <StegListe steg={steg} />
           <div className="mt-6 md:mt-8">
             <ButtonLink href="/foresporsel" size="lg">
-              Få cateringtilbud
+              Få tilbud
             </ButtonLink>
           </div>
         </section>
@@ -172,7 +173,11 @@ export default function Forside() {
             </h2>
             <p className="m-0 max-w-[52ch] text-base text-text-muted md:text-[17px]">Velg kategorien som passer ditt behov best, og motta tilbud fra anerkjente restauranter, cateringvirksomheter og bakerier.</p>
           </div>
-          <AnledningKort liste={anledningerInnhold} medAnnet />
+          <AnledningKort liste={anledningerInnhold.filter((x) => x.gruppe !== 'mattype' && x.bilde)} medAnnet />
+          <div className="mt-8 grid gap-6 md:grid-cols-2 md:gap-10">
+            <KategoriLenker tittel="Flere anledninger" liste={anledningerInnhold.filter((x) => x.gruppe !== 'mattype' && !x.bilde)} />
+            <KategoriLenker tittel="Type mat" liste={anledningerInnhold.filter((x) => x.gruppe === 'mattype')} />
+          </div>
         </section>
 
         {/* Tillit */}

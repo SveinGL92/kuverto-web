@@ -1,14 +1,25 @@
 import type { Anledning, Budsjett, Kostholdstype, Levering, Servering } from './types';
 
-export const anledninger: { id: Anledning; navn: string; illustrasjon?: string }[] = [
-  { id: 'firmalunsj', navn: 'Firmalunsj', illustrasjon: '/illustrasjoner/smorbrod.svg' },
-  { id: 'motemat', navn: 'Møtemat', illustrasjon: '/illustrasjoner/kaffe-bolle.svg' },
-  { id: 'julebord', navn: 'Julebord', illustrasjon: '/illustrasjoner/julebord.svg' },
-  { id: 'bryllup', navn: 'Bryllup', illustrasjon: '/illustrasjoner/bryllup.svg' },
-  { id: 'konfirmasjon', navn: 'Konfirmasjon', illustrasjon: '/illustrasjoner/konfirmasjon.svg' },
-  { id: 'minnesamvaer', navn: 'Minnesamvær', illustrasjon: '/illustrasjoner/minnesamvaer.svg' },
-  { id: 'privat_fest', navn: 'Privat fest', illustrasjon: '/illustrasjoner/privat-fest.svg' },
-  { id: 'annet', navn: 'Noe annet' },
+/** Kategorier kunden kan velge: anledninger (når) og mattyper (hva). */
+export const anledninger: { id: Anledning; navn: string; gruppe: 'anledning' | 'mattype' | 'annet'; illustrasjon?: string }[] = [
+  { id: 'firmalunsj', navn: 'Firmalunsj', gruppe: 'anledning', illustrasjon: '/illustrasjoner/smorbrod.svg' },
+  { id: 'motemat', navn: 'Møtemat', gruppe: 'anledning', illustrasjon: '/illustrasjoner/kaffe-bolle.svg' },
+  { id: 'kurs_konferanse', navn: 'Kurs og konferanse', gruppe: 'anledning', illustrasjon: '/illustrasjoner/kaffe-bolle.svg' },
+  { id: 'julebord', navn: 'Julebord', gruppe: 'anledning', illustrasjon: '/illustrasjoner/julebord.svg' },
+  { id: 'sommerfest', navn: 'Sommerfest', gruppe: 'anledning', illustrasjon: '/illustrasjoner/privat-fest.svg' },
+  { id: 'bryllup', navn: 'Bryllup', gruppe: 'anledning', illustrasjon: '/illustrasjoner/bryllup.svg' },
+  { id: 'konfirmasjon', navn: 'Konfirmasjon', gruppe: 'anledning', illustrasjon: '/illustrasjoner/konfirmasjon.svg' },
+  { id: 'dap', navn: 'Dåp og navnefest', gruppe: 'anledning', illustrasjon: '/illustrasjoner/konfirmasjon.svg' },
+  { id: 'jubileum', navn: 'Jubileum og bursdag', gruppe: 'anledning', illustrasjon: '/illustrasjoner/privat-fest.svg' },
+  { id: 'minnesamvaer', navn: 'Minnesamvær', gruppe: 'anledning', illustrasjon: '/illustrasjoner/minnesamvaer.svg' },
+  { id: 'privat_fest', navn: 'Privat fest', gruppe: 'anledning', illustrasjon: '/illustrasjoner/privat-fest.svg' },
+  { id: 'kaker_bakst', navn: 'Kaker og bakst', gruppe: 'mattype', illustrasjon: '/illustrasjoner/kaffe-bolle.svg' },
+  { id: 'frokost', navn: 'Frokost', gruppe: 'mattype', illustrasjon: '/illustrasjoner/kaffe-bolle.svg' },
+  { id: 'fingermat', navn: 'Fingermat og tapas', gruppe: 'mattype', illustrasjon: '/illustrasjoner/smorbrod.svg' },
+  { id: 'buffet', navn: 'Buffet', gruppe: 'mattype', illustrasjon: '/illustrasjoner/bord-ovenfra.svg' },
+  { id: 'grill', navn: 'Grillmat', gruppe: 'mattype', illustrasjon: '/illustrasjoner/bord-ovenfra.svg' },
+  { id: 'vegetar_vegansk', navn: 'Vegetar og vegansk', gruppe: 'mattype', illustrasjon: '/illustrasjoner/bord-ovenfra.svg' },
+  { id: 'annet', navn: 'Noe annet', gruppe: 'annet' },
 ];
 
 export const anledningNavn = (id: Anledning) => anledninger.find((a) => a.id === id)?.navn ?? id;

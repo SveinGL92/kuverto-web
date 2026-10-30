@@ -6,7 +6,7 @@ const kolonner = [
   {
     tittel: 'For deg som bestiller',
     lenker: [
-      { href: '/foresporsel', navn: 'Få cateringtilbud' },
+      { href: '/foresporsel', navn: 'Få tilbud' },
       { href: '/#slik-fungerer-det', navn: 'Slik fungerer det' },
       { href: '/#anledninger', navn: 'Anledninger' },
     ],

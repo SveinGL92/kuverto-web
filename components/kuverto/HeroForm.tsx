@@ -2,12 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-import { anledninger } from '@/lib/labels';
+import { KategoriValg } from './KategoriValg';
 import { gyldigPostnummer, rensPostnummer } from '@/lib/postnummer';
 import { cn } from '@/lib/cn';
 
 /** Hurtigstart på forsiden. Sender verdiene videre til skjemaet, som fortsetter derfra. */
-export function HeroForm({ standardAnledning = 'firmalunsj', standardGjester = 25, knapp = 'Få cateringtilbud' }: { standardAnledning?: string; standardGjester?: number; knapp?: string } = {}) {
+export function HeroForm({ standardAnledning = 'firmalunsj', standardGjester = 25, knapp = 'Få tilbud' }: { standardAnledning?: string; standardGjester?: number; knapp?: string } = {}) {
   const router = useRouter();
   const [anledning, setAnledning] = useState(standardAnledning);
   const [gjester, setGjester] = useState(String(standardGjester));
@@ -39,13 +39,9 @@ export function HeroForm({ standardAnledning = 'firmalunsj', standardGjester = 2
       className="flex flex-col gap-3.5 rounded-[28px] bg-surface p-[18px] shadow-[0_10px_30px_rgba(28,34,16,0.10)] md:flex-row md:flex-wrap md:items-center md:gap-1 md:rounded-media md:p-2"
     >
       <label className={cn(labelMobil, celle, 'md:flex-[1.4_1_130px]')}>
-        Anledning
+        Hva gjelder det?
         <select value={anledning} onChange={(e) => setAnledning(e.target.value)} className={feltMobil}>
-          {anledninger.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.navn}
-            </option>
-          ))}
+          <KategoriValg />
         </select>
       </label>
       <div className="grid grid-cols-2 gap-2.5 md:contents">

@@ -26,14 +26,21 @@ export function AnledningKort({
             className="group flex h-full flex-col overflow-hidden rounded-card bg-surface text-text no-underline transition-shadow duration-200 hover:text-text hover:shadow-float focus-visible:shadow-float"
           >
             <span className="relative block aspect-[4/3] overflow-hidden bg-[var(--k-photo-placeholder)]">
-              <Image
-                src={a.bilde.src}
-                alt=""
-                fill
-                sizes="(min-width: 768px) 25vw, 50vw"
-                className="object-cover transition-transform duration-500 ease-kuverto group-hover:scale-[1.03] motion-reduce:transition-none"
-                style={{ objectPosition: a.bilde.posisjon ?? '50% 50%' }}
-              />
+              {a.bilde ? (
+                <Image
+                  src={a.bilde.src}
+                  alt=""
+                  fill
+                  sizes="(min-width: 768px) 25vw, 50vw"
+                  className="object-cover transition-transform duration-500 ease-kuverto group-hover:scale-[1.03] motion-reduce:transition-none"
+                  style={{ objectPosition: a.bilde.posisjon ?? '50% 50%' }}
+                />
+              ) : (
+                <span className="flex h-full items-center justify-center bg-surface-soft">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={a.illustrasjon ?? '/illustrasjoner/tom-tallerken.svg'} alt="" className="k-ink w-[45%]" />
+                </span>
+              )}
             </span>
             <span className="flex flex-grow items-center justify-between gap-2 px-4 py-3.5 md:px-5 md:py-4">
               <H className="m-0 text-base font-bold leading-tight md:text-[17px]">{a.kortnavn}</H>

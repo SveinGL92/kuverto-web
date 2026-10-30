@@ -44,7 +44,7 @@ export default function Personvern() {
           <Del tittel="Når du sender en forespørsel">
             <p>Vi lagrer det du fyller ut i skjemaet:</p>
             <ul>
-              <li>Om arrangementet: anledning, dato, klokkeslett, antall gjester, postnummer, gateadresse (valgfritt), budsjett, kosthold og allergier.</li>
+              <li>Om behovet: kategori, dato, klokkeslett, antall gjester, postnummer, gateadresse (valgfritt), budsjett, kosthold og allergier.</li>
               <li>Kontaktinformasjon: navn, e-post og eventuelt telefon og bedrift.</li>
               <li>Meldingen din til leverandørene, hvis du skriver en.</li>
             </ul>
@@ -78,7 +78,7 @@ export default function Personvern() {
 
           <Del tittel="Informasjonskapsler">
             <p>
-              Vi bruker ingen informasjonskapsler til sporing eller annonser. Nettleseren lagrer et utkast av skjemaet i fanen du har åpen, uten kontaktopplysninger. Utkastet slettes når du lukker fanen. Velger du lyst eller mørkt tema, husker nettleseren valget til du tømmer nettleserdataene.
+              Vi bruker ingen informasjonskapsler til sporing eller annonser. Nettleseren lagrer et utkast av skjemaet i fanen du har åpen, uten kontaktopplysninger. Utkastet slettes når du lukker fanen. Velger du lyst eller mørkt tema, husker nettleseren valget til du tømmer nettleserdataene. Vi teller besøk med Vercel Web Analytics, som ikke bruker informasjonskapsler og ikke lagrer IP-adresser eller identifiserer deg.
             </p>
           </Del>
 

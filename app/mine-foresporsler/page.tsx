@@ -34,7 +34,7 @@ export default async function MineForesporsler() {
       </AppHeader>
       <main id="innhold" className="mx-auto flex max-w-[900px] flex-col gap-4 px-4 py-8 md:px-6">
         {(fs ?? []).length === 0 ? (
-          <EmptyState illustrasjon="/illustrasjoner/tom-tallerken.svg" tittel="Ingen forespørsler ennå" handling={<ButtonLink href="/foresporsel">Få cateringtilbud</ButtonLink>}>
+          <EmptyState illustrasjon="/illustrasjoner/tom-tallerken.svg" tittel="Ingen forespørsler ennå" handling={<ButtonLink href="/foresporsel">Få tilbud</ButtonLink>}>
             Forespørsler du sender med denne e-postadressen, vises her.
           </EmptyState>
         ) : (

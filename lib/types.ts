@@ -9,6 +9,16 @@ export type Anledning =
   | 'konfirmasjon'
   | 'minnesamvaer'
   | 'privat_fest'
+  | 'sommerfest'
+  | 'dap'
+  | 'jubileum'
+  | 'kurs_konferanse'
+  | 'kaker_bakst'
+  | 'frokost'
+  | 'fingermat'
+  | 'buffet'
+  | 'grill'
+  | 'vegetar_vegansk'
   | 'annet';
 
 export type Levering = 'levering' | 'henting';

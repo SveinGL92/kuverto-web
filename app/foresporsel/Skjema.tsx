@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
+import { KategoriValg } from '@/components/kuverto/KategoriValg';
 import { Datovelger } from '@/components/ui/Datovelger';
 import { Input, Textarea, feltKlasse } from '@/components/ui/Input';
 import { cn } from '@/lib/cn';
@@ -17,7 +18,7 @@ import type { Anledning, Budsjett, Kostholdstype, Levering } from '@/lib/types';
 import { sendForesporsel, sjekkPostnummer, type PostnummerSvar } from './actions';
 
 /**
- * Forespørselsskjemaet i to steg: 1) arrangementet og maten, 2) kontakt og innsending.
+ * Forespørselsskjemaet i to steg: 1) behovet og maten, 2) kontakt og innsending.
  * Anledning, gjester og postnummer kommer ofte ferdig utfylt fra forsiden eller en anledningsside.
  */
 const ANTALL_STEG = 2;
@@ -31,6 +32,16 @@ const standardTid: Record<Anledning, string> = {
   konfirmasjon: '13:00',
   minnesamvaer: '13:00',
   privat_fest: '18:00',
+  sommerfest: '17:00',
+  dap: '13:00',
+  jubileum: '18:00',
+  kurs_konferanse: '11:30',
+  kaker_bakst: '13:00',
+  frokost: '08:00',
+  fingermat: '18:00',
+  buffet: '17:00',
+  grill: '17:00',
+  vegetar_vegansk: '12:00',
   annet: '12:00',
 };
 
@@ -393,7 +404,7 @@ export function Skjema() {
     <main id="innhold" className="flex min-h-dvh flex-col">
       <div className="mx-auto flex w-full max-w-[680px] flex-grow flex-col">
         <div className="flex shrink-0 items-center justify-between px-2 pt-2">
-          <button type="button" aria-label={steg === 1 ? 'Tilbake til forsiden' : 'Tilbake til arrangementet'} onClick={tilbake} className="flex h-11 w-11 items-center justify-center rounded-pill">
+          <button type="button" aria-label={steg === 1 ? 'Tilbake til forsiden' : 'Tilbake til behovet'} onClick={tilbake} className="flex h-11 w-11 items-center justify-center rounded-pill">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" />
             </svg>
@@ -401,7 +412,7 @@ export function Skjema() {
           <span className="text-[15px] font-semibold" aria-hidden="true">
             Steg {steg} av {ANTALL_STEG}
           </span>
-          <Link href="/" aria-label="Lukk skjemaet. Valgene om arrangementet og maten blir lagret i denne fanen." className="flex h-11 w-11 items-center justify-center rounded-pill text-text">
+          <Link href="/" aria-label="Lukk skjemaet. Valgene om behovet og maten blir lagret i denne fanen." className="flex h-11 w-11 items-center justify-center rounded-pill text-text">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
@@ -442,14 +453,10 @@ export function Skjema() {
                 <div className="grid grid-cols-1 gap-5 min-[480px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="felt-anledning" className="text-[15px] font-semibold">
-                      Anledning
+                      Hva gjelder det?
                     </label>
                     <select id="felt-anledning" value={u.anledning} onChange={(e) => velgAnledning(e.target.value as Anledning)} className={feltKlasse()}>
-                      {anledninger.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.navn}
-                        </option>
-                      ))}
+                      <KategoriValg />
                     </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -706,7 +713,7 @@ export function Skjema() {
                     </p>
                   </div>
                   <Button variant="text" size="sm" onClick={tilbake} className="shrink-0 font-semibold">
-                    Endre<span className="sr-only"> arrangementet</span>
+                    Endre<span className="sr-only"> behovet</span>
                   </Button>
                 </section>
 
@@ -740,7 +747,7 @@ export function Skjema() {
 
                 <div className="flex flex-col gap-1.5 rounded-alert bg-surface-soft p-4 text-[15px] leading-normal">
                   <strong className="text-base">Hvem ser hva?</strong>
-                  <p className="m-0">Leverandører i området ser arrangementet og maten, ikke hvem du er.</p>
+                  <p className="m-0">Leverandører i området ser behovet og maten, ikke hvem du er.</p>
                   <p className="m-0">
                     Navn, kontaktinfo og ønskene dine ser bare de som låser opp forespørselen, høyst {MAKS_LEVERANDORER}. Gateadressen deles først når du velger et tilbud.{' '}
                     <Link href="/personvern" target="_blank">
