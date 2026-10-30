@@ -1,5 +1,5 @@
 import 'server-only';
-import { json } from 'postnummer';
+import postnumre from './postnumre.json';
 import { db } from './supabase';
 
 export interface Postnummer {
@@ -18,15 +18,16 @@ const storForbokstav = (s: string) =>
 
 /**
  * Slår opp et postnummer i hele Norge. Tabellen public.postnummer fylles på etter hvert som postnumre brukes,
- * med data fra Postens register (npm-pakken «postnummer») og kommunenavn fra public.kommuner.
+ * med data fra Postens register (lib/server/postnumre.json, hentet fra npm-pakken «postnummer») og kommunenavn fra public.kommuner.
  */
 export async function finnPostnummer(nr: string): Promise<Postnummer | null> {
   if (!/^\d{4}$/.test(nr)) return null;
   const s = db();
   const { data: finnes } = await s.from('postnummer').select('postnummer, poststed, kommunenr, kommunenavn, fylkesnr').eq('postnummer', nr).maybeSingle();
   if (finnes) return finnes as Postnummer;
-  const j = json(nr);
-  if (!j?.kommunenummer) return null;
+  const treff = (postnumre as Record<string, [string, string]>)[nr];
+  if (!treff) return null;
+  const j = { kommunenummer: treff[0], poststed: treff[1] };
   const { data: k } = await s.from('kommuner').select('kommunenr, kommunenavn, fylkesnr').eq('kommunenr', j.kommunenummer).maybeSingle();
   if (!k) return null; // Svalbard, Jan Mayen og utgåtte kommunenumre
   const rad = { postnummer: nr, poststed: storForbokstav(j.poststed), kommunenr: k.kommunenr, kommunenavn: k.kommunenavn };
