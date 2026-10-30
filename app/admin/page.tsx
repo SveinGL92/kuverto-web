@@ -1,30 +1,38 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { Badge } from '@/components/ui/Badge';
 import { anledningNavn } from '@/lib/labels';
-import { db, erAdmin, innloggetEpost } from '@/lib/server/supabase';
+import { dt, foresporselStatus, klippGrunn, kr, kravAdminSide, leverandorStatus, tilbudStatus } from '@/lib/server/admin';
+import { db } from '@/lib/server/supabase';
 import type { Anledning } from '@/lib/types';
-import { godkjennLeverandor, giKlipp, settForesporselStatus, settLeverandorStatus } from './actions';
+import { bekreftForKunde, godkjennLeverandor, settLeverandorStatus } from './actions';
 
 export const metadata: Metadata = { title: 'Admin', robots: { index: false } };
 export const dynamic = 'force-dynamic';
 
-const dt = (iso: string) => new Date(iso).toLocaleString('nb-NO', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Oslo' });
 const knapp = 'min-h-touch rounded-pill border-[1.5px] border-border-input bg-surface px-4 text-[15px] font-bold hover:border-primary';
 
+interface Hendelse {
+  tid: string;
+  tekst: string;
+  lenke: string;
+}
+
 export default async function Admin() {
-  const epost = await innloggetEpost();
-  if (!epost) redirect('/logg-inn');
-  if (!(await erAdmin(epost))) redirect('/min-side');
+  await kravAdminSide();
   const s = db();
-  const [{ data: lev }, { data: forsp }, { data: trans }, { data: oppl }, { data: tilb }] = await Promise.all([
+  const [{ data: lev }, { data: forsp }, { data: trans }, { data: oppl }, { data: tilb }, { data: meld }, { data: kont }] = await Promise.all([
     s.from('leverandorer').select('*').order('opprettet', { ascending: false }),
-    s.from('foresporsler').select('id, anledning, gjester, dato, poststed, status, opprettet, kunde_epost, klipp_pris').order('opprettet', { ascending: false }).limit(100),
-    s.from('klipp_transaksjoner').select('leverandor_id, endring'),
-    s.from('opplasinger').select('foresporsel_id'),
-    s.from('tilbud').select('foresporsel_id, status'),
+    s.from('foresporsler').select('id, anledning, gjester, dato, poststed, status, opprettet, kunde_epost, klipp_pris').order('opprettet', { ascending: false }).limit(200),
+    s.from('klipp_transaksjoner').select('leverandor_id, endring, grunn, opprettet, referanse').order('opprettet', { ascending: false }),
+    s.from('opplasinger').select('foresporsel_id, leverandor_id, klipp, opprettet').order('opprettet', { ascending: false }),
+    s.from('tilbud').select('foresporsel_id, leverandor_id, status, pris_per_kuvert, opprettet').order('opprettet', { ascending: false }),
+    s.from('meldinger').select('foresporsel_id, leverandor_id, fra, opprettet').order('opprettet', { ascending: false }).limit(100),
+    s.from('foresporsel_kontakt').select('foresporsel_id, navn, firma'),
   ]);
+  const levNavn = new Map((lev ?? []).map((l) => [l.id, l.navn as string]));
+  const fInfo = new Map((forsp ?? []).map((f) => [f.id, `${anledningNavn(f.anledning as Anledning)} for ${f.gjester} i ${f.poststed}`]));
+  const kunde = new Map((kont ?? []).map((k) => [k.foresporsel_id, [k.navn, k.firma].filter(Boolean).join(', ')]));
+
   const saldo = new Map<string, number>();
   for (const t of trans ?? []) saldo.set(t.leverandor_id, (saldo.get(t.leverandor_id) ?? 0) + t.endring);
   const antallOppl = new Map<string, number>();
@@ -33,6 +41,38 @@ export default async function Admin() {
   for (const t of tilb ?? []) antallTilb.set(t.foresporsel_id, (antallTilb.get(t.foresporsel_id) ?? 0) + 1);
   const venter = (lev ?? []).filter((l) => l.status === 'venter');
   const andre = (lev ?? []).filter((l) => l.status !== 'venter');
+  const klippSolgt = (trans ?? []).filter((t) => t.grunn === 'kjop').reduce((sum, t) => sum + t.endring, 0);
+
+  const tall = [
+    { navn: 'Aktive forespørsler', verdi: (forsp ?? []).filter((f) => f.status === 'aktiv').length },
+    { navn: 'Venter på bekreftelse', verdi: (forsp ?? []).filter((f) => f.status === 'venter_bekreftelse').length },
+    { navn: 'Tildelt', verdi: (forsp ?? []).filter((f) => f.status === 'tildelt').length },
+    { navn: 'Godkjente leverandører', verdi: (lev ?? []).filter((l) => l.status === 'godkjent').length },
+    { navn: 'Opplåsinger', verdi: oppl?.length ?? 0 },
+    { navn: 'Tilbud', verdi: tilb?.length ?? 0 },
+    { navn: 'Klipp solgt', verdi: klippSolgt },
+  ];
+
+  const hendelser: Hendelse[] = [
+    ...(forsp ?? []).map((f) => ({ tid: f.opprettet, tekst: `Ny forespørsel: ${fInfo.get(f.id)} fra ${kunde.get(f.id) || f.kunde_epost}`, lenke: `/admin/foresporsler/${f.id}` })),
+    ...(lev ?? []).map((l) => ({ tid: l.opprettet, tekst: `Leverandør registrert: ${l.navn}`, lenke: `/admin/leverandorer/${l.id}` })),
+    ...(oppl ?? []).map((o) => ({ tid: o.opprettet, tekst: `${levNavn.get(o.leverandor_id)} låste opp ${fInfo.get(o.foresporsel_id) ?? 'en forespørsel'} (${o.klipp} klipp)`, lenke: `/admin/foresporsler/${o.foresporsel_id}` })),
+    ...(tilb ?? []).map((t) => ({
+      tid: t.opprettet,
+      tekst: `${levNavn.get(t.leverandor_id)} sendte tilbud på ${fInfo.get(t.foresporsel_id) ?? 'en forespørsel'}: ${kr(t.pris_per_kuvert)}/kuvert (${tilbudStatus[t.status] ?? t.status})`,
+      lenke: `/admin/foresporsler/${t.foresporsel_id}`,
+    })),
+    ...(meld ?? []).map((m) => ({
+      tid: m.opprettet,
+      tekst: m.fra === 'kunde' ? `Kunden sendte spørsmål til ${levNavn.get(m.leverandor_id)}` : `${levNavn.get(m.leverandor_id)} sendte melding til kunden`,
+      lenke: `/admin/foresporsler/${m.foresporsel_id}`,
+    })),
+    ...(trans ?? [])
+      .filter((t) => t.grunn !== 'opplasing')
+      .map((t) => ({ tid: t.opprettet, tekst: `${klippGrunn[t.grunn] ?? t.grunn}: ${t.endring > 0 ? '+' : ''}${t.endring} klipp til ${levNavn.get(t.leverandor_id)}`, lenke: `/admin/leverandorer/${t.leverandor_id}` })),
+  ]
+    .sort((a, b) => b.tid.localeCompare(a.tid))
+    .slice(0, 40);
 
   return (
     <main id="innhold" className="k-wrap flex flex-col gap-10 py-8">
@@ -46,6 +86,15 @@ export default async function Admin() {
         </div>
       </div>
 
+      <section aria-label="Nøkkeltall" className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+        {tall.map((t) => (
+          <div key={t.navn} className="flex flex-col gap-1 rounded-card bg-surface p-4">
+            <span className="k-heading k-num text-[30px] leading-none">{t.verdi}</span>
+            <span className="text-small text-text-muted">{t.navn}</span>
+          </div>
+        ))}
+      </section>
+
       <section aria-labelledby="venter" className="flex flex-col gap-4">
         <h2 id="venter" className="k-heading m-0 text-h2">
           Leverandører som venter ({venter.length})
@@ -54,7 +103,9 @@ export default async function Admin() {
         {venter.map((l) => (
           <article key={l.id} className="flex flex-col gap-3 rounded-card bg-surface p-5">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="m-0 text-xl font-bold">{l.navn}</h3>
+              <h3 className="m-0 text-xl font-bold">
+                <Link href={`/admin/leverandorer/${l.id}`}>{l.navn}</Link>
+              </h3>
               <span className="text-small text-text-muted">Registrert {dt(l.opprettet)}</span>
             </div>
             <p className="m-0 text-[15px] leading-normal">
@@ -64,15 +115,6 @@ export default async function Admin() {
               </a>{' '}
               · {l.kontaktperson} · <a href={`mailto:${l.epost}`}>{l.epost}</a>
               {l.telefon ? ` · ${l.telefon}` : ''}
-              {l.nettside ? (
-                <>
-                  {' '}
-                  ·{' '}
-                  <a href={l.nettside.startsWith('http') ? l.nettside : `https://${l.nettside}`} target="_blank" rel="noopener">
-                    nettside
-                  </a>
-                </>
-              ) : null}
             </p>
             <p className="m-0 text-[15px] text-text-muted">Dekning: {l.dekning_visning}</p>
             {l.beskrivelse && <p className="m-0 text-[15px]">{l.beskrivelse}</p>}
@@ -88,12 +130,29 @@ export default async function Admin() {
         ))}
       </section>
 
+      <section aria-labelledby="aktivitet" className="flex flex-col gap-4">
+        <h2 id="aktivitet" className="k-heading m-0 text-h2">
+          Siste aktivitet
+        </h2>
+        <ul className="m-0 flex list-none flex-col rounded-card bg-surface p-0">
+          {hendelser.length === 0 && <li className="p-4 text-text-muted">Ingen aktivitet ennå.</li>}
+          {hendelser.map((h, i) => (
+            <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-b border-border px-4 py-3 last:border-0">
+              <Link href={h.lenke} className="text-[15px] font-semibold">
+                {h.tekst}
+              </Link>
+              <span className="k-num text-small text-text-muted">{dt(h.tid)}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <section aria-labelledby="foresporsler" className="flex flex-col gap-4">
         <h2 id="foresporsler" className="k-heading m-0 text-h2">
           Forespørsler ({forsp?.length ?? 0})
         </h2>
         <div className="relative overflow-x-auto rounded-card bg-surface">
-          <table className="w-full min-w-[760px] border-collapse text-left text-[15px]">
+          <table className="w-full min-w-[860px] border-collapse text-left text-[15px]">
             <thead className="text-small text-text-muted">
               <tr className="border-b border-border">
                 <th scope="col" className="p-3">Mottatt</th>
@@ -111,27 +170,27 @@ export default async function Admin() {
                 <tr key={f.id} className="border-b border-border last:border-0">
                   <td className="p-3">{dt(f.opprettet)}</td>
                   <td className="p-3 font-semibold">
-                    {anledningNavn(f.anledning as Anledning)} · {f.gjester}
+                    <Link href={`/admin/foresporsler/${f.id}`}>
+                      {anledningNavn(f.anledning as Anledning)} · {f.gjester}
+                    </Link>
                   </td>
                   <td className="p-3">{f.poststed}</td>
                   <td className="p-3">{f.dato ?? 'fleksibel'}</td>
-                  <td className="p-3">{f.kunde_epost}</td>
+                  <td className="p-3">
+                    {kunde.get(f.id) || '–'}
+                    <br />
+                    <span className="text-small text-text-muted">{f.kunde_epost}</span>
+                  </td>
                   <td className="k-num p-3">
                     {antallOppl.get(f.id) ?? 0} / {antallTilb.get(f.id) ?? 0}
                   </td>
+                  <td className="p-3">{foresporselStatus[f.status] ?? f.status}</td>
                   <td className="p-3">
-                    <Badge tone={f.status === 'aktiv' ? 'ny' : 'opplast'}>{f.status}</Badge>
-                  </td>
-                  <td className="p-3">
-                    {f.status === 'aktiv' ? (
-                      <form action={settForesporselStatus.bind(null, f.id, 'avvist')}>
-                        <button className="text-[15px] font-semibold text-error underline">Avvis</button>
+                    {f.status === 'venter_bekreftelse' && (
+                      <form action={bekreftForKunde.bind(null, f.id)}>
+                        <button className="text-[15px] font-semibold underline">Bekreft for kunden</button>
                       </form>
-                    ) : f.status === 'avvist' ? (
-                      <form action={settForesporselStatus.bind(null, f.id, 'aktiv')}>
-                        <button className="text-[15px] font-semibold underline">Aktiver</button>
-                      </form>
-                    ) : null}
+                    )}
                   </td>
                 </tr>
               ))}
@@ -153,31 +212,18 @@ export default async function Admin() {
                 <th scope="col" className="p-3">Dekning</th>
                 <th scope="col" className="p-3">Status</th>
                 <th scope="col" className="p-3">Klipp</th>
-                <th scope="col" className="p-3"><span className="sr-only">Handlinger</span></th>
               </tr>
             </thead>
             <tbody>
               {andre.map((l) => (
                 <tr key={l.id} className="border-b border-border last:border-0">
-                  <td className="p-3 font-semibold">{l.navn}</td>
+                  <td className="p-3 font-semibold">
+                    <Link href={`/admin/leverandorer/${l.id}`}>{l.navn}</Link>
+                  </td>
                   <td className="p-3">{l.epost}</td>
                   <td className="p-3">{l.dekning_visning}</td>
-                  <td className="p-3">{l.status}</td>
+                  <td className="p-3">{leverandorStatus[l.status] ?? l.status}</td>
                   <td className="k-num p-3">{saldo.get(l.id) ?? 0}</td>
-                  <td className="flex flex-wrap gap-3 p-3">
-                    <form action={giKlipp.bind(null, l.id, 10)}>
-                      <button className="text-[15px] font-semibold underline">+10 klipp</button>
-                    </form>
-                    {l.status === 'godkjent' ? (
-                      <form action={settLeverandorStatus.bind(null, l.id, 'suspendert')}>
-                        <button className="text-[15px] font-semibold text-error underline">Suspender</button>
-                      </form>
-                    ) : (
-                      <form action={godkjennLeverandor.bind(null, l.id)}>
-                        <button className="text-[15px] font-semibold underline">Godkjenn</button>
-                      </form>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
