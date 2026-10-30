@@ -135,7 +135,7 @@ export function BrregSok({
             }
           } else if (e.key === 'Escape') setApen(false);
         }}
-        placeholder="F.eks. Lunsjkokkene eller 924 772 115"
+        placeholder="Bedriftsnavn eller org.nr. (ni siffer)"
         className={`min-h-[52px] rounded-input border-[1.5px] bg-surface px-4 text-[17px] ${feil ? 'border-error' : 'border-border-input'}`}
       />
       {feil && (

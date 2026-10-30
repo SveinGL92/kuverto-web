@@ -32,7 +32,7 @@ const tilTreff = (e: Enhet): BrregTreff => ({
   bransje: e.naeringskode1?.beskrivelse ?? '',
   nettside: e.hjemmeside ?? '',
 });
-const aktiv = (e: Enhet) => !e.konkurs && !e.underAvvikling && !e.underTvangsavviklingEllerTvangsopplosning && !e.slettedato;
+const aktiv = (e: Enhet) => !['KBO', 'BO', 'ESEK'].includes(e.organisasjonsform?.kode ?? '') && !e.konkurs && !e.underAvvikling && !e.underTvangsavviklingEllerTvangsopplosning && !e.slettedato;
 
 export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get('q') ?? '').trim().slice(0, 100);
