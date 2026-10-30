@@ -1,19 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { BrregTreff } from '@/app/api/brreg/route';
+import { BrregSok } from '@/components/kuverto/BrregSok';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
-import { DekningVelger } from '@/components/kuverto/DekningVelger';
+import { DekningVelger, type Kommune } from '@/components/kuverto/DekningVelger';
 import { Input, Textarea } from '@/components/ui/Input';
 import { registrerLeverandor, type RegistreringInn } from './actions';
 
-interface Kommune {
-  nr: string;
-  navn: string;
-}
+type Felt = 'orgnr' | 'navn' | 'beskrivelse' | 'kontaktperson' | 'epost' | 'telefon' | 'kommuner' | 'bekreftet';
 
-type Felt = 'orgnr' | 'navn' | 'kontaktperson' | 'epost' | 'kommuner' | 'bekreftet';
+const UTKAST = 'kuverto-registrering';
+const gyldigTelefon = (t: string) => {
+  const x = t.replace(/[^\d+]/g, '');
+  return /^(\+47)?\d{8}$/.test(x) || /^\+\d{8,15}$/.test(x);
+};
 
 export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
   const [v, setV] = useState<RegistreringInn>({
@@ -29,6 +32,7 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
     markedsforing: false,
     felle: '',
   });
+  const [bedrift, setBedrift] = useState<BrregTreff>();
   const [feil, setFeil] = useState<Partial<Record<Felt, string>>>({});
   const [generellFeil, setGenerellFeil] = useState<string>();
   const [sender, setSender] = useState(false);
@@ -40,12 +44,42 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
     setFeil((f) => ({ ...f, [k]: undefined }));
   };
 
+  // Ta vare på utkastet i fanen, så ingenting går tapt om man går til en annen side og tilbake.
+  const lastet = useRef(false);
+  useEffect(() => {
+    try {
+      const u = JSON.parse(sessionStorage.getItem(UTKAST) ?? 'null') as { v?: RegistreringInn; bedrift?: BrregTreff } | null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- henter utkast fra sessionStorage etter hydrering
+      if (u?.v) setV({ ...u.v, felle: '' });
+      if (u?.bedrift) setBedrift(u.bedrift);
+    } catch {
+      // ignorer
+    }
+    lastet.current = true;
+  }, []);
+  useEffect(() => {
+    if (!lastet.current || ferdig) return;
+    try {
+      sessionStorage.setItem(UTKAST, JSON.stringify({ v: { ...v, felle: '' }, bedrift }));
+    } catch {
+      // ignorer
+    }
+  }, [v, bedrift, ferdig]);
+
+  const velgBedrift = (t: BrregTreff | undefined) => {
+    setBedrift(t);
+    setFeil((f) => ({ ...f, orgnr: undefined }));
+    setV((x) => ({ ...x, orgnr: t?.orgnr ?? '', navn: t?.navn ?? '', nettside: x.nettside || (t?.nettside ?? '') }));
+  };
+
 
   const send = async () => {
     const f: Partial<Record<Felt, string>> = {};
-    if (!/^\d{9}$/.test(v.orgnr.replace(/\s/g, ''))) f.orgnr = 'Organisasjonsnummeret har ni siffer.';
+    if (!bedrift) f.orgnr = 'Søk opp og velg bedriften.';
+    if (v.beskrivelse.trim().length < 20) f.beskrivelse = 'Skriv noen setninger om bedriften (minst 20 tegn).';
     if (!v.kontaktperson.trim()) f.kontaktperson = 'Skriv navnet på kontaktpersonen.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.epost.trim())) f.epost = 'Skriv en gyldig e-postadresse.';
+    if (!gyldigTelefon(v.telefon)) f.telefon = 'Skriv et telefonnummer med åtte siffer.';
     if (!v.kommuner.length) f.kommuner = 'Velg minst én kommune.';
     if (!v.bekreftet) f.bekreftet = 'Du må bekrefte at opplysningene stemmer.';
     setFeil(f);
@@ -59,6 +93,11 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
     try {
       const svar = await registrerLeverandor(v);
       if (svar.ok) {
+        try {
+          sessionStorage.removeItem(UTKAST);
+        } catch {
+          // ignorer
+        }
         setFerdig(true);
         requestAnimationFrame(() => kvittering.current?.focus());
       } else if (svar.felt) {
@@ -100,29 +139,19 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
         <h2 id="bedrift-tittel" className="m-0 text-xl font-bold">
           Bedriften
         </h2>
-        <div className="grid gap-5 min-[480px]:grid-cols-2">
-          <Input
-            id="felt-orgnr"
-            label="Organisasjonsnummer"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={11}
-            value={v.orgnr}
-            onChange={(e) => sett('orgnr', e.target.value.replace(/[^\d ]/g, ''))}
-            feil={feil.orgnr}
-            required
-          />
-          <Input id="felt-navn" label="Navn på bedriften (valgfritt)" hint="Hentes fra Enhetsregisteret hvis tomt." autoComplete="organization" value={v.navn} onChange={(e) => sett('navn', e.target.value)} feil={feil.navn} />
-        </div>
-        <Input id="felt-nettside" label="Nettside (valgfritt)" type="url" inputMode="url" autoComplete="url" value={v.nettside} onChange={(e) => sett('nettside', e.target.value)} />
+        <BrregSok id="felt-orgnr" valgt={bedrift} onVelg={velgBedrift} feil={feil.orgnr} />
         <Textarea
-          label="Kort om bedriften (valgfritt)"
-          hint="Vises for kundene sammen med tilbudene deres. Høyst 300 tegn."
+          id="felt-beskrivelse"
+          label="Kort om bedriften"
+          hint="Vises for kundene sammen med tilbudene deres. Hva lager dere, og hva er dere gode på? 20–300 tegn."
           rows={3}
           maxLength={300}
           value={v.beskrivelse}
           onChange={(e) => sett('beskrivelse', e.target.value)}
+          feil={feil.beskrivelse}
+          required
         />
+        <Input id="felt-nettside" label="Nettside (valgfritt)" type="url" inputMode="url" autoComplete="url" value={v.nettside} onChange={(e) => sett('nettside', e.target.value)} />
       </section>
 
       <section className="flex flex-col gap-5 rounded-card bg-surface p-5 md:p-7" aria-labelledby="kontakt-tittel">
@@ -143,7 +172,18 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
             feil={feil.epost}
             required
           />
-          <Input id="felt-telefon" label="Telefon (valgfritt)" type="tel" inputMode="tel" autoComplete="tel" value={v.telefon} onChange={(e) => sett('telefon', e.target.value)} />
+          <Input
+            id="felt-telefon"
+            label="Telefon"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            hint="Kunden får nummeret når de velger tilbudet deres."
+            value={v.telefon}
+            onChange={(e) => sett('telefon', e.target.value)}
+            feil={feil.telefon}
+            required
+          />
         </div>
       </section>
 
@@ -152,7 +192,7 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
           <h2 id="omrade-tittel" className="m-0 text-xl font-bold">
             Hvor leverer dere?
           </h2>
-          <p className="m-0 text-[15px] text-text-muted">Kryss av for fylkene dere leverer til. Leverer dere bare til noen kommuner, kan du velge dem enkeltvis. Du får bare forespørsler fra områdene du velger.</p>
+          <p className="m-0 text-[15px] text-text-muted">Kryss av for fylkene dere leverer til, eller åpne fylket og velg enkeltkommuner. Du får bare forespørsler fra områdene du velger.</p>
         </div>
         <DekningVelger kommuner={kommuner} valgt={v.kommuner} onChange={(l) => sett('kommuner', l)} feilId={feil.kommuner ? 'kommuner-feil' : undefined} />
         {feil.kommuner && (
@@ -173,7 +213,11 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
             className="mt-0.5 h-6 w-6 shrink-0 accent-[var(--k-primary)]"
           />
           <span>
-            Jeg bekrefter at opplysningene stemmer, og at jeg kan representere bedriften. Les om <Link href="/personvern">personvern</Link>.
+            Jeg bekrefter at opplysningene stemmer, og at jeg kan representere bedriften. Les om{' '}
+            <a href="/personvern" target="_blank" rel="noopener">
+              personvern<span className="sr-only"> (åpnes i ny fane)</span>
+            </a>
+            .
           </span>
         </label>
         {feil.bekreftet && (

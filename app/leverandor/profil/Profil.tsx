@@ -36,12 +36,12 @@ export function Profil({ kommuner, start }: { kommuner: Kommune[]; start: Profil
         </h2>
         <div className="grid gap-5 min-[480px]:grid-cols-2">
           <Input label="Kontaktperson" autoComplete="name" value={v.kontaktperson} onChange={(e) => sett('kontaktperson', e.target.value)} required />
-          <Input label="Telefon (valgfritt)" type="tel" inputMode="tel" autoComplete="tel" value={v.telefon} onChange={(e) => sett('telefon', e.target.value)} />
+          <Input label="Telefon" required type="tel" inputMode="tel" autoComplete="tel" value={v.telefon} onChange={(e) => sett('telefon', e.target.value)} />
         </div>
         <Input label="Nettside (valgfritt)" type="url" inputMode="url" value={v.nettside} onChange={(e) => sett('nettside', e.target.value)} />
         <Textarea
-          label="Kort om bedriften (valgfritt)"
-          hint="Vises for kundene sammen med tilbudene deres. Høyst 300 tegn."
+          label="Kort om bedriften" required
+          hint="Vises for kundene sammen med tilbudene deres. 20–300 tegn."
           rows={3}
           maxLength={300}
           value={v.beskrivelse}

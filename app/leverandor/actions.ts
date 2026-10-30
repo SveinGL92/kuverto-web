@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { KLIPPAKKER } from '@/lib/klipp';
+import { dekningVisning, gyldigeKommuner, hentKommuner } from '@/lib/server/kommuner';
 import { anledningNavn } from '@/lib/labels';
 import { mal, sendEpost } from '@/lib/server/epost';
 import { siteUrl } from '@/lib/server/site';
@@ -193,24 +194,26 @@ export async function oppdaterProfil(inn: ProfilInn): Promise<Svar> {
   const kontaktperson = String(inn.kontaktperson ?? '').trim().slice(0, 120);
   if (!kontaktperson) return { ok: false, feil: 'Skriv navnet på kontaktpersonen.' };
   const s = db();
-  const { data: gyldige } = await s.from('postnummer').select('kommunenr, kommunenavn').in('kommunenr', (inn.kommuner ?? []).slice(0, 100));
-  const unike = new Map((gyldige ?? []).map((k) => [k.kommunenr, k.kommunenavn as string]));
-  if (!unike.size) return { ok: false, feil: 'Velg minst én kommune dere leverer til.' };
-  const navn = [...unike.entries()].sort((a, b) => (a[0] === '0301' ? -1 : b[0] === '0301' ? 1 : a[1].localeCompare(b[1], 'nb'))).map(([, n]) => n);
-  const visning = navn.length <= 3 ? navn.join(', ') : `${navn.slice(0, 2).join(', ')} og ${navn.length - 2} til`;
+  const telefon = String(inn.telefon ?? '').replace(/[^\d+]/g, '');
+  if (!/^(\+47)?\d{8}$/.test(telefon) && !/^\+\d{8,15}$/.test(telefon)) return { ok: false, feil: 'Skriv et gyldig telefonnummer med åtte siffer.' };
+  const beskrivelse = String(inn.beskrivelse ?? '').trim().slice(0, 300);
+  if (beskrivelse.length < 20) return { ok: false, feil: 'Skriv noen setninger om bedriften (minst 20 tegn).' };
+  const valgt = await gyldigeKommuner(inn.kommuner ?? []);
+  if (!valgt.length) return { ok: false, feil: 'Velg minst én kommune dere leverer til.' };
+  const visning = dekningVisning(valgt, await hentKommuner());
   const { error } = await s
     .from('leverandorer')
     .update({
       kontaktperson,
-      telefon: String(inn.telefon ?? '').trim().slice(0, 30) || null,
+      telefon: String(inn.telefon ?? '').trim().slice(0, 30),
       nettside: String(inn.nettside ?? '').trim().slice(0, 200) || null,
-      beskrivelse: String(inn.beskrivelse ?? '').trim().slice(0, 300) || null,
+      beskrivelse,
       dekning_visning: visning,
     })
     .eq('id', lev.id);
   if (error) return { ok: false, feil: 'Vi fikk ikke lagret endringene. Prøv igjen.' };
   await s.from('dekning').delete().eq('leverandor_id', lev.id);
-  await s.from('dekning').insert([...unike.keys()].map((nr) => ({ leverandor_id: lev.id, kommunenr: nr })));
+  await s.from('dekning').insert(valgt.map((k) => ({ leverandor_id: lev.id, kommunenr: k.nr })));
   revalidatePath('/leverandor');
   return { ok: true, melding: 'Endringene er lagret.' };
 }

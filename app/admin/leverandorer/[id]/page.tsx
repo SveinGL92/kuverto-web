@@ -37,7 +37,7 @@ export default async function AdminLeverandor({ params }: { params: Promise<{ id
     s.from('leverandorer').select('id, epost, status').eq('orgnr', l.orgnr).neq('id', id),
   ]);
   const kommuneNr = (dekning ?? []).map((d) => d.kommunenr);
-  const { data: kommuner } = kommuneNr.length ? await s.from('postnummer').select('kommunenr, kommunenavn').in('kommunenr', kommuneNr) : { data: [] };
+  const { data: kommuner } = kommuneNr.length ? await s.from('kommuner').select('kommunenr, kommunenavn').in('kommunenr', kommuneNr) : { data: [] };
   const kommuneNavn = [...new Set((kommuner ?? []).map((k) => k.kommunenavn))].sort((a, b) => a.localeCompare(b, 'nb'));
   const fIder = [...new Set([...(oppl ?? []), ...(tilb ?? [])].map((x) => x.foresporsel_id))];
   const { data: fs } = fIder.length ? await s.from('foresporsler').select('id, anledning, gjester, poststed').in('id', fIder) : { data: [] };
