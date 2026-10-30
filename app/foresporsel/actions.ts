@@ -3,7 +3,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { headers } from 'next/headers';
 import { klippForForesporsel, MAKS_LEVERANDORER } from '@/lib/klipp';
-import { anledninger, budsjetter, kostholdstyper, leveringer, serveringer } from '@/lib/labels';
+import { anledninger, budsjetter, erAllergen, kostholdstyper, leveringer } from '@/lib/labels';
 import { mal, sendEpost } from '@/lib/server/epost';
 import { fullstendigeLinjer, type KostholdRad } from '@/lib/server/formatering';
 import { db } from '@/lib/server/supabase';
@@ -16,8 +16,9 @@ export interface ForesporselInn {
   klokkeslett: string;
   fleksibel: boolean;
   postnummer: string;
+  /** Gateadresse. Valgfri, men postnummer må alltid være med. */
+  adresse: string;
   levering: string;
-  servering: string;
   budsjett: string;
   kosthold: Record<string, { antall: number; alvorlig: boolean }>;
   melding: string;
@@ -43,7 +44,6 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
 
   const anledning = anledninger.find((a) => a.id === inn.anledning)?.id;
   const levering = leveringer.find((l) => l.id === inn.levering)?.id;
-  const servering = serveringer.find((s) => s.id === inn.servering)?.id;
   const budsjett = budsjetter.find((b) => b.id === inn.budsjett)?.id;
   const gjester = Math.round(Number(inn.gjester));
   const epost = tekst(inn.epost, 200).toLowerCase();
@@ -51,7 +51,7 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
   const postnummer = tekst(inn.postnummer, 4);
   const dato = /^\d{4}-\d{2}-\d{2}$/.test(inn.dato ?? '') ? inn.dato : '';
 
-  if (!anledning || !levering || !servering || !budsjett) return { ok: false, feil: 'Noe i skjemaet mangler. Last siden på nytt og prøv igjen.' };
+  if (!anledning || !levering || !budsjett) return { ok: false, feil: 'Noe i skjemaet mangler. Last siden på nytt og prøv igjen.' };
   if (!(gjester >= 1 && gjester <= 9999)) return { ok: false, feil: 'Skriv antall gjester, minst 1.', felt: 'gjester' };
   if (!dato && !inn.fleksibel) return { ok: false, feil: 'Velg en dato, eller kryss av for at datoen ikke er bestemt.', felt: 'dato' };
   if (dato && dato < iDagOslo()) return { ok: false, feil: 'Datoen har passert.', felt: 'dato' };
@@ -61,7 +61,9 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
 
   const kosthold: KostholdRad[] = Object.entries(inn.kosthold ?? {})
     .filter(([type]) => kostholdstyper.some((k) => k.id === type))
-    .map(([type, v]) => ({ type: type as KostholdRad['type'], antall: Math.max(0, Math.min(9999, Math.round(Number(v?.antall) || 0))), alvorlig: !!v?.alvorlig }));
+    .map(([type, v]) => ({ type: type as KostholdRad['type'], antall: Math.max(0, Math.min(9999, Math.round(Number(v?.antall) || 0))), alvorlig: erAllergen(type as KostholdRad['type']) && !!v?.alvorlig }))
+    .filter((k) => k.antall > 0);
+  const adresse = levering === 'levering' ? tekst(inn.adresse, 200) || null : null;
 
   const s = db();
   const { data: pn } = await s.from('postnummer').select('poststed, kommunenr, kommunenavn, fylkesnr').eq('postnummer', postnummer).maybeSingle();
@@ -96,7 +98,7 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
     kommunenr: pn.kommunenr,
     fylkesnr: pn.fylkesnr ?? pn.kommunenr.slice(0, 2),
     levering,
-    servering,
+    servering: null,
     kosthold,
     budsjett,
     maks_leverandorer: MAKS_LEVERANDORER,
@@ -116,6 +118,7 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
     epost,
     telefon: tekst(inn.telefon, 30) || null,
     melding: tekst(inn.melding, 1000) || null,
+    adresse,
   });
   if (kErr) {
     console.error('[foresporsel] kontakt', kErr);
@@ -129,6 +132,7 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
     epost,
     telefon: tekst(inn.telefon, 30) || null,
     melding: tekst(inn.melding, 1000) || null,
+    adresse,
   });
   const anledningTekst = anledninger.find((a) => a.id === anledning)?.navn ?? '';
   await sendEpost({
@@ -139,7 +143,7 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
       avsnitt: [
         `Hei ${navn.split(' ')[0]}! Se over forespørselen under. Stemmer alt, trykker du på knappen. Da sender vi den til godkjente leverandører i området.`,
         linjer.join('\n'),
-        'Leverandørene ser først området og behovet. Navn, kontaktinfo og ønskene dine ser bare de som låser opp forespørselen, og adressen deles først når du velger et tilbud.',
+        'Leverandørene ser først området og behovet. Navn, kontaktinfo og ønskene dine ser bare de som låser opp forespørselen, og gateadressen deles først når du velger et tilbud.',
         'Er noe feil? Ikke bekreft. Send heller en ny forespørsel på kuverto.no.',
       ],
       knapp: { tekst: 'Bekreft og send', sti: `/foresporsel/bekreft?t=${token}` },

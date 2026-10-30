@@ -28,15 +28,34 @@ export const serveringer: { id: Servering; navn: string; beskrivelse: string }[]
 ];
 export const serveringNavn = (id: Servering) => serveringer.find((s) => s.id === id)?.navn ?? id;
 
-export const kostholdstyper: { id: Kostholdstype; navn: string }[] = [
-  { id: 'vegetar', navn: 'Vegetar' },
-  { id: 'vegansk', navn: 'Vegansk' },
-  { id: 'glutenfri', navn: 'Glutenfri' },
-  { id: 'laktosefri', navn: 'Laktosefri' },
-  { id: 'halal', navn: 'Halal' },
-  { id: 'notter', navn: 'Nøtter' },
+export const kostholdstyper: { id: Kostholdstype; navn: string; gruppe: 'kosthold' | 'allergen' }[] = [
+  { id: 'vegetar', navn: 'Vegetar', gruppe: 'kosthold' },
+  { id: 'vegansk', navn: 'Vegansk', gruppe: 'kosthold' },
+  { id: 'laktosefri', navn: 'Laktosefri', gruppe: 'kosthold' },
+  { id: 'halal', navn: 'Halal', gruppe: 'kosthold' },
+  { id: 'uten_svin', navn: 'Uten svinekjøtt', gruppe: 'kosthold' },
+  { id: 'gluten', navn: 'Gluten', gruppe: 'allergen' },
+  { id: 'skalldyr', navn: 'Skalldyr', gruppe: 'allergen' },
+  { id: 'egg', navn: 'Egg', gruppe: 'allergen' },
+  { id: 'fisk', navn: 'Fisk', gruppe: 'allergen' },
+  { id: 'peanotter', navn: 'Peanøtter', gruppe: 'allergen' },
+  { id: 'soya', navn: 'Soya', gruppe: 'allergen' },
+  { id: 'melk', navn: 'Melk', gruppe: 'allergen' },
+  { id: 'notter', navn: 'Nøtter', gruppe: 'allergen' },
+  { id: 'selleri', navn: 'Selleri', gruppe: 'allergen' },
+  { id: 'sennep', navn: 'Sennep', gruppe: 'allergen' },
+  { id: 'sesam', navn: 'Sesamfrø', gruppe: 'allergen' },
+  { id: 'lupin', navn: 'Lupin', gruppe: 'allergen' },
+  { id: 'blotdyr', navn: 'Bløtdyr', gruppe: 'allergen' },
+  { id: 'sulfitt', navn: 'Svoveldioksid og sulfitter', gruppe: 'allergen' },
 ];
 export const kostholdNavn = (id: Kostholdstype) => kostholdstyper.find((k) => k.id === id)?.navn ?? id;
+export const erAllergen = (id: Kostholdstype) => kostholdstyper.find((k) => k.id === id)?.gruppe === 'allergen';
+/** «Vegetar», «uten svinekjøtt», «allergi: gluten». Til løpende tekst. */
+export const kostholdKort = (id: Kostholdstype) => (erAllergen(id) ? `allergi mot ${kostholdNavn(id).toLowerCase()}` : kostholdNavn(id).toLowerCase());
+/** «Allergi mot gluten: 2 (alvorlig)» eller «Vegetar: 5». */
+export const kostholdLinje = (k: { type: Kostholdstype; antall: number; alvorlig?: boolean }) =>
+  `${erAllergen(k.type) ? `Allergi mot ${kostholdNavn(k.type).toLowerCase()}` : kostholdNavn(k.type)}: ${k.antall}${k.alvorlig ? ' (alvorlig)' : ''}`;
 
 export const budsjetter: { id: Budsjett; navn: string }[] = [
   { id: 'under_250', navn: 'Under kr 250' },

@@ -2,7 +2,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Badge, DietTag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { datoKort, stor } from '@/lib/format';
-import { anledningIllustrasjon, anledningNavn, budsjettNavn, kostholdNavn, serveringNavn } from '@/lib/labels';
+import { anledningIllustrasjon, anledningNavn, budsjettNavn, erAllergen, kostholdNavn, serveringNavn } from '@/lib/labels';
 import type { ReactNode } from 'react';
 import type { Foresporsel, ForesporselKontakt } from '@/lib/types';
 import { tidSiden } from './tid';
@@ -47,7 +47,8 @@ export function ForesporselKort({
 }) {
   const opplast = !!kontakt;
   const tittel = `${anledningNavn(f.anledning)} for ${f.gjester}`;
-  const dato = f.dato ? `${stor(datoKort(f.dato))}, kl. ${f.klokkeslett}` : 'Fleksibel dato';
+  const tid = `${f.levering === 'henting' ? 'hentes' : 'før'} kl. ${f.klokkeslett}`;
+  const dato = f.dato ? `${stor(datoKort(f.dato))}, ${tid}` : `Fleksibel dato, ${tid}`;
   const nokKlipp = klippsaldo >= f.klippPris;
   const mangler = f.klippPris - klippsaldo;
 
@@ -124,18 +125,21 @@ export function ForesporselKort({
               <dt className="text-small font-semibold text-text-muted">Budsjett per kuvert</dt>
               <dd className="m-0 mt-0.5 text-[17px] font-semibold">{budsjettNavn(f.budsjett)}</dd>
             </div>
+            {f.servering && (
+              <div>
+                <dt className="text-small font-semibold text-text-muted">Servering</dt>
+                <dd className="m-0 mt-0.5 text-[17px] font-semibold">{serveringNavn(f.servering)}</dd>
+              </div>
+            )}
             <div>
-              <dt className="text-small font-semibold text-text-muted">Servering</dt>
-              <dd className="m-0 mt-0.5 text-[17px] font-semibold">{serveringNavn(f.servering)}</dd>
-            </div>
-            <div>
-              <dt className="text-small font-semibold text-text-muted">Kosthold</dt>
+              <dt className="text-small font-semibold text-text-muted">Kosthold og allergier</dt>
               <dd className="m-0 mt-1 flex flex-wrap gap-1.5">
                 {f.kosthold.length === 0 ? (
                   <span className="text-[17px] font-semibold">Ingen oppgitt</span>
                 ) : (
                   f.kosthold.map((k) => (
                     <DietTag key={k.type} alvorlig={k.alvorlig}>
+                      {erAllergen(k.type) ? 'Allergi: ' : ''}
                       {kostholdNavn(k.type)} {k.antall}
                       {k.alvorlig ? ', alvorlig' : ''}
                     </DietTag>

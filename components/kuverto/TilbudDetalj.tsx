@@ -24,6 +24,7 @@ export function TilbudDetalj({
   onAngreAvslag,
   onSporsmal,
   levering = true,
+  startAdresse = '',
   aktiv = true,
 }: {
   tilbud: Tilbud;
@@ -40,6 +41,8 @@ export function TilbudDetalj({
   onSporsmal: (tekst: string) => Promise<{ ok: true } | { ok: false; feil: string }>;
   /** Om maten skal leveres. Da må kunden oppgi adresse ved valg. */
   levering?: boolean;
+  /** Adressen kunden oppga i forespørselen, forhåndsutfylt. */
+  startAdresse?: string;
   aktiv?: boolean;
 }) {
   const [sporsmal, setSporsmal] = useState('');
@@ -47,7 +50,7 @@ export function TilbudDetalj({
   const [sporsmalFeil, setSporsmalFeil] = useState<string>();
   const [bekreftAvslag, setBekreftAvslag] = useState(false);
   const [bekreftValg, setBekreftValg] = useState(startMedBekreftelse);
-  const [adresse, setAdresse] = useState('');
+  const [adresse, setAdresse] = useState(startAdresse);
   const [adresseFeil, setAdresseFeil] = useState<string>();
   const [velgFeil, setVelgFeil] = useState<string>();
   const [opptatt, setOpptatt] = useState(false);
@@ -177,7 +180,7 @@ export function TilbudDetalj({
                   {levering && (
                     <Input
                       id={`adresse-${t.id}`}
-                      label="Leveringsadresse"
+                      label="Leveringsadresse (gate og nummer)"
                       autoComplete="street-address"
                       value={adresse}
                       onChange={(e) => {

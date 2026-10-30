@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { anledningNavn, budsjettNavn, kostholdNavn, serveringNavn } from '@/lib/labels';
+import { anledningNavn, budsjettNavn, kostholdLinje, serveringNavn } from '@/lib/labels';
 import { dt, foresporselStatus, kr, kravAdminSide, tilbudStatus } from '@/lib/server/admin';
 import { datoTekst, type KostholdRad } from '@/lib/server/formatering';
 import { db } from '@/lib/server/supabase';
@@ -98,9 +98,9 @@ export default async function AdminForesporsel({ params }: { params: Promise<{ i
               {f.postnummer} {f.poststed} (kommune {f.kommunenr}) · {f.levering === 'henting' ? 'henting' : 'levering'}
             </Rad>
             <Rad navn="Leverandører ser">{f.omrade_visning}</Rad>
-            <Rad navn="Servering">{serveringNavn(f.servering as Servering)}</Rad>
+            {f.servering && <Rad navn="Servering">{serveringNavn(f.servering as Servering)}</Rad>}
             <Rad navn="Budsjett">{budsjettNavn(f.budsjett as Budsjett)}</Rad>
-            <Rad navn="Kosthold">{kosthold.length ? kosthold.map((x) => `${kostholdNavn(x.type)} ${x.antall}${x.alvorlig ? ' (alvorlig)' : ''}`).join(', ') : 'Ingen oppgitt'}</Rad>
+            <Rad navn="Kosthold">{kosthold.length ? kosthold.map(kostholdLinje).join(', ') : 'Ingen oppgitt'}</Rad>
             <Rad navn="Maks leverandører">{f.maks_leverandorer}</Rad>
           </dl>
         </Kort>
@@ -113,7 +113,7 @@ export default async function AdminForesporsel({ params }: { params: Promise<{ i
                 <a href={`mailto:${k.epost}`}>{k.epost}</a>
               </Rad>
               <Rad navn="Telefon">{k.telefon ? <a href={`tel:${k.telefon.replace(/\s/g, '')}`}>{k.telefon}</a> : '–'}</Rad>
-              <Rad navn="Adresse">{k.adresse || 'Oppgis når kunden velger et tilbud'}</Rad>
+              <Rad navn="Adresse">{k.adresse || (f.levering === 'henting' ? 'Henting' : 'Ikke oppgitt ennå')}</Rad>
               <Rad navn="Andre ønsker">{k.melding || '–'}</Rad>
             </dl>
           ) : (

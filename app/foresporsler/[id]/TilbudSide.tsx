@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { PriceRing } from '@/components/ui/PriceRing';
 import { cn } from '@/lib/cn';
 import { dagMndLang, datoKort, datoLang, kr } from '@/lib/format';
-import { anledningNavn, budsjettNavn, kostholdNavn } from '@/lib/labels';
+import { anledningNavn, budsjettNavn, kostholdKort as kostholdOrd } from '@/lib/labels';
 import type { Foresporsel, Tilbud } from '@/lib/types';
 
 type Sortering = 'pris' | 'inkludert' | 'nyeste';
@@ -46,7 +46,7 @@ const Hake = () => (
   </svg>
 );
 
-export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporsel; tilbud: Tilbud[] }) {
+export function TilbudSide({ foresporsel: f, tilbud, adresse }: { foresporsel: Foresporsel; tilbud: Tilbud[]; adresse?: string }) {
   const [sortering, setSortering] = useState<Sortering>('pris');
   const router = useRouter();
   const valgt = tilbud.find((t) => t.status === 'godtatt')?.id;
@@ -73,10 +73,10 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
   const apentTilbud = tilbud.find((t) => t.id === apent);
 
   const anledning = anledningNavn(f.anledning).toLowerCase();
-  const kostholdTekst = f.kosthold.map((k) => `${k.type === 'notter' ? 'nøttefritt' : kostholdNavn(k.type).toLowerCase()} ${k.antall}`).join(' · ');
+  const kostholdTekst = f.kosthold.map((k) => `${kostholdOrd(k.type)} ${k.antall}`).join(' · ');
   // «Vegetar og nøttefritt» ut fra det kunden har oppgitt.
   const kostholdKort = (() => {
-    const ord = f.kosthold.map((k) => (k.type === 'notter' ? 'nøttefritt' : kostholdNavn(k.type).toLowerCase()));
+    const ord = f.kosthold.map((k) => kostholdOrd(k.type));
     const tekst = ord.length > 1 ? `${ord.slice(0, -1).join(', ')} og ${ord.at(-1)}` : (ord[0] ?? '');
     return tekst.charAt(0).toUpperCase() + tekst.slice(1);
   })();
@@ -510,6 +510,7 @@ export function TilbudSide({ foresporsel: f, tilbud }: { foresporsel: Foresporse
             utlopt={!!gjelderTil(apentTilbud.gyldigTil).utlopt}
             avslatt={avslatte.includes(apentTilbud.id)}
             levering={f.levering === 'levering'}
+            startAdresse={adresse}
             aktiv={aktiv}
             onVelg={(adresse) => velg(apentTilbud.id, adresse)}
             onAvsla={() => avsla(apentTilbud.id)}

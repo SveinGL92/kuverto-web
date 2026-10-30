@@ -15,7 +15,27 @@ export type Levering = 'levering' | 'henting';
 
 export type Servering = 'levert_ferdig' | 'buffet_oppsett' | 'servert_bordet' | 'fingermat';
 
-export type Kostholdstype = 'vegetar' | 'vegansk' | 'glutenfri' | 'laktosefri' | 'halal' | 'notter';
+/** Kosthold og livssyn, pluss de 14 allergenene Mattilsynet krever merket (matinformasjonsforskriften). */
+export type Kostholdstype =
+  | 'vegetar'
+  | 'vegansk'
+  | 'laktosefri'
+  | 'halal'
+  | 'uten_svin'
+  | 'gluten'
+  | 'skalldyr'
+  | 'egg'
+  | 'fisk'
+  | 'peanotter'
+  | 'soya'
+  | 'melk'
+  | 'notter'
+  | 'selleri'
+  | 'sennep'
+  | 'sesam'
+  | 'lupin'
+  | 'blotdyr'
+  | 'sulfitt';
 
 export type Budsjett = 'under_250' | '250_400' | '400_600' | 'over_600' | 'vet_ikke';
 
@@ -58,7 +78,8 @@ export interface Foresporsel {
   kommunenr: string;
   fylkesnr: string;
   levering: Levering;
-  servering: Servering;
+  /** Utgått fra skjemaet (avtales med leverandøren). Finnes bare på eldre forespørsler. */
+  servering?: Servering | null;
   kosthold: Kosthold[];
   budsjett: Budsjett;
   maksLeverandorer: number;

@@ -21,7 +21,7 @@ export const tilForesporsel = (r: Rad): Foresporsel => ({
   kommunenr: r.kommunenr,
   fylkesnr: r.fylkesnr,
   levering: r.levering as Levering,
-  servering: r.servering as Servering,
+  servering: (r.servering as Servering | null) ?? null,
   kosthold: (r.kosthold ?? []) as Kosthold[],
   budsjett: r.budsjett as Budsjett,
   maksLeverandorer: r.maks_leverandorer,

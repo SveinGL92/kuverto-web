@@ -49,7 +49,7 @@ const trinnTekst = (i: number) => {
 const sporsmal: SporsmalSvar[] = [
   {
     sporsmal: 'Hva ser jeg før jeg låser opp en forespørsel?',
-    svar: 'Anledning, dato og klokkeslett, antall gjester, område (for eksempel «Oslo sentrum, 01xx»), servering, budsjett per kuvert og kosthold. Kundens navn, kontaktinfo og melding ser du etter opplåsing. Adressen får du når kunden velger tilbudet ditt.',
+    svar: 'Anledning, dato og klokkeslett, antall gjester, område (for eksempel «Oslo sentrum, 01xx»), budsjett per kuvert, kosthold og allergier. Kundens navn, kontaktinfo og melding ser du etter opplåsing. Adressen får du når kunden velger tilbudet ditt.',
   },
   {
     sporsmal: 'Hvor mange leverandører kan svare på samme forespørsel?',

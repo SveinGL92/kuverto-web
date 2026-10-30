@@ -15,7 +15,7 @@ async function eget(tilbudId: string) {
   const s = db();
   const { data: t } = await s.from('tilbud').select('id, status, foresporsel_id, leverandor_id').eq('id', tilbudId).maybeSingle();
   if (!t) return null;
-  const { data: f } = await s.from('foresporsler').select('id, kunde_epost, status, anledning, gjester').eq('id', t.foresporsel_id).single();
+  const { data: f } = await s.from('foresporsler').select('id, kunde_epost, status, anledning, gjester, postnummer, poststed').eq('id', t.foresporsel_id).single();
   if (!f || f.kunde_epost !== epost) return null;
   const { data: l } = await s.from('leverandorer').select('navn, epost, telefon, kontaktperson').eq('id', t.leverandor_id).single();
   return { epost, t, f, l: l! };
@@ -48,7 +48,7 @@ export async function velgTilbud(tilbudId: string, adresse: string): Promise<Sva
       tittel: 'Kunden har valgt tilbudet ditt',
       avsnitt: [
         `${k?.navn ?? 'Kunden'} har valgt tilbudet ditt på ${hva}. Ta kontakt for å avtale detaljene.`,
-        [`E-post: ${k?.epost ?? e.epost}`, k?.telefon ? `Telefon: ${k.telefon}` : '', k?.adresse ? `Adresse: ${k.adresse}` : ''].filter(Boolean).join('\n'),
+        [`E-post: ${k?.epost ?? e.epost}`, k?.telefon ? `Telefon: ${k.telefon}` : '', k?.adresse ? `Adresse: ${k.adresse}, ${e.f.postnummer} ${e.f.poststed}` : `Postnummer: ${e.f.postnummer} ${e.f.poststed}`].filter(Boolean).join('\n'),
         'Du kan svare direkte på denne e-posten.',
       ],
       knapp: { tekst: 'Åpne oversikten', sti: '/leverandor' },

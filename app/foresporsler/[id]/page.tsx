@@ -15,9 +15,10 @@ export default async function Side({ params }: { params: Promise<{ id: string }>
   const s = db();
   const { data: f } = await s.from('foresporsler').select('*').eq('id', id).maybeSingle();
   if (!f || (f.kunde_epost !== epost && !(await erAdmin(epost)))) notFound();
+  const { data: k } = await s.from('foresporsel_kontakt').select('adresse').eq('foresporsel_id', id).maybeSingle();
   const { data: rader } = await s.from('tilbud').select('*').eq('foresporsel_id', id).neq('status', 'trukket').order('opprettet');
   const levIder = [...new Set((rader ?? []).map((t) => t.leverandor_id))];
   const { data: lev } = levIder.length ? await s.from('leverandorer').select('id, navn, beskrivelse').in('id', levIder) : { data: [] };
   const tilbud = (rader ?? []).map((t, i) => tilTilbud(t, lev?.find((l) => l.id === t.leverandor_id) ?? { navn: 'Leverandør' }, i));
-  return <TilbudSide foresporsel={tilForesporsel(f)} tilbud={tilbud} />;
+  return <TilbudSide foresporsel={tilForesporsel(f)} tilbud={tilbud} adresse={k?.adresse ?? undefined} />;
 }

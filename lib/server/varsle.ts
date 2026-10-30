@@ -11,7 +11,7 @@ export async function varsleOmForesporsel(id: string) {
   const s = db();
   const { data: f } = await s.from('foresporsler').select('*').eq('id', id).single();
   if (!f) return;
-  const { data: k } = await s.from('foresporsel_kontakt').select('navn, firma, epost, telefon, melding').eq('foresporsel_id', id).single();
+  const { data: k } = await s.from('foresporsel_kontakt').select('navn, firma, epost, telefon, melding, adresse').eq('foresporsel_id', id).single();
   const linjer = foresporselLinjer(f);
   const anledning = anledningNavn(f.anledning as Anledning).toLowerCase();
 

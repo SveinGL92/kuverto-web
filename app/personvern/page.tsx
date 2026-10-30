@@ -44,7 +44,7 @@ export default function Personvern() {
           <Del tittel="Når du sender en forespørsel">
             <p>Vi lagrer det du fyller ut i skjemaet:</p>
             <ul>
-              <li>Om arrangementet: anledning, dato, klokkeslett, antall gjester, postnummer, servering, budsjett og kosthold.</li>
+              <li>Om arrangementet: anledning, dato, klokkeslett, antall gjester, postnummer, gateadresse (valgfritt), budsjett, kosthold og allergier.</li>
               <li>Kontaktinformasjon: navn, e-post og eventuelt telefon og bedrift.</li>
               <li>Meldingen din til leverandørene, hvis du skriver en.</li>
             </ul>
@@ -53,7 +53,7 @@ export default function Personvern() {
 
           <Del tittel="Hvem ser hva?">
             <ul>
-              <li>Godkjente leverandører som dekker området ditt, ser anledning, dato, antall gjester, område, servering, budsjett og kosthold. De ser ikke hvem du er.</li>
+              <li>Godkjente leverandører som dekker området ditt, ser anledning, dato, antall gjester, område, budsjett, kosthold og allergier. De ser ikke hvem du er.</li>
               <li>Navn, kontaktinformasjon og meldingen din ser bare leverandørene som låser opp forespørselen, høyst {MAKS_LEVERANDORER}.</li>
               <li>Full adresse deles bare med leverandøren du velger.</li>
             </ul>
