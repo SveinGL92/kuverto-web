@@ -3,7 +3,7 @@ import { MAKS_LEVERANDORER } from '@/lib/klipp';
 import { anledningNavn } from '@/lib/labels';
 import type { Anledning } from '@/lib/types';
 import { ADMIN_VARSEL, mal, sendEpost } from './epost';
-import { foresporselLinjer } from './formatering';
+import { foresporselLinjer, fullstendigeLinjer } from './formatering';
 import { db } from './supabase';
 
 /** Varsler godkjente leverandører i kommunen og admin om en bekreftet forespørsel. */
@@ -11,7 +11,7 @@ export async function varsleOmForesporsel(id: string) {
   const s = db();
   const { data: f } = await s.from('foresporsler').select('*').eq('id', id).single();
   if (!f) return;
-  const { data: k } = await s.from('foresporsel_kontakt').select('navn, epost, telefon').eq('foresporsel_id', id).single();
+  const { data: k } = await s.from('foresporsel_kontakt').select('navn, firma, epost, telefon, melding').eq('foresporsel_id', id).single();
   const linjer = foresporselLinjer(f);
   const anledning = anledningNavn(f.anledning as Anledning).toLowerCase();
 
@@ -37,7 +37,7 @@ export async function varsleOmForesporsel(id: string) {
     emne: `[Kuverto] Ny forespørsel: ${anledning} ${f.gjester} i ${f.poststed}`,
     html: mal({
       tittel: 'Ny bekreftet forespørsel',
-      avsnitt: [...linjer, `Kunde: ${k?.navn ?? ''} <${f.kunde_epost}>${k?.telefon ? `, ${k.telefon}` : ''}`, `Varslet ${lev?.length ?? 0} godkjente leverandører i kommunen.`],
+      avsnitt: [...(k ? fullstendigeLinjer(f, k) : linjer), `Varslet ${lev?.length ?? 0} godkjente leverandører i kommunen.`],
       knapp: { tekst: 'Åpne admin', sti: '/admin' },
     }),
   });

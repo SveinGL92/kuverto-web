@@ -34,3 +34,21 @@ export function foresporselLinjer(f: {
     `Kosthold: ${kostholdTekst((f.kosthold as KostholdRad[]) ?? [])}`,
   ];
 }
+
+/** Alt kunden har fylt ut, til bekreftelsen og admin. Inneholder personopplysninger: aldri til leverandører før opplåsing. */
+export function fullstendigeLinjer(
+  f: Parameters<typeof foresporselLinjer>[0] & { postnummer: string; poststed: string; levering: string; fleksibel_dato?: boolean },
+  k: { navn: string; firma?: string | null; epost: string; telefon?: string | null; melding?: string | null },
+) {
+  const [hva, naar, , servering, budsjett, kosthold] = foresporselLinjer(f);
+  return [
+    hva,
+    `${naar}${f.dato && f.fleksibel_dato ? ' (datoen er fleksibel)' : ''}`,
+    `Sted: ${f.postnummer} ${f.poststed} · ${f.levering === 'henting' ? 'henting' : 'levering'}`,
+    servering,
+    budsjett,
+    kosthold,
+    `Andre ønsker: ${k.melding?.trim() || 'ingen'}`,
+    `Kontakt: ${[k.navn, k.firma].filter(Boolean).join(', ')} · ${k.epost}${k.telefon ? ` · ${k.telefon}` : ''}`,
+  ];
+}

@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 import { klippForForesporsel, MAKS_LEVERANDORER } from '@/lib/klipp';
 import { anledninger, budsjetter, kostholdstyper, leveringer, serveringer } from '@/lib/labels';
 import { mal, sendEpost } from '@/lib/server/epost';
-import { foresporselLinjer, type KostholdRad } from '@/lib/server/formatering';
+import { fullstendigeLinjer, type KostholdRad } from '@/lib/server/formatering';
 import { db } from '@/lib/server/supabase';
 import type { Budsjett } from '@/lib/types';
 
@@ -123,7 +123,13 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
     return { ok: false, feil: 'Vi fikk ikke lagret forespørselen. Prøv igjen om litt.' };
   }
 
-  const linjer = foresporselLinjer(rad);
+  const linjer = fullstendigeLinjer(rad, {
+    navn,
+    firma: tekst(inn.firma, 160) || null,
+    epost,
+    telefon: tekst(inn.telefon, 30) || null,
+    melding: tekst(inn.melding, 1000) || null,
+  });
   const anledningTekst = anledninger.find((a) => a.id === anledning)?.navn ?? '';
   await sendEpost({
     til: epost,
@@ -131,8 +137,10 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
     html: mal({
       tittel: 'Bekreft forespørselen',
       avsnitt: [
-        `Hei ${navn.split(' ')[0]}! Trykk på knappen for å bekrefte e-postadressen din. Da sender vi forespørselen til godkjente leverandører i området.`,
+        `Hei ${navn.split(' ')[0]}! Se over forespørselen under. Stemmer alt, trykker du på knappen. Da sender vi den til godkjente leverandører i området.`,
         linjer.join('\n'),
+        'Leverandørene ser først området og behovet. Navn, kontaktinfo og ønskene dine ser bare de som låser opp forespørselen, og adressen deles først når du velger et tilbud.',
+        'Er noe feil? Ikke bekreft. Send heller en ny forespørsel på kuverto.no.',
       ],
       knapp: { tekst: 'Bekreft og send', sti: `/foresporsel/bekreft?t=${token}` },
       fot: 'Sendte du ikke denne forespørselen, kan du se bort fra e-posten. Da blir ingenting sendt videre.',
