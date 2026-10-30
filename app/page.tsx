@@ -171,9 +171,9 @@ export default function Forside() {
         <section id="anledninger" aria-labelledby="anledninger-tittel" className="k-wrap scroll-mt-6 pt-14 md:pt-24">
           <div className="mb-6 flex flex-col gap-2 md:mb-9">
             <h2 id="anledninger-tittel" className="k-heading m-0 text-[30px] leading-[1.05] md:text-[clamp(32px,3.2vw,44px)]">
-              Finn catering til anledningen
+              Mat til alle anledninger
             </h2>
-            <p className="m-0 max-w-[52ch] text-base text-text-muted md:text-[17px]">Velg anledning for å se hva leverandørene trenger å vite, og start forespørselen derfra.</p>
+            <p className="m-0 max-w-[52ch] text-base text-text-muted md:text-[17px]">Velg kategorien som passer ditt behov best, og motta tilbud fra anerkjente restauranter, cateringvirksomheter og bakerier.</p>
           </div>
           <AnledningKort liste={anledningerInnhold} medAnnet />
         </section>
