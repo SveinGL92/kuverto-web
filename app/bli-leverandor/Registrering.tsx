@@ -38,10 +38,18 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
     setV((x) => ({ ...x, [k]: verdi }));
     setFeil((f) => ({ ...f, [k]: undefined }));
   };
-  const oslo = kommuner.filter((k) => k.nr === '0301');
-  const akershus = kommuner.filter((k) => k.nr.startsWith('32'));
+  const FYLKER: Record<string, string> = { '03': 'Oslo', '32': 'Akershus' };
+  const fylker = Object.entries(
+    kommuner.reduce<Record<string, Kommune[]>>((acc, k) => {
+      (acc[k.nr.slice(0, 2)] ??= []).push(k);
+      return acc;
+    }, {}),
+  ).map(([nr, liste]) => ({ nr, navn: FYLKER[nr] ?? nr, kommuner: liste }));
   const vekslKommune = (nr: string) => sett('kommuner', v.kommuner.includes(nr) ? v.kommuner.filter((x) => x !== nr) : [...v.kommuner, nr]);
-  const alleAkershus = akershus.every((k) => v.kommuner.includes(k.nr));
+  const vekslFylke = (liste: Kommune[], alle: boolean) => {
+    const nr = liste.map((k) => k.nr);
+    sett('kommuner', alle ? v.kommuner.filter((x) => !nr.includes(x)) : [...new Set([...v.kommuner, ...nr])]);
+  };
 
   const send = async () => {
     const f: Partial<Record<Felt, string>> = {};
@@ -154,36 +162,54 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
           <h2 id="omrade-tittel" className="m-0 text-xl font-bold">
             Hvor leverer dere?
           </h2>
-          <p className="m-0 text-[15px] text-text-muted">Du får bare forespørsler fra kommunene du velger. Du kan endre dette senere.</p>
+          <p className="m-0 text-[15px] text-text-muted">Kryss av for fylkene dere leverer til. Leverer dere bare til noen kommuner, kan du velge dem enkeltvis. Du får bare forespørsler fra områdene du velger.</p>
         </div>
-        <fieldset id="felt-kommuner" tabIndex={-1} aria-describedby={feil.kommuner ? 'kommuner-feil' : undefined} className="m-0 flex flex-col gap-4 border-0 p-0 outline-none">
-          <legend className="sr-only">Kommuner</legend>
-          {oslo.map((k) => (
-            <label key={k.nr} className="flex min-h-touch cursor-pointer items-center gap-3 text-base font-bold">
-              <input type="checkbox" checked={v.kommuner.includes(k.nr)} onChange={() => vekslKommune(k.nr)} className="h-6 w-6 shrink-0 accent-[var(--k-primary)]" />
-              {k.navn}
-            </label>
-          ))}
-          <div className="flex flex-col gap-2 border-t border-border pt-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-base font-bold">Akershus</span>
-              <Button
-                variant="text"
-                size="sm"
-                onClick={() => sett('kommuner', alleAkershus ? v.kommuner.filter((nr) => !nr.startsWith('32')) : [...new Set([...v.kommuner, ...akershus.map((k) => k.nr)])])}
-              >
-                {alleAkershus ? 'Fjern alle i Akershus' : 'Velg alle i Akershus'}
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 gap-x-4 min-[420px]:grid-cols-2 md:grid-cols-3">
-              {akershus.map((k) => (
-                <label key={k.nr} className="flex min-h-touch cursor-pointer items-center gap-3 text-[15px] font-semibold">
-                  <input type="checkbox" checked={v.kommuner.includes(k.nr)} onChange={() => vekslKommune(k.nr)} className="h-6 w-6 shrink-0 accent-[var(--k-primary)]" />
-                  {k.navn}
+        <fieldset id="felt-kommuner" tabIndex={-1} aria-describedby={feil.kommuner ? 'kommuner-feil' : undefined} className="m-0 flex flex-col gap-3 border-0 p-0 outline-none">
+          <legend className="sr-only">Fylker og kommuner</legend>
+          {fylker.map((fy) => {
+            const valgte = fy.kommuner.filter((k) => v.kommuner.includes(k.nr)).length;
+            const alle = valgte === fy.kommuner.length;
+            const delvis = valgte > 0 && !alle;
+            const ettKommune = fy.kommuner.length === 1;
+            return (
+              <div key={fy.nr} className="flex flex-col rounded-alert border border-border">
+                <label className="flex min-h-14 cursor-pointer items-center gap-3 px-4 text-base font-bold">
+                  <input
+                    type="checkbox"
+                    checked={alle}
+                    ref={(el) => {
+                      if (el) el.indeterminate = delvis;
+                    }}
+                    aria-describedby={`fylke-${fy.nr}-status`}
+                    onChange={() => vekslFylke(fy.kommuner, alle)}
+                    className="h-6 w-6 shrink-0 accent-[var(--k-primary)]"
+                  />
+                  <span className="flex-grow">{fy.navn}</span>
+                  <span id={`fylke-${fy.nr}-status`} className="text-small font-semibold text-text-muted">
+                    {ettKommune ? '' : alle ? `Alle ${fy.kommuner.length} kommuner` : valgte ? `${valgte} av ${fy.kommuner.length} kommuner` : `${fy.kommuner.length} kommuner`}
+                  </span>
                 </label>
-              ))}
-            </div>
-          </div>
+                {!ettKommune && (
+                  <details className="group border-t border-border" open={delvis || undefined}>
+                    <summary className="flex min-h-touch cursor-pointer list-none items-center gap-2 px-4 text-[15px] font-semibold text-primary [&::-webkit-details-marker]:hidden">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open:rotate-90 motion-reduce:transition-none">
+                        <path d="M9 6l6 6-6 6" />
+                      </svg>
+                      Velg enkeltkommuner i {fy.navn}
+                    </summary>
+                    <div className="grid grid-cols-1 gap-x-4 px-4 pb-3 min-[420px]:grid-cols-2 md:grid-cols-3">
+                      {fy.kommuner.map((k) => (
+                        <label key={k.nr} className="flex min-h-touch cursor-pointer items-center gap-3 text-[15px] font-semibold">
+                          <input type="checkbox" checked={v.kommuner.includes(k.nr)} onChange={() => vekslKommune(k.nr)} className="h-6 w-6 shrink-0 accent-[var(--k-primary)]" />
+                          {k.navn}
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            );
+          })}
         </fieldset>
         {feil.kommuner && (
           <span id="kommuner-feil" className="text-small font-semibold text-error">
