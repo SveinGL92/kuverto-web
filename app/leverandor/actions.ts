@@ -2,13 +2,14 @@
 
 import { revalidatePath } from 'next/cache';
 import { KLIPPAKKER } from '@/lib/klipp';
+import { MAKS_VEDLEGG, TILLATTE_TYPER } from '@/lib/vedlegg';
 import { dekningVisning, gyldigeKommuner, hentKommuner } from '@/lib/server/kommuner';
 import { anledningNavn } from '@/lib/labels';
 import { mal, sendEpost } from '@/lib/server/epost';
 import { siteUrl } from '@/lib/server/site';
 import { stripe, mvaSats } from '@/lib/server/stripe';
 import { db, innloggetEpost } from '@/lib/server/supabase';
-import type { Anledning } from '@/lib/types';
+import type { Anledning, VedleggFil } from '@/lib/types';
 
 type Svar = { ok: true; melding?: string } | { ok: false; feil: string };
 
@@ -58,6 +59,27 @@ export interface TilbudInn {
   servise: string;
   gyldigTil: string;
   betingelser: string;
+  menyUrl: string;
+  /** Opplastede filer. url er bare med for forhåndsvisning hos leverandøren og lagres ikke. */
+  vedlegg: (VedleggFil & { url?: string })[];
+}
+
+
+/** Gir en signert URL leverandøren kan laste opp én fil til. Filen knyttes til tilbudet når det sendes. */
+export async function lagOpplasting(foresporselId: string, navn: string, type: string, storrelse: number): Promise<{ ok: true; sti: string; token: string } | { ok: false; feil: string }> {
+  const lev = await godkjentLeverandor();
+  if (!lev) return { ok: false, feil: 'Du må være logget inn som godkjent leverandør.' };
+  if (!(await harOpplast(foresporselId, lev.id))) return { ok: false, feil: 'Du må låse opp forespørselen først.' };
+  if (!TILLATTE_TYPER.includes(type)) return { ok: false, feil: `${navn}: Bare bilder (JPG, PNG, WebP, HEIC) og PDF kan lastes opp.` };
+  if (!(storrelse > 0 && storrelse <= 10 * 1024 * 1024)) return { ok: false, feil: `${navn} er større enn 10 MB.` };
+  const rent = navn.normalize('NFKD').replace(/[^\w.-]+/g, '-').replace(/-+/g, '-').slice(-80) || 'fil';
+  const sti = `${foresporselId}/${lev.id}/${crypto.randomUUID()}-${rent}`;
+  const { data, error } = await db().storage.from('vedlegg').createSignedUploadUrl(sti);
+  if (error || !data) {
+    console.error('[vedlegg]', error);
+    return { ok: false, feil: 'Kunne ikke starte opplastingen. Prøv igjen.' };
+  }
+  return { ok: true, sti, token: data.token };
 }
 
 export async function sendTilbud(foresporselId: string, inn: TilbudInn): Promise<Svar> {
@@ -75,6 +97,17 @@ export async function sendTilbud(foresporselId: string, inn: TilbudInn): Promise
   if (!(pris >= 1000 && pris <= 10_000_00)) return { ok: false, feil: 'Skriv pris per kuvert i kroner, mellom 10 og 10 000.' };
   if (meny.length < 5) return { ok: false, feil: 'Beskriv menyen.' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(inn.gyldigTil) || inn.gyldigTil < idag) return { ok: false, feil: 'Velg en dato tilbudet gjelder til, fra i dag og fremover.' };
+  let menyUrl = String(inn.menyUrl ?? '').trim().slice(0, 500);
+  if (menyUrl && !/^https?:\/\//i.test(menyUrl)) menyUrl = `https://${menyUrl}`;
+  if (menyUrl && !/^https?:\/\/[^\s/]+\.[^\s]+$/i.test(menyUrl)) return { ok: false, feil: 'Lenken til menyen ser ikke riktig ut. Skriv hele adressen, for eksempel https://firma.no/meny.' };
+  // Vedlegg må ligge i mappen til denne forespørselen og leverandøren, og finnes i bøtta.
+  const mappe = `${foresporselId}/${lev.id}`;
+  const onsket = (inn.vedlegg ?? []).slice(0, MAKS_VEDLEGG).filter((v) => typeof v?.sti === 'string' && v.sti.startsWith(`${mappe}/`));
+  const { data: filer } = await s.storage.from('vedlegg').list(mappe, { limit: 100 });
+  const finnesFil = new Set((filer ?? []).map((x) => `${mappe}/${x.name}`));
+  const vedlegg: VedleggFil[] = onsket
+    .filter((v) => finnesFil.has(v.sti))
+    .map((v) => ({ sti: v.sti, navn: String(v.navn ?? 'Vedlegg').slice(0, 120), type: TILLATTE_TYPER.includes(v.type) ? v.type : 'application/octet-stream', storrelse: Number(v.storrelse) || 0 }));
 
   const rad = {
     foresporsel_id: f.id,
@@ -90,6 +123,8 @@ export async function sendTilbud(foresporselId: string, inn: TilbudInn): Promise
     servise: String(inn.servise ?? '').trim().slice(0, 100),
     gyldig_til: inn.gyldigTil,
     betingelser: String(inn.betingelser ?? '').trim().slice(0, 1000) || null,
+    meny_url: menyUrl || null,
+    vedlegg,
   };
   const { data: finnes } = await s.from('tilbud').select('id, status').eq('foresporsel_id', f.id).eq('leverandor_id', lev.id).maybeSingle();
   if (finnes && !['sendt', 'endret'].includes(finnes.status)) return { ok: false, feil: 'Tilbudet kan ikke endres lenger.' };
@@ -100,6 +135,9 @@ export async function sendTilbud(foresporselId: string, inn: TilbudInn): Promise
     console.error('[tilbud]', error);
     return { ok: false, feil: 'Vi fikk ikke lagret tilbudet. Prøv igjen.' };
   }
+  // Rydd bort filer som er fjernet eller aldri ble brukt.
+  const ubrukte = [...finnesFil].filter((sti) => !vedlegg.some((v) => v.sti === sti));
+  if (ubrukte.length) await s.storage.from('vedlegg').remove(ubrukte);
   await sendEpost({
     til: f.kunde_epost,
     emne: finnes ? `${lev.navn} har oppdatert tilbudet sitt` : `Nytt tilbud fra ${lev.navn}`,
@@ -114,33 +152,6 @@ export async function sendTilbud(foresporselId: string, inn: TilbudInn): Promise
   });
   revalidatePath('/leverandor');
   return { ok: true, melding: finnes ? 'Tilbudet er oppdatert.' : 'Tilbudet er sendt. Kunden får beskjed på e-post.' };
-}
-
-export async function sendMeldingTilKunde(foresporselId: string, tekst: string): Promise<Svar> {
-  const lev = await godkjentLeverandor();
-  if (!lev) return { ok: false, feil: 'Du må være logget inn som godkjent leverandør.' };
-  if (!(await harOpplast(foresporselId, lev.id))) return { ok: false, feil: 'Du må låse opp forespørselen først.' };
-  const t = String(tekst ?? '').trim().slice(0, 2000);
-  if (t.length < 2) return { ok: false, feil: 'Skriv en melding.' };
-  const s = db();
-  const { data: f } = await s.from('foresporsler').select('id, kunde_epost, anledning, status').eq('id', foresporselId).single();
-  if (!f) return { ok: false, feil: 'Fant ikke forespørselen.' };
-  if (f.status !== 'aktiv') {
-    const { data: mitt } = await s.from('tilbud').select('status').eq('foresporsel_id', f.id).eq('leverandor_id', lev.id).maybeSingle();
-    if (mitt?.status !== 'godtatt') return { ok: false, feil: 'Kunden har valgt en annen leverandør, eller forespørselen er lukket.' };
-  }
-  await s.from('meldinger').insert({ foresporsel_id: f.id, leverandor_id: lev.id, fra: 'leverandor', tekst: t });
-  await sendEpost({
-    til: f.kunde_epost,
-    svarTil: lev.epost,
-    emne: `Melding fra ${lev.navn} om forespørselen din`,
-    html: mal({
-      tittel: `Melding fra ${lev.navn}`,
-      avsnitt: [t, `Svar direkte på denne e-posten, så går svaret til ${lev.navn}.`],
-      knapp: { tekst: 'Se forespørselen', sti: `/foresporsler/${f.id}` },
-    }),
-  });
-  return { ok: true, melding: 'Meldingen er sendt. Kunden kan svare deg på e-post.' };
 }
 
 export async function kjopKlipp(pakkeId: string): Promise<{ ok: true; url: string } | { ok: false; feil: string }> {

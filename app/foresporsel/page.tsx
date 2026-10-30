@@ -4,7 +4,7 @@ import { Skjema } from './Skjema';
 
 export const metadata: Metadata = {
   title: 'Få cateringtilbud',
-  description: 'Beskriv arrangementet i to korte steg. Godkjente cateringleverandører i nærheten svarer med meny og pris per kuvert. Gratis og uforpliktende.',
+  description: 'Beskriv behovet i to korte steg. Godkjente cateringleverandører i nærheten svarer med meny og pris per kuvert. Gratis og uforpliktende.',
   alternates: { canonical: '/foresporsel' },
 };
 

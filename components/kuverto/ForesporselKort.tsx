@@ -24,6 +24,7 @@ export function ForesporselKort({
   onIkkeAktuell,
   onLagTilbud,
   onSendMelding,
+  meldingTekst,
   onKjopKlipp,
   svarfrist,
   tilbudStatus,
@@ -37,6 +38,8 @@ export function ForesporselKort({
   onIkkeAktuell?: () => void;
   onLagTilbud?: () => void;
   onSendMelding?: () => void;
+  /** Tekst på meldingsknappen, f.eks. «Meldinger (2 nye)». */
+  meldingTekst?: string;
   onKjopKlipp?: () => void;
   /** Tekst i merket for opplåste forespørsler, f.eks. «Svar innen i morgen». */
   svarfrist?: string;
@@ -110,7 +113,7 @@ export function ForesporselKort({
               </Button>
             )}
             <Button variant="secondary" onClick={onSendMelding} className="min-h-[54px] px-5">
-              Send melding
+              {meldingTekst ?? 'Send melding'}
             </Button>
           </div>
         </>

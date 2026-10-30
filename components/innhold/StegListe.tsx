@@ -16,9 +16,6 @@ export function StegListe({ steg, className }: { steg: Steg[]; className?: strin
           <img src={s.illustrasjon} alt="" className="k-ink h-16 w-20 shrink-0 object-contain object-left md:h-20 md:w-auto md:self-start" />
           <div className="flex flex-col gap-1.5">
             <h3 className="m-0 flex items-baseline gap-2.5 text-[19px] font-bold leading-snug md:text-xl">
-              <span className="k-num text-[15px] font-bold text-text-muted" aria-hidden="true">
-                {i + 1}
-              </span>
               <span>
                 <span className="sr-only">Steg {i + 1}: </span>
                 {s.tittel}

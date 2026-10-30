@@ -189,7 +189,7 @@ export default async function AdminForesporsel({ params }: { params: Promise<{ i
             ))}
           </ul>
         ) : (
-          <p className="m-0 text-text-muted">Ingen meldinger. Svar som sendes direkte på e-post, vises ikke her.</p>
+          <p className="m-0 text-text-muted">Ingen meldinger mellom kunden og leverandørene ennå.</p>
         )}
       </Kort>
     </main>

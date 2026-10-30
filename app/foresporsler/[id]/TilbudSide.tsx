@@ -2,10 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
 import { Alert } from '@/components/ui/Alert';
-import { avslaTilbud, sporLeverandor, trekkForesporsel, velgTilbud } from './actions';
+import { avslaTilbud, trekkForesporsel, velgTilbud } from './actions';
+import { Samtale } from '@/components/kuverto/Samtale';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { EmptyState } from '@/components/states/EmptyState';
@@ -46,7 +47,18 @@ const Hake = () => (
   </svg>
 );
 
-export function TilbudSide({ foresporsel: f, tilbud, adresse }: { foresporsel: Foresporsel; tilbud: Tilbud[]; adresse?: string }) {
+export interface SamtaleOversikt {
+  leverandorId: string;
+  navn: string;
+  antall: number;
+  uleste: number;
+  sist?: { tekst: string; fra: 'kunde' | 'leverandor'; opprettet: string };
+}
+
+export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: { foresporsel: Foresporsel; tilbud: Tilbud[]; adresse?: string; samtaler?: SamtaleOversikt[] }) {
+  const q = useSearchParams();
+  const [samtaleMed, setSamtaleMed] = useState<string | undefined>(() => q.get('samtale') ?? undefined);
+  const samtaleNavn = samtaler.find((x) => x.leverandorId === samtaleMed)?.navn ?? tilbud.find((t) => t.leverandorId === samtaleMed)?.leverandorNavn;
   const [sortering, setSortering] = useState<Sortering>('pris');
   const router = useRouter();
   const valgt = tilbud.find((t) => t.status === 'godtatt')?.id;
@@ -227,6 +239,40 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse }: { foresporsel: F
           </div>
         )}
 
+        {samtaler.length > 0 && (
+          <section aria-labelledby="samtaler-tittel" className="mx-4 mt-6 flex flex-col gap-3 md:mx-0 md:mb-8 md:mt-0">
+            <h2 id="samtaler-tittel" className="k-heading m-0 text-2xl">
+              Meldinger
+            </h2>
+            <ul className="m-0 grid list-none gap-2 p-0 md:grid-cols-2">
+              {samtaler.map((x) => (
+                <li key={x.leverandorId}>
+                  <button
+                    type="button"
+                    onClick={() => setSamtaleMed(x.leverandorId)}
+                    className="flex w-full items-center gap-3 rounded-card border border-border bg-surface p-4 text-left hover:border-primary"
+                  >
+                    <span className="flex min-w-0 flex-grow flex-col gap-0.5">
+                      <strong className="text-base">{x.navn}</strong>
+                      {x.sist && (
+                        <span className="truncate text-[15px] text-text-muted">
+                          {x.sist.fra === 'kunde' ? 'Du: ' : ''}
+                          {x.sist.tekst}
+                        </span>
+                      )}
+                    </span>
+                    {x.uleste > 0 ? (
+                      <span className="shrink-0 rounded-pill bg-accent px-2.5 py-1 text-small font-bold text-accent-on">{x.uleste} nye</span>
+                    ) : (
+                      <span className="shrink-0 text-small font-semibold text-text-muted">Åpne</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {tilbud.length === 0 ? (
           <div className="px-4 pt-8 md:px-0">
             <EmptyState
@@ -265,7 +311,7 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse }: { foresporsel: F
                     <li key={t.id} className="flex w-[172px] shrink-0 flex-col gap-3">
                       <article aria-label={t.leverandorNavn} className={cn('flex flex-grow flex-col gap-3', avslatte.includes(t.id) && 'opacity-60')}>
                         <div className="relative h-[130px] overflow-hidden rounded-card bg-[var(--k-photo-placeholder)]">
-                          <Image src={t.bilde.src} alt={t.bilde.alt} fill sizes="172px" className="object-cover" />
+                          <Image src={t.bilde.src} alt={t.bilde.alt} unoptimized={t.bilde.src.startsWith('http')} fill sizes="172px" className="object-cover" />
                         </div>
                         <h2 className="m-0 text-[15px] font-bold">{t.leverandorNavn}</h2>
                         <div className="flex min-h-[84px] flex-col items-start">
@@ -357,7 +403,7 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse }: { foresporsel: F
                       <th key={t.id} scope="col" className="px-3 pb-4 text-left align-top">
                         <div className="flex flex-col gap-3">
                           <div className="relative h-[170px] overflow-hidden rounded-card bg-[var(--k-photo-placeholder)]">
-                            <Image src={t.bilde.src} alt={t.bilde.alt} fill sizes="(min-width: 1200px) 300px, 25vw" className="object-cover" />
+                            <Image src={t.bilde.src} alt={t.bilde.alt} unoptimized={t.bilde.src.startsWith('http')} fill sizes="(min-width: 1200px) 300px, 25vw" className="object-cover" />
                           </div>
                           <span className="text-[17px] font-bold">{t.leverandorNavn}</span>
                           {t.leverandorBeskrivelse && <span className="line-clamp-2 text-[15px] font-normal leading-snug text-text-muted">{t.leverandorBeskrivelse}</span>}
@@ -474,7 +520,7 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse }: { foresporsel: F
 
             <section className="mx-4 mt-6 flex flex-col gap-2.5 md:hidden">
               <h2 className="k-heading m-0 text-2xl">Spørsmål til en leverandør?</h2>
-              <p className="m-0 text-[15px] text-text-muted">Trykk «Se hele tilbudet» og send et spørsmål. Svaret kommer på e-post.</p>
+              <p className="m-0 text-[15px] text-text-muted">Trykk «Se hele tilbudet» og skriv til leverandøren. Dere skriver sammen her på Kuverto, og du får e-post når de svarer.</p>
             </section>
           </>
         )}
@@ -515,8 +561,23 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse }: { foresporsel: F
             onVelg={(adresse) => velg(apentTilbud.id, adresse)}
             onAvsla={() => avsla(apentTilbud.id)}
             onAngreAvslag={() => avsla(apentTilbud.id, true)}
-            onSporsmal={(tekst) => sporLeverandor(apentTilbud.id, tekst)}
           />
+        )}
+      </Dialog>
+      <Dialog
+        apen={!!samtaleMed}
+        onLukk={() => {
+          setSamtaleMed(undefined);
+          if (q.get('samtale')) router.replace(`/foresporsler/${f.id}`, { scroll: false });
+          router.refresh();
+        }}
+        label={samtaleNavn ? `Samtale med ${samtaleNavn}` : 'Samtale'}
+        className="max-w-[640px]"
+      >
+        {samtaleMed && (
+          <div className="bg-bg p-6 md:p-7">
+            <Samtale foresporselId={f.id} leverandorId={samtaleMed} />
+          </div>
         )}
       </Dialog>
       <SiteFooter />

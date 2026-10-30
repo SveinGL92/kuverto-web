@@ -133,8 +133,27 @@ export interface Tilbud {
   gyldigTil: string; // YYYY-MM-DD
   /** Betingelser leverandøren vil at kunden skal se, f.eks. avbestilling og betaling. */
   betingelser?: string;
+  /** Lenke til menyen på leverandørens nettside. */
+  menyUrl?: string;
+  /** Bilder og PDF-er fra leverandøren, med midlertidige signerte lenker. */
+  vedlegg?: Vedlegg[];
   status: TilbudStatus;
   opprettet: string;
+}
+
+/** Vedlegg slik det lagres på tilbudet (sti i bøtta «vedlegg»). */
+export interface VedleggFil {
+  sti: string;
+  navn: string;
+  type: string;
+  storrelse: number;
+}
+
+export interface Vedlegg {
+  navn: string;
+  type: string;
+  storrelse: number;
+  url: string;
 }
 
 export type OpplasingStatus = 'aktiv' | 'refundert' | 'trukket';

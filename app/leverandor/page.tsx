@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ButtonLink } from '@/components/ui/Button';
-import { tilForesporsel, tilKontakt } from '@/lib/server/data';
+import { signerVedlegg, tilForesporsel, tilKontakt } from '@/lib/server/data';
+import type { VedleggFil } from '@/lib/types';
 import { db, innloggetEpost } from '@/lib/server/supabase';
 import { Oversikt, type Opplast } from './Oversikt';
 
@@ -87,11 +88,13 @@ export default async function LeverandorSide() {
   // Mine opplåste med kontaktinfo og eget tilbud.
   let opplaste: Opplast[] = [];
   if (opplasteIder.length) {
-    const [{ data: fs }, { data: ks }, { data: ts }] = await Promise.all([
+    const [{ data: fs }, { data: ks }, { data: ts }, { data: ms }] = await Promise.all([
       s.from('foresporsler').select('*').in('id', opplasteIder),
       s.from('foresporsel_kontakt').select('*').in('foresporsel_id', opplasteIder),
       s.from('tilbud').select('*').in('foresporsel_id', opplasteIder).eq('leverandor_id', lev.id),
+      s.from('meldinger').select('foresporsel_id, fra, lest').eq('leverandor_id', lev.id).in('foresporsel_id', opplasteIder),
     ]);
+    const lenker = await signerVedlegg(ts ?? []);
     opplaste = (mineOppl ?? []).flatMap((o) => {
       const f = fs?.find((x) => x.id === o.foresporsel_id);
       const k = ks?.find((x) => x.foresporsel_id === o.foresporsel_id);
@@ -104,6 +107,8 @@ export default async function LeverandorSide() {
           kontakt: { ...tilKontakt(k), adresse: t?.status === 'godtatt' ? (k.adresse ?? undefined) : undefined },
           svarfrist: o.svarfrist,
           foresporselStatus: f.status,
+          meldinger: (ms ?? []).filter((m) => m.foresporsel_id === f.id).length,
+          uleste: (ms ?? []).filter((m) => m.foresporsel_id === f.id && m.fra === 'kunde' && !m.lest).length,
           tilbud: t
             ? {
                 status: t.status,
@@ -117,6 +122,8 @@ export default async function LeverandorSide() {
                 servise: t.servise,
                 gyldigTil: t.gyldig_til,
                 betingelser: t.betingelser ?? '',
+                menyUrl: t.meny_url ?? '',
+                vedlegg: ((t.vedlegg as VedleggFil[]) ?? []).map((v) => ({ ...v, url: lenker.get(v.sti) })),
               }
             : undefined,
         },

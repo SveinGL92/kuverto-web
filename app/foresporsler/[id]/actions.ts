@@ -98,25 +98,6 @@ export async function avslaTilbud(tilbudId: string, angre = false): Promise<Svar
   return { ok: true };
 }
 
-export async function sporLeverandor(tilbudId: string, tekst: string): Promise<Svar> {
-  const e = await eget(tilbudId);
-  if (!e) return { ok: false, feil: 'Fant ikke tilbudet.' };
-  const t = String(tekst ?? '').trim().slice(0, 2000);
-  if (t.length < 3) return { ok: false, feil: 'Skriv spørsmålet ditt før du sender.' };
-  await db().from('meldinger').insert({ foresporsel_id: e.f.id, leverandor_id: e.t.leverandor_id, fra: 'kunde', tekst: t });
-  await sendEpost({
-    til: e.l.epost,
-    svarTil: e.epost,
-    emne: `Spørsmål fra kunden om tilbudet ditt`,
-    html: mal({
-      tittel: 'Kunden har et spørsmål',
-      avsnitt: [`Om tilbudet ditt på ${anledningNavn(e.f.anledning as Anledning).toLowerCase()} for ${e.f.gjester} gjester:`, t, 'Svar direkte på denne e-posten, så går svaret til kunden.'],
-      knapp: { tekst: 'Åpne oversikten', sti: '/leverandor' },
-    }),
-  });
-  return { ok: true };
-}
-
 export async function trekkForesporsel(foresporselId: string): Promise<Svar> {
   const epost = await innloggetEpost();
   if (!epost) return { ok: false, feil: 'Du må være logget inn.' };

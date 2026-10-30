@@ -2,10 +2,12 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
+import { Samtale } from '@/components/kuverto/Samtale';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
-import { Input, Textarea } from '@/components/ui/Input';
+import { Input } from '@/components/ui/Input';
 import { dagMndLang, kr } from '@/lib/format';
+import { filstorrelse, kanVises } from '@/lib/vedlegg';
 import type { Foresporsel, Tilbud } from '@/lib/types';
 
 /**
@@ -22,7 +24,6 @@ export function TilbudDetalj({
   onVelg,
   onAvsla,
   onAngreAvslag,
-  onSporsmal,
   levering = true,
   startAdresse = '',
   aktiv = true,
@@ -38,16 +39,12 @@ export function TilbudDetalj({
   onVelg: (adresse: string) => Promise<string | undefined>;
   onAvsla: () => void;
   onAngreAvslag: () => void;
-  onSporsmal: (tekst: string) => Promise<{ ok: true } | { ok: false; feil: string }>;
   /** Om maten skal leveres. Da må kunden oppgi adresse ved valg. */
   levering?: boolean;
   /** Adressen kunden oppga i forespørselen, forhåndsutfylt. */
   startAdresse?: string;
   aktiv?: boolean;
 }) {
-  const [sporsmal, setSporsmal] = useState('');
-  const [sendt, setSendt] = useState(false);
-  const [sporsmalFeil, setSporsmalFeil] = useState<string>();
   const [bekreftAvslag, setBekreftAvslag] = useState(false);
   const [bekreftValg, setBekreftValg] = useState(startMedBekreftelse);
   const [adresse, setAdresse] = useState(startAdresse);
@@ -68,26 +65,10 @@ export function TilbudDetalj({
   const erValgt = valgtId === t.id;
   const leveringTekst = t.levering.inkludert ? 'Inkludert' : t.levering.pris ? `${kr(t.levering.pris)} i tillegg` : 'Ikke inkludert';
 
-  const send = async () => {
-    if (sporsmal.trim().length < 3) {
-      setSporsmalFeil('Skriv spørsmålet ditt før du sender.');
-      document.getElementById(`sporsmal-${t.id}`)?.focus();
-      return;
-    }
-    setSporsmalFeil(undefined);
-    const svar = await onSporsmal(sporsmal);
-    if (!svar.ok) {
-      setSporsmalFeil(svar.feil);
-      return;
-    }
-    setSendt(true);
-    setSporsmal('');
-  };
-
   return (
     <div className="flex flex-col bg-bg">
       <div className="relative h-[180px] bg-[var(--k-photo-placeholder)] md:h-[220px]">
-        <Image src={t.bilde.src} alt={t.bilde.alt} fill sizes="560px" className="object-cover" />
+        <Image src={t.bilde.src} alt={t.bilde.alt} unoptimized={t.bilde.src.startsWith('http')} fill sizes="560px" className="object-cover" />
       </div>
       <div className="flex flex-col gap-6 p-5 md:p-7">
         <div className="flex flex-col gap-1.5">
@@ -130,29 +111,56 @@ export function TilbudDetalj({
           )}
         </dl>
 
-        {!avslatt && (
-          <section aria-labelledby={`sporsmal-tittel-${t.id}`} className="flex flex-col gap-3 rounded-alert bg-surface-soft p-4">
-            <h3 id={`sporsmal-tittel-${t.id}`} className="m-0 text-[17px] font-bold">
-              Spørsmål til leverandøren
+        {(t.menyUrl || (t.vedlegg?.length ?? 0) > 0) && (
+          <section aria-labelledby={`vedlegg-${t.id}`} className="flex flex-col gap-3">
+            <h3 id={`vedlegg-${t.id}`} className="m-0 text-[17px] font-bold">
+              Meny, bilder og filer
             </h3>
-            <div aria-live="polite">{sendt && <Alert tone="status">Spørsmålet er sendt. Svaret kommer på e-post.</Alert>}</div>
-            <Textarea
-              id={`sporsmal-${t.id}`}
-              label="Ditt spørsmål"
-              rows={3}
-              value={sporsmal}
-              maxLength={1000}
-              onChange={(e) => {
-                setSporsmal(e.target.value);
-                setSendt(false);
-              }}
-              placeholder="Kan dere lage nøttefri dessert?"
-              feil={sporsmalFeil}
-            />
-            <Button variant="secondary" size="sm" onClick={send} className="self-start">
-              Send spørsmål
-            </Button>
+            {t.menyUrl && (
+              <a href={t.menyUrl} target="_blank" rel="noopener noreferrer" className="self-start text-base font-semibold">
+                Se menyen på nettsiden til {t.leverandorNavn}
+                <span className="sr-only"> (åpnes i ny fane)</span> ↗
+              </a>
+            )}
+            {t.vedlegg?.some((v) => kanVises(v.type)) && (
+              <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 min-[480px]:grid-cols-3">
+                {t.vedlegg
+                  .filter((v) => kanVises(v.type))
+                  .map((v) => (
+                    <li key={v.url}>
+                      <a href={v.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-alert border border-border">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- midlertidig signert lenke */}
+                        <img src={v.url} alt={`${v.navn} (åpnes i ny fane)`} loading="lazy" className="h-28 w-full object-cover" />
+                      </a>
+                    </li>
+                  ))}
+              </ul>
+            )}
+            {t.vedlegg?.some((v) => !kanVises(v.type)) && (
+              <ul className="m-0 flex list-none flex-col gap-1 p-0">
+                {t.vedlegg
+                  .filter((v) => !kanVises(v.type))
+                  .map((v) => (
+                    <li key={v.url}>
+                      <a href={v.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-touch items-center gap-2 text-base font-semibold">
+                        <span className="rounded-[6px] bg-surface-soft px-1.5 py-0.5 text-small font-bold uppercase text-text-muted" aria-hidden="true">
+                          {v.type === 'application/pdf' ? 'PDF' : 'Fil'}
+                        </span>
+                        {v.navn}
+                        <span className="font-normal text-text-muted">({filstorrelse(v.storrelse)})</span>
+                        <span className="sr-only"> (åpnes i ny fane)</span>
+                      </a>
+                    </li>
+                  ))}
+              </ul>
+            )}
           </section>
+        )}
+
+        {!avslatt && (
+          <div className="rounded-alert border border-border p-4">
+            <Samtale foresporselId={f.id} leverandorId={t.leverandorId} tittel={`Skriv til ${t.leverandorNavn}`} kompakt />
+          </div>
         )}
 
         <div className="flex flex-col gap-2">

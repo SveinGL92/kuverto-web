@@ -1,5 +1,6 @@
 import 'server-only';
-import type { Anledning, Budsjett, Foresporsel, ForesporselKontakt, Kosthold, Levering, Servering, Tilbud } from '@/lib/types';
+import type { Anledning, Budsjett, Foresporsel, ForesporselKontakt, Kosthold, Levering, Servering, Tilbud, VedleggFil } from '@/lib/types';
+import { db } from './supabase';
 
 /* Oversetter rader fra databasen (snake_case) til typene i lib/types.ts (camelCase). */
 
@@ -42,13 +43,28 @@ export const tilKontakt = (r: Rad): ForesporselKontakt => ({
 
 const BILDER = ['/bilder/tilbud-a.webp', '/bilder/tilbud-b.webp', '/bilder/tilbud-c.webp', '/bilder/smorbrod.webp', '/bilder/hero-langbord.webp'];
 
-export const tilTilbud = (r: Rad, lev: { navn: string; beskrivelse?: string | null }, i: number): Tilbud => ({
+type LagretVedlegg = VedleggFil;
+
+/** Signerte lenker (1 time) til vedleggene på tilbudene, nøkkel = sti. */
+export async function signerVedlegg(rader: Rad[]): Promise<Map<string, string>> {
+  const stier = rader.flatMap((r) => ((r.vedlegg as LagretVedlegg[]) ?? []).map((v) => v.sti));
+  if (!stier.length) return new Map();
+  const { data } = await db().storage.from('vedlegg').createSignedUrls(stier, 3600);
+  return new Map((data ?? []).filter((d) => d.signedUrl && d.path).map((d) => [d.path as string, d.signedUrl as string]));
+}
+
+export const tilTilbud = (r: Rad, lev: { navn: string; beskrivelse?: string | null }, i: number, lenker?: Map<string, string>): Tilbud => {
+  const vedlegg = ((r.vedlegg as LagretVedlegg[]) ?? [])
+    .map((v) => ({ navn: v.navn, type: v.type, storrelse: v.storrelse, url: lenker?.get(v.sti) ?? '' }))
+    .filter((v) => v.url);
+  const forsteBilde = vedlegg.find((v) => v.type.startsWith('image/') && !/heic|heif/.test(v.type));
+  return {
   id: r.id,
   foresporselId: r.foresporsel_id,
   leverandorId: r.leverandor_id,
   leverandorNavn: lev.navn,
   leverandorBeskrivelse: lev.beskrivelse ?? undefined,
-  bilde: { src: BILDER[i % BILDER.length], alt: 'Illustrasjonsbilde, ikke leverandørens egen mat' },
+  bilde: forsteBilde ? { src: forsteBilde.url, alt: `Bilde fra ${lev.navn}` } : { src: BILDER[i % BILDER.length], alt: 'Illustrasjonsbilde, ikke leverandørens egen mat' },
   prisPerKuvert: r.pris_per_kuvert,
   totalInklMva: r.total_inkl_mva,
   meny: r.meny,
@@ -58,6 +74,9 @@ export const tilTilbud = (r: Rad, lev: { navn: string; beskrivelse?: string | nu
   servise: r.servise || 'Ikke oppgitt',
   gyldigTil: r.gyldig_til,
   betingelser: r.betingelser ?? undefined,
+  menyUrl: r.meny_url ?? undefined,
+  vedlegg,
   status: r.status,
   opprettet: r.opprettet,
-});
+  };
+};

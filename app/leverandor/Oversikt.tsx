@@ -10,6 +10,8 @@ import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { EmptyState } from '@/components/states/EmptyState';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { VedleggOpplaster } from '@/components/kuverto/VedleggOpplaster';
+import { Datovelger } from '@/components/ui/Datovelger';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input, Textarea, feltKlasse } from '@/components/ui/Input';
 import { Tabs } from '@/components/ui/Tabs';
@@ -17,13 +19,16 @@ import { kr } from '@/lib/format';
 import { KLIPPAKKER, MVA_SATS, prisPerKlipp } from '@/lib/klipp';
 import { anledningNavn } from '@/lib/labels';
 import type { Foresporsel, ForesporselKontakt } from '@/lib/types';
-import { kjopKlipp, lasOpp, sendMeldingTilKunde, sendTilbud, type TilbudInn } from './actions';
+import { Samtale } from '@/components/kuverto/Samtale';
+import { kjopKlipp, lasOpp, sendTilbud, type TilbudInn } from './actions';
 
 export interface Opplast {
   foresporsel: Foresporsel;
   kontakt: ForesporselKontakt;
   svarfrist: string | null;
   foresporselStatus: string;
+  meldinger: number;
+  uleste: number;
   tilbud?: TilbudInn & { status: string };
 }
 
@@ -42,7 +47,7 @@ function svarfristTekst(iso: string | null) {
 export function Oversikt({ firma, dekning, saldo, nye, opplaste }: { firma: string; dekning: string; saldo: number; nye: (Foresporsel & { andreOpplast: number })[]; opplaste: Opplast[] }) {
   const router = useRouter();
   const q = useSearchParams();
-  const [fane, setFane] = useState(nye.length === 0 && opplaste.length > 0 ? 'opplaste' : 'nye');
+  const [fane, setFane] = useState(q.get('samtale') || (nye.length === 0 && opplaste.length > 0) ? 'opplaste' : 'nye');
   const [skjult, setSkjult] = useState<string[]>([]);
   const [status, setStatus] = useState<{ tone: 'status' | 'feil'; tekst: string } | undefined>(
     q.get('kjop') === 'ok' ? { tone: 'status', tekst: 'Takk for kjøpet! Klippene legges til så snart betalingen er bekreftet. Last siden på nytt om et øyeblikk.' } : undefined,
@@ -50,7 +55,8 @@ export function Oversikt({ firma, dekning, saldo, nye, opplaste }: { firma: stri
   const [opptatt, setOpptatt] = useState<string>();
   const [kjopApen, setKjopApen] = useState(false);
   const [tilbudFor, setTilbudFor] = useState<Opplast>();
-  const [meldingFor, setMeldingFor] = useState<Opplast>();
+  // Lenke fra e-postvarsel: /leverandor?samtale=<forespørsel>
+  const [meldingFor, setMeldingFor] = useState<Opplast | undefined>(() => opplaste.find((o) => o.foresporsel.id === q.get('samtale')));
 
   useEffect(() => {
     try {
@@ -187,6 +193,7 @@ export function Oversikt({ firma, dekning, saldo, nye, opplaste }: { firma: stri
                     lagTilbudTekst={o.tilbud ? 'Endre tilbudet' : 'Lag tilbud'}
                     onLagTilbud={kanEndre ? () => setTilbudFor(o) : undefined}
                     onSendMelding={() => setMeldingFor(o)}
+                    meldingTekst={o.uleste ? `Meldinger (${o.uleste} nye)` : o.meldinger ? `Meldinger (${o.meldinger})` : 'Send melding'}
                     tilbudStatus={
                       o.tilbud ? (
                         <p className="m-0 rounded-alert bg-surface-soft px-4 py-3 text-[15px]">
@@ -224,15 +231,23 @@ export function Oversikt({ firma, dekning, saldo, nye, opplaste }: { firma: stri
           />
         )}
       </Dialog>
-      <Dialog apen={!!meldingFor} onLukk={() => setMeldingFor(undefined)} label="Send melding">
+      <Dialog
+        apen={!!meldingFor}
+        onLukk={() => {
+          setMeldingFor(undefined);
+          if (q.get('samtale')) router.replace('/leverandor', { scroll: false });
+          router.refresh();
+        }}
+        label="Samtale med kunden"
+        className="max-w-[640px]"
+      >
         {meldingFor && (
-          <MeldingSkjema
-            o={meldingFor}
-            onFerdig={(melding) => {
-              setMeldingFor(undefined);
-              setStatus({ tone: 'status', tekst: melding });
-            }}
-          />
+          <div className="flex flex-col gap-1 bg-bg p-6 md:p-7">
+            <Samtale foresporselId={meldingFor.foresporsel.id} tittel={`Samtale med ${meldingFor.kontakt.navn}`} />
+            <p className="m-0 text-small text-text-muted">
+              {anledningNavn(meldingFor.foresporsel.anledning)} for {meldingFor.foresporsel.gjester} gjester. Kunden får e-post når du skriver, og svarer her på Kuverto.
+            </p>
+          </div>
         )}
       </Dialog>
     </div>
@@ -297,12 +312,17 @@ function TilbudSkjema({ o, onFerdig }: { o: Opplast; onFerdig: (melding: string)
       servise: '',
       gyldigTil: om14Dager(),
       betingelser: '',
+      menyUrl: '',
+      vedlegg: [],
     },
   );
   const [feil, setFeil] = useState<string>();
   const [sender, setSender] = useState(false);
   const sett = <K extends keyof TilbudInn>(k: K, verdi: TilbudInn[K]) => setV((x) => ({ ...x, [k]: verdi }));
-  const total = (Number(v.prisPerKuvert) || 0) * f.gjester + (v.leveringInkludert ? 0 : Number(v.leveringPris) || 0);
+  const mat = (Number(v.prisPerKuvert) || 0) * f.gjester;
+  const frakt = v.leveringInkludert ? 0 : Number(v.leveringPris) || 0;
+  const total = mat + frakt;
+  const krTekst = (n: number) => `kr ${Math.round(n).toLocaleString('nb-NO')}`;
 
   const send = async () => {
     setSender(true);
@@ -337,9 +357,20 @@ function TilbudSkjema({ o, onFerdig }: { o: Opplast; onFerdig: (melding: string)
           onChange={(e) => sett('prisPerKuvert', Number(e.target.value.replace(',', '.').replace(/[^\d.]/g, '')) || 0)}
           required
         />
-        <Input id="tilbud-gyldig" label="Tilbudet gjelder til" type="date" value={v.gyldigTil} onChange={(e) => sett('gyldigTil', e.target.value)} required />
+        <Datovelger id="tilbud-gyldig" label="Tilbudet gjelder til" min={new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' })} value={v.gyldigTil} onChange={(d) => sett('gyldigTil', d)} required />
       </div>
       <Textarea label="Meny" hint="Hva som serveres, gjerne med retter og tilbehør." rows={4} maxLength={2000} value={v.meny} onChange={(e) => sett('meny', e.target.value)} required />
+      <Input
+        id="tilbud-meny-url"
+        label="Lenke til menyen (valgfritt)"
+        type="url"
+        inputMode="url"
+        placeholder="https://firma.no/meny"
+        hint="Har dere menyen på nettsiden, kan kunden åpne den herfra."
+        value={v.menyUrl}
+        onChange={(e) => sett('menyUrl', e.target.value)}
+      />
+      <VedleggOpplaster foresporselId={f.id} vedlegg={v.vedlegg} onChange={(l) => sett('vedlegg', l)} />
       {f.kosthold.length > 0 && (
         <div className="flex flex-col gap-2">
           <label className="flex min-h-touch cursor-pointer items-center gap-3 text-base font-semibold">
@@ -387,43 +418,33 @@ function TilbudSkjema({ o, onFerdig }: { o: Opplast; onFerdig: (melding: string)
         </label>
       </div>
       <Textarea label="Betingelser (valgfritt)" hint="For eksempel avbestilling og betaling." rows={2} maxLength={1000} value={v.betingelser} onChange={(e) => sett('betingelser', e.target.value)} />
-      <p className="m-0 rounded-alert bg-surface-soft px-4 py-3 text-base">
-        Totalt for kunden: <strong className="k-num">kr {Math.round(total).toLocaleString('nb-NO')}</strong> inkl. mva
-      </p>
-      {feil && <Alert tone="feil">{feil}</Alert>}
-      <Button type="submit" size="lg" busy={sender} disabled={sender}>
-        {o.tilbud ? 'Oppdater tilbudet' : 'Send tilbudet'}
-      </Button>
-    </form>
-  );
-}
-
-function MeldingSkjema({ o, onFerdig }: { o: Opplast; onFerdig: (melding: string) => void }) {
-  const [tekst, setTekst] = useState('');
-  const [feil, setFeil] = useState<string>();
-  const [sender, setSender] = useState(false);
-  const send = async () => {
-    setSender(true);
-    const svar = await sendMeldingTilKunde(o.foresporsel.id, tekst);
-    setSender(false);
-    if (svar.ok) onFerdig(svar.melding ?? 'Meldingen er sendt.');
-    else setFeil(svar.feil);
-  };
-  return (
-    <form
-      noValidate
-      onSubmit={(e) => {
-        e.preventDefault();
-        send();
-      }}
-      className="flex flex-col gap-4 bg-bg p-6 md:p-7"
-    >
-      <h2 className="k-heading m-0 pr-10 text-[28px]">Melding til {o.kontakt.navn}</h2>
-      <p className="m-0 text-[15px] text-text-muted">Kunden får meldingen på e-post og kan svare deg direkte.</p>
-      <Textarea label="Melding" rows={5} maxLength={2000} value={tekst} onChange={(e) => setTekst(e.target.value)} feil={feil} />
-      <Button type="submit" busy={sender} disabled={sender} className="self-start">
-        Send melding
-      </Button>
+      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col gap-3 border-t border-border bg-bg px-6 pb-6 pt-4 md:-mx-7 md:-mb-7 md:px-7 md:pb-7">
+        <section aria-labelledby="tilbud-sum" className="flex flex-col gap-1 rounded-alert bg-surface-soft px-4 py-3">
+          <h3 id="tilbud-sum" className="sr-only">
+            Totalpris
+          </h3>
+          <div className="flex justify-between gap-3 text-[15px] text-text-muted">
+            <span>
+              {f.gjester} kuverter × {krTekst(Number(v.prisPerKuvert) || 0)}
+            </span>
+            <span className="k-num">{krTekst(mat)}</span>
+          </div>
+          <div className="flex justify-between gap-3 text-[15px] text-text-muted">
+            <span>Levering</span>
+            <span className="k-num">{v.leveringInkludert ? 'Inkludert' : krTekst(frakt)}</span>
+          </div>
+          <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-border pt-2">
+            <strong className="text-base">Totalt for kunden inkl. mva</strong>
+            <strong className="k-heading k-num text-[26px] leading-none" aria-live="polite">
+              {krTekst(total)}
+            </strong>
+          </div>
+        </section>
+        {feil && <Alert tone="feil">{feil}</Alert>}
+        <Button type="submit" size="lg" busy={sender} disabled={sender}>
+          {o.tilbud ? 'Oppdater tilbudet' : total > 0 ? `Send tilbud på ${krTekst(total)}` : 'Send tilbudet'}
+        </Button>
+      </div>
     </form>
   );
 }

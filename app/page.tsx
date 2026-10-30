@@ -56,7 +56,7 @@ const strukturertData = {
 
 const steg: Steg[] = [
   {
-    tittel: 'Beskriv arrangementet',
+    tittel: 'Beskriv behovet',
     tekst: 'Fortell hva du planlegger, hvor mange gjester du venter og hva slags mat du ønsker. Det tar et par minutter.',
     illustrasjon: '/illustrasjoner/bordkort.svg',
   },
@@ -67,7 +67,7 @@ const steg: Steg[] = [
   },
   {
     tittel: 'Sammenlign og velg',
-    tekst: 'Se tilbudene side om side og velg det som passer. De andre leverandørene får beskjed.',
+    tekst: 'Se tilbudene side om side og velg det som passer ditt behov best.',
     illustrasjon: '/illustrasjoner/tallerken-hake.svg',
   },
 ];
@@ -109,10 +109,10 @@ export default function Forside() {
         <section aria-labelledby="hero-tittel" className="k-wrap flex flex-col gap-8 pt-4 md:flex-row md:flex-wrap md:items-center md:gap-x-14 md:gap-y-12 md:pt-8">
           <div className="flex min-w-0 flex-col gap-5 md:max-w-[660px] md:flex-[1.15_1_520px] md:gap-7">
             <h1 id="hero-tittel" className="k-heading m-0 text-[clamp(36px,11vw,46px)] leading-[1.0] tracking-[-0.045em] md:text-[clamp(44px,4.8vw,68px)]">
-              Én forespørsel. Flere cateringtilbud. Du velger.
+              Én forespørsel. Flere tilbud. Du velger.
             </h1>
             <p className="m-0 max-w-[36ch] text-[17px] leading-normal text-text-muted md:text-[20px]">
-              Beskriv arrangementet, få tilbud fra godkjente leverandører nær deg, og sammenlign meny og pris per kuvert på ett sted.
+              Beskriv behovet, få tilbud fra godkjente leverandører nær deg, og sammenlign meny og pris per kuvert på ett sted.
             </p>
             <div className="mt-1 md:mt-0">
               <HeroForm />
@@ -157,7 +157,7 @@ export default function Forside() {
             <h2 id="steg-tittel" className="k-heading m-0 text-[30px] leading-[1.05] md:text-[clamp(32px,3.2vw,44px)]">
               Slik fungerer Kuverto
             </h2>
-            <p className="m-0 max-w-[52ch] text-base text-text-muted md:text-[17px]">Du beskriver arrangementet én gang. Leverandørene gjør resten av jobben.</p>
+            <p className="m-0 max-w-[52ch] text-base text-text-muted md:text-[17px]">Du beskriver behovet én gang. Leverandørene gjør resten av jobben.</p>
           </div>
           <StegListe steg={steg} />
           <div className="mt-6 md:mt-8">
