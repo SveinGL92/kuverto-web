@@ -12,6 +12,10 @@ import { ButtonLink } from '@/components/ui/Button';
 import { PriceRing } from '@/components/ui/PriceRing';
 import { anledningerInnhold } from '@/lib/anledninger-innhold';
 import { MAKS_LEVERANDORER } from '@/lib/klipp';
+import { aktivSesong } from '@/lib/sesong';
+
+// Bygges på nytt hver natt, så sesongseksjonen følger datoen.
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: { absolute: 'Kuverto – få tilbud på catering i hele Norge' },
@@ -98,6 +102,7 @@ const sporsmal: SporsmalSvar[] = [
 ];
 
 export default function Forside() {
+  const sesong = aktivSesong();
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(strukturertData) }} />
@@ -145,6 +150,37 @@ export default function Forside() {
                 <strong className="text-base">Firmalunsj · 25 kuverter</strong>
                 <span className="text-small text-text-muted">Vegetar 4 · Allergi: nøtter 1</span>
               </span>
+            </div>
+          </div>
+        </section>
+
+        {/* Sesong */}
+        <section aria-labelledby="sesong-tittel" className="k-wrap pt-14 md:pt-20">
+          <div className="grid overflow-hidden rounded-media bg-surface md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:rounded-panel">
+            <div className="relative min-h-[220px] md:min-h-[360px]">
+              <Image
+                src={sesong.bilde.src}
+                alt={sesong.bilde.alt}
+                fill
+                sizes="(min-width: 768px) 45vw, 100vw"
+                className="object-cover"
+                style={{ objectPosition: sesong.bilde.posisjon ?? '50% 50%' }}
+              />
+            </div>
+            <div className="flex flex-col justify-center gap-4 px-[22px] py-8 md:gap-5 md:px-[clamp(28px,4vw,64px)] md:py-12">
+              <span className="self-start rounded-pill bg-accent px-3 py-1 text-small font-bold text-accent-on">Akkurat nå</span>
+              <h2 id="sesong-tittel" className="k-heading m-0 text-[30px] leading-[1.05] md:text-[clamp(32px,3.2vw,44px)]">
+                {sesong.tittel}
+              </h2>
+              <p className="m-0 max-w-[46ch] text-base leading-normal text-text-muted md:text-[17px]">{sesong.tekst}</p>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                <ButtonLink href={`/foresporsel?anledning=${sesong.anledning}&gjester=${sesong.gjester}`} size="lg">
+                  {sesong.knapp}
+                </ButtonLink>
+                <a href={`/catering/${sesong.slug}`} className="inline-flex min-h-touch items-center text-base font-semibold">
+                  {sesong.lesMer}
+                </a>
+              </div>
             </div>
           </div>
         </section>
