@@ -15,8 +15,9 @@ import { Datovelger } from '@/components/ui/Datovelger';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input, Textarea, feltKlasse } from '@/components/ui/Input';
 import { Tabs } from '@/components/ui/Tabs';
-import { kr } from '@/lib/format';
-import { KLIPPAKKER, MVA_SATS, prisPerKlipp, REFUSJON_LANG } from '@/lib/klipp';
+import { useSprak } from '@/components/Sprak';
+import type { T } from '@/lib/i18n/core';
+import { KLIPPAKKER, MVA_SATS, pakkePris, prisPerKlipp, refusjonLang } from '@/lib/klipp';
 import { anledningNavn } from '@/lib/labels';
 import type { Foresporsel, ForesporselKontakt } from '@/lib/types';
 import { Samtale } from '@/components/kuverto/Samtale';
@@ -35,13 +36,13 @@ export interface Opplast {
 const SKJULT = 'kuverto-skjulte';
 const statusNavn: Record<string, string> = { sendt: 'Sendt', endret: 'Oppdatert', godtatt: 'Valgt av kunden', avslatt: 'Ikke valgt', trukket: 'Trukket', utlopt: 'Utløpt' };
 
-function svarfristTekst(iso: string | null) {
+function svarfristTekst(iso: string | null, t: T) {
   if (!iso) return undefined;
   const d = dagerTil(iso);
-  if (d < 0) return 'Svarfristen har gått ut';
-  if (d === 0) return 'Svar i dag';
-  if (d === 1) return 'Svar innen i morgen';
-  return `Svar innen ${d} dager`;
+  if (d < 0) return t('Svarfristen har gått ut');
+  if (d === 0) return t('Svar i dag');
+  if (d === 1) return t('Svar innen i morgen');
+  return t('Svar innen {d} dager', { d });
 }
 
 export interface KlippLinje {
@@ -68,10 +69,11 @@ export function Oversikt({
 }) {
   const router = useRouter();
   const q = useSearchParams();
+  const { t, sti, info, penger } = useSprak();
   const [fane, setFane] = useState(q.get('samtale') || (nye.length === 0 && opplaste.length > 0) ? 'opplaste' : 'nye');
   const [skjult, setSkjult] = useState<string[]>([]);
   const [status, setStatus] = useState<{ tone: 'status' | 'feil'; tekst: string } | undefined>(
-    q.get('kjop') === 'ok' ? { tone: 'status', tekst: 'Takk for kjøpet! Klippene legges til så snart betalingen er bekreftet. Last siden på nytt om et øyeblikk.' } : undefined,
+    q.get('kjop') === 'ok' ? { tone: 'status', tekst: t('Takk for kjøpet! Klippene legges til så snart betalingen er bekreftet. Last siden på nytt om et øyeblikk.') } : undefined,
   );
   const [opptatt, setOpptatt] = useState<string>();
   const [kjopApen, setKjopApen] = useState(false);
@@ -100,7 +102,7 @@ export function Oversikt({
     const svar = await lasOpp(f.id);
     setOpptatt(undefined);
     if (svar.ok) {
-      setStatus({ tone: 'status', tekst: `${anledningNavn(f.anledning)} for ${f.gjester} er låst opp. ${f.klippPris} klipp er trukket. Du finner den under «Opplåste».` });
+      setStatus({ tone: 'status', tekst: t('{hva} for {gjester} er låst opp. {klipp} klipp er trukket. Du finner den under «Opplåste».', { hva: anledningNavn(f.anledning, t), gjester: f.gjester, klipp: f.klippPris }) });
       setFane('opplaste');
       router.refresh();
     } else setStatus({ tone: 'feil', tekst: svar.feil });
@@ -111,18 +113,18 @@ export function Oversikt({
     <div className="min-h-dvh">
       <header className="bg-panel text-panel-on">
         <div className="k-wrap flex flex-wrap items-center justify-between gap-3 py-3.5">
-          <Link href="/" className="flex items-center gap-2 text-panel-on no-underline hover:text-panel-on">
+          <Link href={sti('/')} className="flex items-center gap-2 text-panel-on no-underline hover:text-panel-on">
             <Symbol size={26} />
             <span className="k-heading text-[26px] leading-none tracking-[-0.035em]">kuverto</span>
-            <span className="sr-only">, til forsiden</span>
+            <span className="sr-only">{t(', til forsiden')}</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Link href="/leverandor/profil" className="inline-flex min-h-touch items-center px-2 text-[15px] font-semibold text-panel-on-muted no-underline hover:text-panel-on">
-              Profil og område
+            <Link href={sti('/leverandor/profil')} className="inline-flex min-h-touch items-center px-2 text-[15px] font-semibold text-panel-on-muted no-underline hover:text-panel-on">
+              {t('Profil og område')}
             </Link>
             <form action="/logg-ut" method="post">
               <button type="submit" className="min-h-touch px-2 text-[15px] font-semibold text-panel-on-muted hover:text-panel-on">
-                Logg ut
+                {t('Logg ut')}
               </button>
             </form>
           </div>
@@ -131,19 +133,19 @@ export function Oversikt({
           <div className="flex flex-col gap-1.5">
             <h1 className="k-heading m-0 text-[34px] leading-none md:text-[48px]">{firma}</h1>
             <p className="m-0 text-[15px] text-panel-on-muted">
-              Leverer til {dekning} ·{' '}
-              <Link href="/leverandor/profil" className="text-panel-on">
-                endre
+              {t('Leverer til {dekning}', { dekning })} ·{' '}
+              <Link href={sti('/leverandor/profil')} className="text-panel-on">
+                {t('endre')}
               </Link>
             </p>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-end">
               <span className="k-heading k-num text-[34px] leading-none">{saldo}</span>
-              <span className="text-small text-panel-on-muted">klipp igjen</span>
+              <span className="text-small text-panel-on-muted">{t('klipp igjen')}</span>
             </div>
             <Button variant="accent" onClick={() => setKjopApen(true)}>
-              Kjøp klipp
+              {t('Kjøp klipp')}
             </Button>
           </div>
         </div>
@@ -156,13 +158,13 @@ export function Oversikt({
           </div>
         )}
         <Tabs
-          label="Forespørsler"
+          label={t('Forespørsler')}
           aktiv={fane}
           onVelg={setFane}
           faner={[
-            { id: 'nye', navn: `Nye i området (${synlige.length})` },
-            { id: 'opplaste', navn: `Opplåste (${opplaste.length})` },
-            { id: 'klipp', navn: 'Klipp' },
+            { id: 'nye', navn: t('Nye i området ({n})', { n: synlige.length }) },
+            { id: 'opplaste', navn: t('Opplåste ({n})', { n: opplaste.length }) },
+            { id: 'klipp', navn: t('Klipp') },
           ]}
         />
 
@@ -170,8 +172,8 @@ export function Oversikt({
           <div role="tabpanel" id="nye-panel" aria-labelledby="nye-fane" className="grid gap-5 lg:grid-cols-2">
             {synlige.length === 0 ? (
               <div className="lg:col-span-2">
-                <EmptyState illustrasjon="/illustrasjoner/tom-tallerken.svg" tittel="Ingen nye forespørsler akkurat nå">
-                  Du får e-post når det kommer nye forespørsler i området ditt.
+                <EmptyState illustrasjon="/illustrasjoner/tom-tallerken.svg" tittel={t('Ingen nye forespørsler akkurat nå')}>
+                  {t('Du får e-post når det kommer nye forespørsler i området ditt.')}
                 </EmptyState>
               </div>
             ) : (
@@ -186,7 +188,7 @@ export function Oversikt({
                     onKjopKlipp={() => setKjopApen(true)}
                   />
                   <p className="m-0 px-2 text-small text-text-muted">
-                    {f.andreOpplast === 0 ? 'Ingen har låst opp ennå.' : `${f.andreOpplast} av ${f.maksLeverandorer} plasser er tatt.`}
+                    {f.andreOpplast === 0 ? t('Ingen har låst opp ennå.') : t('{n} av {maks} plasser er tatt.', { n: f.andreOpplast, maks: f.maksLeverandorer })}
                   </p>
                 </div>
               ))
@@ -198,8 +200,8 @@ export function Oversikt({
           <div role="tabpanel" id="opplaste-panel" aria-labelledby="opplaste-fane" className="grid gap-5 lg:grid-cols-2">
             {opplaste.length === 0 ? (
               <div className="lg:col-span-2">
-                <EmptyState illustrasjon="/illustrasjoner/bordkort.svg" tittel="Ingen opplåste ennå">
-                  Når du låser opp en forespørsel, ser du kundens kontaktinfo her og kan sende tilbud.
+                <EmptyState illustrasjon="/illustrasjoner/bordkort.svg" tittel={t('Ingen opplåste ennå')}>
+                  {t('Når du låser opp en forespørsel, ser du kundens kontaktinfo her og kan sende tilbud.')}
                 </EmptyState>
               </div>
             ) : (
@@ -211,19 +213,19 @@ export function Oversikt({
                     foresporsel={o.foresporsel}
                     kontakt={o.kontakt}
                     klippsaldo={saldo}
-                    svarfrist={o.tilbud ? undefined : svarfristTekst(o.svarfrist)}
-                    lagTilbudTekst={o.tilbud ? 'Endre tilbudet' : 'Lag tilbud'}
+                    svarfrist={o.tilbud ? undefined : svarfristTekst(o.svarfrist, t)}
+                    lagTilbudTekst={o.tilbud ? t('Endre tilbudet') : t('Lag tilbud')}
                     onLagTilbud={kanEndre ? () => setTilbudFor(o) : undefined}
                     onSendMelding={() => setMeldingFor(o)}
-                    meldingTekst={o.uleste ? `Meldinger (${o.uleste} nye)` : o.meldinger ? `Meldinger (${o.meldinger})` : 'Send melding'}
+                    meldingTekst={o.uleste ? t('Meldinger ({n} nye)', { n: o.uleste }) : o.meldinger ? t('Meldinger ({n})', { n: o.meldinger }) : t('Send melding')}
                     tilbudStatus={
                       o.tilbud ? (
                         <p className="m-0 rounded-alert bg-surface-soft px-4 py-3 text-[15px]">
-                          <strong>Tilbud: {statusNavn[o.tilbud.status] ?? o.tilbud.status}</strong> · kr {o.tilbud.prisPerKuvert} per kuvert
-                          {o.tilbud.status === 'godtatt' && ' · Ta kontakt med kunden for å avtale detaljene.'}
+                          <strong>{t('Tilbud: {status}', { status: statusNavn[o.tilbud.status] ? t(statusNavn[o.tilbud.status]) : o.tilbud.status })}</strong> · {t('{pris} per kuvert', { pris: penger(Math.round(o.tilbud.prisPerKuvert * 100)) })}
+                          {o.tilbud.status === 'godtatt' && ` · ${t('Ta kontakt med kunden for å avtale detaljene.')}`}
                         </p>
                       ) : o.foresporselStatus !== 'aktiv' ? (
-                        <p className="m-0 rounded-alert bg-surface-soft px-4 py-3 text-[15px]">Kunden har valgt et annet tilbud, eller forespørselen er lukket.</p>
+                        <p className="m-0 rounded-alert bg-surface-soft px-4 py-3 text-[15px]">{t('Kunden har valgt et annet tilbud, eller forespørselen er lukket.')}</p>
                       ) : undefined
                     }
                   />
@@ -235,20 +237,20 @@ export function Oversikt({
 
         {fane === 'klipp' && (
           <div role="tabpanel" id="klipp-panel" aria-labelledby="klipp-fane" className="flex flex-col gap-4">
-            <p className="m-0 max-w-[70ch] rounded-alert bg-surface-soft px-4 py-3 text-[15px]">{REFUSJON_LANG}</p>
+            <p className="m-0 max-w-[70ch] rounded-alert bg-surface-soft px-4 py-3 text-[15px]">{refusjonLang(t)}</p>
             {historikk.length === 0 ? (
-              <p className="m-0 text-text-muted">Ingen klipp ennå.</p>
+              <p className="m-0 text-text-muted">{t('Ingen klipp ennå.')}</p>
             ) : (
               <ul className="m-0 flex list-none flex-col rounded-card bg-surface p-0">
                 {historikk.map((h) => (
                   <li key={h.id} className="flex items-center justify-between gap-4 border-b border-border px-4 py-3 last:border-0 md:px-6">
                     <span className="flex min-w-0 flex-col">
                       <span className="text-base">{h.tekst}</span>
-                      <span className="text-small text-text-muted">{new Date(h.dato).toLocaleString('nb-NO', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Oslo' })}</span>
+                      <span className="text-small text-text-muted">{new Date(h.dato).toLocaleString(info.intl, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Oslo' })}</span>
                     </span>
                     <strong className={`k-num shrink-0 text-[17px] ${h.endring < 0 ? 'text-text' : 'text-success'}`}>
                       {h.endring > 0 ? `+${h.endring}` : h.endring}
-                      <span className="sr-only"> klipp</span>
+                      <span className="sr-only"> {t('klipp')}</span>
                     </strong>
                   </li>
                 ))}
@@ -262,10 +264,10 @@ export function Oversikt({
         </div>
       </main>
 
-      <Dialog apen={kjopApen} onLukk={() => setKjopApen(false)} label="Kjøp klipp">
+      <Dialog apen={kjopApen} onLukk={() => setKjopApen(false)} label={t('Kjøp klipp')}>
         <KjopKlipp />
       </Dialog>
-      <Dialog apen={!!tilbudFor} onLukk={() => setTilbudFor(undefined)} label="Tilbud" className="max-w-[640px]">
+      <Dialog apen={!!tilbudFor} onLukk={() => setTilbudFor(undefined)} label={t('Tilbud')} className="max-w-[640px]">
         {tilbudFor && (
           <TilbudSkjema
             o={tilbudFor}
@@ -281,17 +283,17 @@ export function Oversikt({
         apen={!!meldingFor}
         onLukk={() => {
           setMeldingFor(undefined);
-          if (q.get('samtale')) router.replace('/leverandor', { scroll: false });
+          if (q.get('samtale')) router.replace(sti('/leverandor'), { scroll: false });
           router.refresh();
         }}
-        label="Samtale med kunden"
+        label={t('Samtale med kunden')}
         className="max-w-[640px]"
       >
         {meldingFor && (
           <div className="flex flex-col gap-1 bg-bg p-6 md:p-7">
-            <Samtale foresporselId={meldingFor.foresporsel.id} tittel={`Samtale med ${meldingFor.kontakt.navn}`} />
+            <Samtale foresporselId={meldingFor.foresporsel.id} tittel={t('Samtale med {navn}', { navn: meldingFor.kontakt.navn })} />
             <p className="m-0 text-small text-text-muted">
-              {anledningNavn(meldingFor.foresporsel.anledning)} for {meldingFor.foresporsel.gjester} gjester. Kunden får e-post når du skriver, og svarer her på Kuverto.
+              {t('{hva} for {gjester} gjester. Kunden får e-post når du skriver, og svarer her på Kuverto.', { hva: anledningNavn(meldingFor.foresporsel.anledning, t), gjester: meldingFor.foresporsel.gjester })}
             </p>
           </div>
         )}
@@ -301,6 +303,7 @@ export function Oversikt({
 }
 
 function KjopKlipp() {
+  const { t, marked, info, penger } = useSprak();
   const [opptatt, setOpptatt] = useState<string>();
   const [feil, setFeil] = useState<string>();
   const kjop = async (id: string) => {
@@ -315,22 +318,28 @@ function KjopKlipp() {
   };
   return (
     <div className="flex flex-col gap-4 bg-bg p-6 md:p-7">
-      <h2 className="k-heading m-0 pr-10 text-[28px]">Kjøp klipp</h2>
-      <p className="m-0 text-[15px] text-text-muted">Du betaler med kort hos Stripe. Kvittering og faktura kommer på e-post. Prisene er eks. mva.</p>
-      <p className="m-0 rounded-alert bg-surface-soft px-4 py-3 text-[15px]">{REFUSJON_LANG}</p>
+      <h2 className="k-heading m-0 pr-10 text-[28px]">{t('Kjøp klipp')}</h2>
+      <p className="m-0 text-[15px] text-text-muted">
+        {info.omvendtAvgift
+          ? t('Du betaler med kort hos Stripe. Kvittering og faktura kommer på e-post. Fakturaen er uten mva (omvendt avgiftsplikt).')
+          : t('Du betaler med kort hos Stripe. Kvittering og faktura kommer på e-post. Prisene er eks. mva.')}
+      </p>
+      <p className="m-0 rounded-alert bg-surface-soft px-4 py-3 text-[15px]">{refusjonLang(t)}</p>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {KLIPPAKKER.map((p) => (
           <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
             <div className="flex flex-col">
               <strong className="text-[17px]">
-                {p.navn} · {p.klipp} klipp
+                {t(p.navn)} · {t('{n} klipp', { n: p.klipp })}
               </strong>
               <span className="text-[15px] text-text-muted">
-                {kr(p.prisEksMva)} + mva ({kr(p.prisEksMva * (1 + MVA_SATS))}) · {kr(prisPerKlipp(p))} per klipp
+                {info.omvendtAvgift
+                  ? `${penger(pakkePris(p, marked))} · ${t('{pris} per klipp', { pris: penger(prisPerKlipp(p, marked)) })}`
+                  : `${penger(pakkePris(p, marked))} + ${t('mva')} (${penger(pakkePris(p, marked) * (1 + MVA_SATS))}) · ${t('{pris} per klipp', { pris: penger(prisPerKlipp(p, marked)) })}`}
               </span>
             </div>
             <Button size="sm" busy={opptatt === p.id} disabled={!!opptatt} onClick={() => kjop(p.id)}>
-              Velg<span className="sr-only"> {p.navn}</span>
+              {t('Velg')}<span className="sr-only"> {t(p.navn)}</span>
             </Button>
           </li>
         ))}
@@ -346,6 +355,7 @@ const om14Dager = () => {
 };
 
 function TilbudSkjema({ o, onFerdig }: { o: Opplast; onFerdig: (melding: string) => void }) {
+  const { t, penger } = useSprak();
   const f = o.foresporsel;
   const [v, setV] = useState<TilbudInn>(
     o.tilbud ?? {
@@ -369,14 +379,14 @@ function TilbudSkjema({ o, onFerdig }: { o: Opplast; onFerdig: (melding: string)
   const mat = (Number(v.prisPerKuvert) || 0) * f.gjester;
   const frakt = v.leveringInkludert ? 0 : Number(v.leveringPris) || 0;
   const total = mat + frakt;
-  const krTekst = (n: number) => `kr ${Math.round(n).toLocaleString('nb-NO')}`;
+  const krTekst = (n: number) => penger(Math.round(n) * 100);
 
   const send = async () => {
     setSender(true);
     setFeil(undefined);
     const svar = await sendTilbud(f.id, v);
     setSender(false);
-    if (svar.ok) onFerdig(svar.melding ?? 'Tilbudet er sendt.');
+    if (svar.ok) onFerdig(svar.melding ?? t('Tilbudet er sendt.'));
     else setFeil(svar.feil);
   };
 
@@ -390,30 +400,30 @@ function TilbudSkjema({ o, onFerdig }: { o: Opplast; onFerdig: (melding: string)
       className="flex flex-col gap-5 bg-bg p-6 md:p-7"
     >
       <div className="flex flex-col gap-1 pr-10">
-        <h2 className="k-heading m-0 text-[28px]">{o.tilbud ? 'Endre tilbudet' : 'Lag tilbud'}</h2>
+        <h2 className="k-heading m-0 text-[28px]">{o.tilbud ? t('Endre tilbudet') : t('Lag tilbud')}</h2>
         <p className="m-0 text-[15px] text-text-muted">
-          {anledningNavn(f.anledning)} for {f.gjester} gjester · {o.kontakt.navn}
+          {t('{hva} for {gjester} gjester', { hva: anledningNavn(f.anledning, t), gjester: f.gjester })} · {o.kontakt.navn}
         </p>
       </div>
       <div className="grid gap-5 min-[480px]:grid-cols-2">
         <Input
           id="tilbud-pris"
-          label="Pris per kuvert inkl. mva (kr)"
+          label={t('Pris per kuvert inkl. mva (kr)')}
           inputMode="decimal"
           value={v.prisPerKuvert || ''}
           onChange={(e) => sett('prisPerKuvert', Number(e.target.value.replace(',', '.').replace(/[^\d.]/g, '')) || 0)}
           required
         />
-        <Datovelger id="tilbud-gyldig" label="Tilbudet gjelder til" min={new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' })} value={v.gyldigTil} onChange={(d) => sett('gyldigTil', d)} required />
+        <Datovelger id="tilbud-gyldig" label={t('Tilbudet gjelder til')} min={new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' })} value={v.gyldigTil} onChange={(d) => sett('gyldigTil', d)} required />
       </div>
-      <Textarea label="Meny" hint="Hva som serveres, gjerne med retter og tilbehør." rows={4} maxLength={2000} value={v.meny} onChange={(e) => sett('meny', e.target.value)} required />
+      <Textarea label={t('Meny')} hint={t('Hva som serveres, gjerne med retter og tilbehør.')} rows={4} maxLength={2000} value={v.meny} onChange={(e) => sett('meny', e.target.value)} required />
       <Input
         id="tilbud-meny-url"
-        label="Lenke til menyen (valgfritt)"
+        label={t('Lenke til menyen (valgfritt)')}
         type="url"
         inputMode="url"
-        placeholder="https://firma.no/meny"
-        hint="Har dere menyen på nettsiden, kan kunden åpne den herfra."
+        placeholder={t('https://firma.no/meny')}
+        hint={t('Har dere menyen på nettsiden, kan kunden åpne den herfra.')}
         value={v.menyUrl}
         onChange={(e) => sett('menyUrl', e.target.value)}
       />
@@ -422,24 +432,24 @@ function TilbudSkjema({ o, onFerdig }: { o: Opplast; onFerdig: (melding: string)
         <div className="flex flex-col gap-2">
           <label className="flex min-h-touch cursor-pointer items-center gap-3 text-base font-semibold">
             <input type="checkbox" checked={v.kostholdDekket} onChange={(e) => sett('kostholdDekket', e.target.checked)} className="h-6 w-6 shrink-0 accent-[var(--k-primary)]" />
-            Alle kostholdsbehov er dekket
+            {t('Alle kostholdsbehov er dekket')}
           </label>
-          <Input label="Kommentar om kosthold (valgfritt)" value={v.kostholdTekst} maxLength={300} onChange={(e) => sett('kostholdTekst', e.target.value)} placeholder="Egen nøttefri dessert til én gjest" />
+          <Input label={t('Kommentar om kosthold (valgfritt)')} value={v.kostholdTekst} maxLength={300} onChange={(e) => sett('kostholdTekst', e.target.value)} placeholder={t('Egen nøttefri dessert til én gjest')} />
         </div>
       )}
       <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-        <legend className="mb-2 text-[15px] font-semibold">Levering</legend>
+        <legend className="mb-2 text-[15px] font-semibold">{t('Levering')}</legend>
         <label className="flex min-h-touch cursor-pointer items-center gap-3 text-base">
           <input type="radio" name="levering" checked={v.leveringInkludert} onChange={() => sett('leveringInkludert', true)} className="h-6 w-6 shrink-0 accent-[var(--k-primary)]" />
-          Inkludert i prisen
+          {t('Inkludert i prisen')}
         </label>
         <label className="flex min-h-touch cursor-pointer items-center gap-3 text-base">
           <input type="radio" name="levering" checked={!v.leveringInkludert} onChange={() => sett('leveringInkludert', false)} className="h-6 w-6 shrink-0 accent-[var(--k-primary)]" />
-          Kommer i tillegg
+          {t('Kommer i tillegg')}
         </label>
         {!v.leveringInkludert && (
           <Input
-            label="Leveringspris inkl. mva (kr)"
+            label={t('Leveringspris inkl. mva (kr)')}
             inputMode="decimal"
             value={v.leveringPris || ''}
             onChange={(e) => sett('leveringPris', Number(e.target.value.replace(',', '.').replace(/[^\d.]/g, '')) || 0)}
@@ -450,38 +460,39 @@ function TilbudSkjema({ o, onFerdig }: { o: Opplast; onFerdig: (melding: string)
       <div className="grid gap-5 min-[480px]:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="tilbud-servise" className="text-[15px] font-semibold">
-            Servise
+            {t('Servise')}
           </label>
           <select id="tilbud-servise" value={v.servise} onChange={(e) => sett('servise', e.target.value)} className={feltKlasse()}>
-            <option value="">Ikke oppgitt</option>
-            <option>Porselen</option>
-            <option>Kompostérbart engangs</option>
-            <option>Ikke inkludert</option>
+            <option value="">{t('Ikke oppgitt')}</option>
+            {/* Verdien lagres på norsk og oversettes der den vises. */}
+            <option value="Porselen">{t('Porselen')}</option>
+            <option value="Kompostérbart engangs">{t('Kompostérbart engangs')}</option>
+            <option value="Ikke inkludert">{t('Ikke inkludert')}</option>
           </select>
         </div>
         <label className="flex min-h-touch cursor-pointer items-center gap-3 self-end text-base font-semibold">
           <input type="checkbox" checked={v.oppsettOgRydding} onChange={(e) => sett('oppsettOgRydding', e.target.checked)} className="h-6 w-6 shrink-0 accent-[var(--k-primary)]" />
-          Oppsett og rydding inkludert
+          {t('Oppsett og rydding inkludert')}
         </label>
       </div>
-      <Textarea label="Betingelser (valgfritt)" hint="For eksempel avbestilling og betaling." rows={2} maxLength={1000} value={v.betingelser} onChange={(e) => sett('betingelser', e.target.value)} />
+      <Textarea label={t('Betingelser (valgfritt)')} hint={t('For eksempel avbestilling og betaling.')} rows={2} maxLength={1000} value={v.betingelser} onChange={(e) => sett('betingelser', e.target.value)} />
       <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col gap-3 border-t border-border bg-bg px-6 pb-6 pt-4 md:-mx-7 md:-mb-7 md:px-7 md:pb-7">
         <section aria-labelledby="tilbud-sum" className="flex flex-col gap-1 rounded-alert bg-surface-soft px-4 py-3">
           <h3 id="tilbud-sum" className="sr-only">
-            Totalpris
+            {t('Totalpris')}
           </h3>
           <div className="flex justify-between gap-3 text-[15px] text-text-muted">
             <span>
-              {f.gjester} kuverter × {krTekst(Number(v.prisPerKuvert) || 0)}
+              {t('{n} kuverter × {pris}', { n: f.gjester, pris: krTekst(Number(v.prisPerKuvert) || 0) })}
             </span>
             <span className="k-num">{krTekst(mat)}</span>
           </div>
           <div className="flex justify-between gap-3 text-[15px] text-text-muted">
-            <span>Levering</span>
-            <span className="k-num">{v.leveringInkludert ? 'Inkludert' : krTekst(frakt)}</span>
+            <span>{t('Levering')}</span>
+            <span className="k-num">{v.leveringInkludert ? t('Inkludert') : krTekst(frakt)}</span>
           </div>
           <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-border pt-2">
-            <strong className="text-base">Totalt for kunden inkl. mva</strong>
+            <strong className="text-base">{t('Totalt for kunden inkl. mva')}</strong>
             <strong className="k-heading k-num text-[26px] leading-none" aria-live="polite">
               {krTekst(total)}
             </strong>
@@ -489,7 +500,7 @@ function TilbudSkjema({ o, onFerdig }: { o: Opplast; onFerdig: (melding: string)
         </section>
         {feil && <Alert tone="feil">{feil}</Alert>}
         <Button type="submit" size="lg" busy={sender} disabled={sender}>
-          {o.tilbud ? 'Oppdater tilbudet' : total > 0 ? `Send tilbud på ${krTekst(total)}` : 'Send tilbudet'}
+          {o.tilbud ? t('Oppdater tilbudet') : total > 0 ? t('Send tilbud på {belop}', { belop: krTekst(total) }) : t('Send tilbudet')}
         </Button>
       </div>
     </form>

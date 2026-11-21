@@ -17,7 +17,7 @@ type Felt = 'orgnr' | 'navn' | 'mvaNummer' | 'beskrivelse' | 'kontaktperson' | '
 const UTKAST = 'kuverto-registrering';
 
 export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
-  const { marked, info } = useSprak();
+  const { marked, info, t, sti } = useSprak();
   // Sverige og Danmark har ikke et åpent navnesøk. Der skriver leverandøren navn og nummer selv.
   const medSok = marked === 'no' || marked === 'fi';
   const [v, setV] = useState<RegistreringInn>({
@@ -68,28 +68,28 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
     }
   }, [v, bedrift, ferdig]);
 
-  const velgBedrift = (t: BrregTreff | undefined) => {
-    setBedrift(t);
+  const velgBedrift = (b: BrregTreff | undefined) => {
+    setBedrift(b);
     setFeil((f) => ({ ...f, orgnr: undefined }));
-    setV((x) => ({ ...x, orgnr: t?.orgnr ?? '', navn: t?.navn ?? '', nettside: x.nettside || (t?.nettside ?? ''), mvaNummer: x.mvaNummer || foreslattMvaNummer(marked, t?.orgnr ?? '') }));
+    setV((x) => ({ ...x, orgnr: b?.orgnr ?? '', navn: b?.navn ?? '', nettside: x.nettside || (b?.nettside ?? ''), mvaNummer: x.mvaNummer || foreslattMvaNummer(marked, b?.orgnr ?? '') }));
   };
 
 
   const send = async () => {
     const f: Partial<Record<Felt, string>> = {};
     if (medSok) {
-      if (!bedrift) f.orgnr = 'Søk opp og velg bedriften.';
+      if (!bedrift) f.orgnr = t('Søk opp og velg bedriften.');
     } else {
-      if (!v.navn.trim()) f.navn = 'Skriv navnet på bedriften.';
-      if (!gyldigOrgnr(marked, v.orgnr)) f.orgnr = `Sjekk ${info.orgnr.navn.toLowerCase()}, for eksempel ${info.orgnr.eksempel}.`;
+      if (!v.navn.trim()) f.navn = t('Skriv navnet på bedriften.');
+      if (!gyldigOrgnr(marked, v.orgnr)) f.orgnr = t('Sjekk {navn}, for eksempel {eksempel}.', { navn: marked === 'se' ? info.orgnr.navn.toLowerCase() : info.orgnr.navn, eksempel: info.orgnr.eksempel });
     }
-    if (info.omvendtAvgift && !gyldigMvaNummer(marked, v.mvaNummer ?? "")) f.mvaNummer = `Skriv MVA-nummeret, for eksempel ${foreslattMvaNummer(marked, v.orgnr) || info.mvaPrefiks + '…'}.`;
-    if (v.beskrivelse.trim().length < 20) f.beskrivelse = 'Skriv noen setninger om bedriften (minst 20 tegn).';
-    if (!v.kontaktperson.trim()) f.kontaktperson = 'Skriv navnet på kontaktpersonen.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.epost.trim())) f.epost = 'Skriv en gyldig e-postadresse.';
-    if (!gyldigTelefon(v.telefon)) f.telefon = 'Skriv et gyldig telefonnummer.';
-    if (!v.kommuner.length) f.kommuner = 'Velg minst én kommune.';
-    if (!v.bekreftet) f.bekreftet = 'Du må bekrefte at opplysningene stemmer.';
+    if (info.omvendtAvgift && !gyldigMvaNummer(marked, v.mvaNummer ?? "")) f.mvaNummer = t('Skriv MVA-nummeret, for eksempel {eksempel}.', { eksempel: foreslattMvaNummer(marked, v.orgnr) || info.mvaPrefiks + '…' });
+    if (v.beskrivelse.trim().length < 20) f.beskrivelse = t('Skriv noen setninger om bedriften (minst 20 tegn).');
+    if (!v.kontaktperson.trim()) f.kontaktperson = t('Skriv navnet på kontaktpersonen.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.epost.trim())) f.epost = t('Skriv en gyldig e-postadresse.');
+    if (!gyldigTelefon(v.telefon)) f.telefon = t('Skriv et gyldig telefonnummer.');
+    if (!v.kommuner.length) f.kommuner = t('Velg minst én kommune.');
+    if (!v.bekreftet) f.bekreftet = t('Du må bekrefte at opplysningene stemmer.');
     setFeil(f);
     const forste = Object.keys(f)[0];
     if (forste) {
@@ -113,7 +113,7 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
         document.getElementById(`felt-${svar.felt}`)?.focus();
       } else setGenerellFeil(svar.feil);
     } catch {
-      setGenerellFeil('Vi fikk ikke kontakt. Prøv igjen.');
+      setGenerellFeil(t('Vi fikk ikke kontakt. Prøv igjen.'));
     } finally {
       setSender(false);
     }
@@ -123,13 +123,13 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
     return (
       <div role="status" className="mt-6 flex flex-col gap-3 rounded-card bg-surface p-6">
         <h2 ref={kvittering} tabIndex={-1} className="k-heading m-0 text-[28px] outline-none">
-          Takk, registreringen er mottatt
+          {t('Takk, registreringen er mottatt')}
         </h2>
         <p className="m-0 text-base leading-normal text-text-muted">
-          Vi har sendt en bekreftelse til <strong className="text-text">{v.epost}</strong>. Du får en ny e-post når bedriften er godkjent. Da logger du inn med den samme adressen.
+          {t('Vi har sendt en bekreftelse til')} <strong className="text-text">{v.epost}</strong>. {t('Du får en ny e-post når bedriften er godkjent. Da logger du inn med den samme adressen.')}
         </p>
-        <Link href="/for-leverandorer" className="font-semibold">
-          Les mer om hvordan det fungerer
+        <Link href={sti('/for-leverandorer')} className="font-semibold">
+          {t('Les mer om hvordan det fungerer')}
         </Link>
       </div>
     );
@@ -145,13 +145,13 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
     >
       <section className="flex flex-col gap-5 rounded-card bg-surface p-5 md:p-7" aria-labelledby="bedrift-tittel">
         <h2 id="bedrift-tittel" className="m-0 text-xl font-bold">
-          Bedriften
+          {t('Bedriften')}
         </h2>
         {medSok ? (
           <BrregSok id="felt-orgnr" valgt={bedrift} onVelg={velgBedrift} feil={feil.orgnr} />
         ) : (
           <div className="grid gap-5 min-[480px]:grid-cols-2">
-            <Input id="felt-navn" label="Bedriftens navn" autoComplete="organization" value={v.navn} onChange={(e) => sett('navn', e.target.value)} feil={feil.navn} required />
+            <Input id="felt-navn" label={t('Bedriftens navn')} autoComplete="organization" value={v.navn} onChange={(e) => sett('navn', e.target.value)} feil={feil.navn} required />
             <Input
               id="felt-orgnr"
               label={info.orgnr.navn}
@@ -171,8 +171,8 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
         {info.omvendtAvgift && (
           <Input
             id="felt-mvaNummer"
-            label="MVA-nummer (VAT)"
-            hint="Kuverto fakturerer fra Norge med omvendt avgiftsplikt, så vi trenger bedriftens MVA-nummer."
+            label={t('MVA-nummer (VAT)')}
+            hint={t('Kuverto fakturerer fra Norge med omvendt avgiftsplikt, så vi trenger bedriftens MVA-nummer.')}
             value={v.mvaNummer ?? ''}
             onChange={(e) => sett('mvaNummer', e.target.value.toUpperCase())}
             feil={feil.mvaNummer}
@@ -181,8 +181,8 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
         )}
         <Textarea
           id="felt-beskrivelse"
-          label="Kort om bedriften"
-          hint="Vises for kundene sammen med tilbudene deres. Hva lager dere, og hva er dere gode på? 20–300 tegn."
+          label={t('Kort om bedriften')}
+          hint={t('Vises for kundene sammen med tilbudene deres. Hva lager dere, og hva er dere gode på? 20–300 tegn.')}
           rows={3}
           maxLength={300}
           value={v.beskrivelse}
@@ -190,22 +190,22 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
           feil={feil.beskrivelse}
           required
         />
-        <Input id="felt-nettside" label="Nettside (valgfritt)" type="url" inputMode="url" autoComplete="url" value={v.nettside} onChange={(e) => sett('nettside', e.target.value)} />
+        <Input id="felt-nettside" label={t('Nettside (valgfritt)')} type="url" inputMode="url" autoComplete="url" value={v.nettside} onChange={(e) => sett('nettside', e.target.value)} />
       </section>
 
       <section className="flex flex-col gap-5 rounded-card bg-surface p-5 md:p-7" aria-labelledby="kontakt-tittel">
         <h2 id="kontakt-tittel" className="m-0 text-xl font-bold">
-          Kontaktperson
+          {t('Kontaktperson')}
         </h2>
-        <Input id="felt-kontaktperson" label="Navn" autoComplete="name" value={v.kontaktperson} onChange={(e) => sett('kontaktperson', e.target.value)} feil={feil.kontaktperson} required />
+        <Input id="felt-kontaktperson" label={t('Navn')} autoComplete="name" value={v.kontaktperson} onChange={(e) => sett('kontaktperson', e.target.value)} feil={feil.kontaktperson} required />
         <div className="grid gap-5 min-[480px]:grid-cols-2">
           <Input
             id="felt-epost"
-            label="E-post"
+            label={t('E-post')}
             type="email"
             inputMode="email"
             autoComplete="email"
-            hint="Her får du forespørsler, og med den logger du inn."
+            hint={t('Her får du forespørsler, og med den logger du inn.')}
             value={v.epost}
             onChange={(e) => sett('epost', e.target.value)}
             feil={feil.epost}
@@ -213,11 +213,11 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
           />
           <Input
             id="felt-telefon"
-            label="Telefon"
+            label={t('Telefon')}
             type="tel"
             inputMode="tel"
             autoComplete="tel"
-            hint="Kunden får nummeret når de velger tilbudet deres."
+            hint={t('Kunden får nummeret når de velger tilbudet deres.')}
             value={v.telefon}
             onChange={(e) => sett('telefon', e.target.value)}
             feil={feil.telefon}
@@ -229,9 +229,9 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
       <section className="flex flex-col gap-4 rounded-card bg-surface p-5 md:p-7" aria-labelledby="omrade-tittel">
         <div className="flex flex-col gap-1">
           <h2 id="omrade-tittel" className="m-0 text-xl font-bold">
-            Hvor leverer dere?
+            {t('Hvor leverer dere?')}
           </h2>
-          <p className="m-0 text-[15px] text-text-muted">Kryss av for fylkene dere leverer til, eller åpne fylket og velg enkeltkommuner. Du får bare forespørsler fra områdene du velger.</p>
+          <p className="m-0 text-[15px] text-text-muted">{t('Kryss av for fylkene dere leverer til, eller åpne fylket og velg enkeltkommuner. Du får bare forespørsler fra områdene du velger.')}</p>
         </div>
         <DekningVelger kommuner={kommuner} valgt={v.kommuner} onChange={(l) => sett('kommuner', l)} feilId={feil.kommuner ? 'kommuner-feil' : undefined} />
         {feil.kommuner && (
@@ -252,9 +252,9 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
             className="mt-0.5 h-6 w-6 shrink-0 accent-[var(--k-primary)]"
           />
           <span>
-            Jeg bekrefter at opplysningene stemmer, og at jeg kan representere bedriften. Les om{' '}
-            <a href="/personvern" target="_blank" rel="noopener">
-              personvern<span className="sr-only"> (åpnes i ny fane)</span>
+            {t('Jeg bekrefter at opplysningene stemmer, og at jeg kan representere bedriften. Les om')}{' '}
+            <a href={sti('/personvern')} target="_blank" rel="noopener">
+              {t('personvern')}<span className="sr-only"> {t('(åpnes i ny fane)')}</span>
             </a>
             .
           </span>
@@ -266,7 +266,7 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
         )}
         <label className="flex cursor-pointer items-start gap-3 text-base">
           <input type="checkbox" checked={v.markedsforing} onChange={(e) => sett('markedsforing', e.target.checked)} className="mt-0.5 h-6 w-6 shrink-0 accent-[var(--k-primary)]" />
-          <span>Send meg nyheter og tips fra Kuverto på e-post (valgfritt).</span>
+          <span>{t('Send meg nyheter og tips fra Kuverto på e-post (valgfritt).')}</span>
         </label>
       </div>
 
@@ -276,7 +276,7 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
 
       {generellFeil && <Alert tone="feil">{generellFeil}</Alert>}
       <Button type="submit" size="lg" busy={sender} disabled={sender} className="self-start">
-        {sender ? 'Sender' : 'Send registreringen'}
+        {sender ? t('Sender') : t('Send registreringen')}
       </Button>
     </form>
   );

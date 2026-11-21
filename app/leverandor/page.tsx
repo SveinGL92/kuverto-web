@@ -5,27 +5,32 @@ import { ButtonLink } from '@/components/ui/Button';
 import { signerVedlegg, tilForesporsel, tilKontakt } from '@/lib/server/data';
 import { anledningNavn } from '@/lib/labels';
 import type { Anledning, VedleggFil } from '@/lib/types';
+import type { T } from '@/lib/i18n';
+import { sprak } from '@/lib/server/marked';
 import { db, innloggetEpost } from '@/lib/server/supabase';
 import { Oversikt, type Opplast } from './Oversikt';
 
-export const metadata: Metadata = {
-  title: 'Leverandør – oversikt',
-  description: 'Se nye cateringforespørsler i området ditt, lås opp dem du vil svare på og send tilbud.',
-  robots: { index: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await sprak();
+  return {
+    title: t('Leverandør – oversikt'),
+    description: t('Se nye cateringforespørsler i området ditt, lås opp dem du vil svare på og send tilbud.'),
+    robots: { index: false },
+  };
+}
 export const dynamic = 'force-dynamic';
 
-function Melding({ tittel, children }: { tittel: string; children: React.ReactNode }) {
+function Melding({ tittel, children, t, sti }: { tittel: string; children: React.ReactNode; t: T; sti: (s: string) => string }) {
   return (
     <main id="innhold" className="k-wrap flex min-h-dvh items-center justify-center py-10">
       <div className="flex max-w-[520px] flex-col gap-4 rounded-card bg-surface p-7">
-        <Link href="/" className="k-heading text-xl text-primary no-underline">
+        <Link href={sti('/')} className="k-heading text-xl text-primary no-underline">
           kuverto
         </Link>
         <h1 className="k-heading m-0 text-[30px] leading-tight">{tittel}</h1>
         {children}
         <form action="/logg-ut" method="post">
-          <button className="text-[15px] font-semibold underline">Logg ut</button>
+          <button className="text-[15px] font-semibold underline">{t('Logg ut')}</button>
         </form>
       </div>
     </main>
@@ -33,33 +38,34 @@ function Melding({ tittel, children }: { tittel: string; children: React.ReactNo
 }
 
 export default async function LeverandorSide() {
+  const { t, sti } = await sprak();
   const epost = await innloggetEpost();
-  if (!epost) redirect('/logg-inn?rolle=leverandor');
+  if (!epost) redirect(sti('/logg-inn?rolle=leverandor'));
   const s = db();
   const { data: lev } = await s.from('leverandorer').select('*').eq('epost', epost).maybeSingle();
 
   if (!lev)
     return (
-      <Melding tittel="Bedriften er ikke registrert">
+      <Melding tittel={t('Bedriften er ikke registrert')} t={t} sti={sti}>
         <p className="m-0 text-base leading-normal text-text-muted">
-          Vi finner ingen leverandør med e-postadressen <strong className="text-text">{epost}</strong>. Registrer bedriften først, eller logg inn med e-posten dere registrerte.
+          {t('Vi finner ingen leverandør med e-postadressen')} <strong className="text-text">{epost}</strong>. {t('Registrer bedriften først, eller logg inn med e-posten dere registrerte.')}
         </p>
-        <ButtonLink href="/bli-leverandor" className="self-start">
-          Registrer bedriften
+        <ButtonLink href={sti('/bli-leverandor')} className="self-start">
+          {t('Registrer bedriften')}
         </ButtonLink>
       </Melding>
     );
   if (lev.status === 'venter')
     return (
-      <Melding tittel="Venter på godkjenning">
-        <p className="m-0 text-base leading-normal text-text-muted">Vi sjekker {lev.navn} og godkjenner så raskt vi kan. Du får en e-post når du kan begynne å svare på forespørsler.</p>
+      <Melding tittel={t('Venter på godkjenning')} t={t} sti={sti}>
+        <p className="m-0 text-base leading-normal text-text-muted">{t('Vi sjekker {firma} og godkjenner så raskt vi kan. Du får en e-post når du kan begynne å svare på forespørsler.', { firma: lev.navn })}</p>
       </Melding>
     );
   if (lev.status !== 'godkjent')
     return (
-      <Melding tittel="Kontoen er ikke aktiv">
+      <Melding tittel={t('Kontoen er ikke aktiv')} t={t} sti={sti}>
         <p className="m-0 text-base leading-normal text-text-muted">
-          Ta kontakt på <a href="mailto:hei@kuverto.no">hei@kuverto.no</a> hvis du har spørsmål.
+          {t('Ta kontakt på')} <a href="mailto:hei@kuverto.no">hei@kuverto.no</a> {t('hvis du har spørsmål.')}
         </p>
       </Melding>
     );
@@ -84,7 +90,7 @@ export default async function LeverandorSide() {
   const nye = (kandidater ?? [])
     .filter((f) => !opplasteIder.includes(f.id) && (telling.get(f.id) ?? 0) < f.maks_leverandorer)
     // Før opplåsing: bare område, ikke eksakt postnummer.
-    .map((f) => ({ ...tilForesporsel(f), postnummer: `${String(f.postnummer).slice(0, 2)}xx`, andreOpplast: telling.get(f.id) ?? 0 }));
+    .map((f) => ({ ...tilForesporsel(f), postnummer: `${String(f.postnummer).slice(0, 2)}${'x'.repeat(Math.max(2, String(f.postnummer).length - 2))}`, andreOpplast: telling.get(f.id) ?? 0 }));
 
   // Mine opplåste med kontaktinfo og eget tilbud.
   let opplaste: Opplast[] = [];
@@ -145,21 +151,21 @@ export default async function LeverandorSide() {
   const { data: fNavn } = fIder.length ? await s.from('foresporsler').select('id, anledning, gjester, poststed').in('id', fIder) : { data: [] };
   const hva = (fid?: string) => {
     const f = fNavn?.find((x) => x.id === fid);
-    return f ? `${anledningNavn(f.anledning as Anledning)} for ${f.gjester} i ${f.poststed}` : 'forespørsel';
+    return f ? t('{hva} for {gjester} i {sted}', { hva: anledningNavn(f.anledning as Anledning, t), gjester: f.gjester, sted: f.poststed }) : t('forespørsel');
   };
-  const historikk = (trans ?? []).map((t) => {
-    const ref = t.referanse ?? '';
-    let tekst = 'Justert av Kuverto';
-    if (t.grunn === 'kjop') tekst = t.endring > 0 ? 'Kjøpt' : 'Kjøp refundert';
-    else if (t.grunn === 'gratis') tekst = 'Gratis klipp ved godkjenning';
-    else if (t.grunn === 'opplasing') tekst = `Låste opp: ${hva(ref.split(':')[1])}`;
-    else if (t.grunn === 'refusjon') {
+  const historikk = (trans ?? []).map((tr) => {
+    const ref = tr.referanse ?? '';
+    let tekst = t('Justert av Kuverto');
+    if (tr.grunn === 'kjop') tekst = tr.endring > 0 ? t('Kjøpt') : t('Kjøp refundert');
+    else if (tr.grunn === 'gratis') tekst = t('Gratis klipp ved godkjenning');
+    else if (tr.grunn === 'opplasing') tekst = t('Låste opp: {hva}', { hva: hva(ref.split(':')[1]) });
+    else if (tr.grunn === 'refusjon') {
       const fid = oppRader?.find((o) => ref.endsWith(o.id))?.foresporsel_id;
       tekst = ref.startsWith('refusjon-7d:')
-        ? `Tilbake: kunden svarte ikke innen 7 dager (${hva(fid)})`
-        : `Tilbake: forespørselen ble trukket eller stoppet (${hva(fid)})`;
+        ? t('Tilbake: kunden svarte ikke innen 7 dager ({hva})', { hva: hva(fid) })
+        : t('Tilbake: forespørselen ble trukket eller stoppet ({hva})', { hva: hva(fid) });
     }
-    return { id: t.id, endring: t.endring, tekst, dato: t.opprettet };
+    return { id: tr.id, endring: tr.endring, tekst, dato: tr.opprettet };
   });
 
   return <Oversikt firma={lev.navn} dekning={lev.dekning_visning} saldo={(saldo as number) ?? 0} nye={nye} opplaste={opplaste} historikk={historikk} />;

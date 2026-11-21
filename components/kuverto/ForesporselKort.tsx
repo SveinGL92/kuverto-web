@@ -5,11 +5,17 @@ import { datoKort, stor } from '@/lib/format';
 import { anledningIllustrasjon, anledningNavn, budsjettNavn, erAllergen, kostholdNavn, serveringNavn } from '@/lib/labels';
 import type { ReactNode } from 'react';
 import type { Foresporsel, ForesporselKontakt } from '@/lib/types';
-import { tidSiden } from './tid';
+import type { T } from '@/lib/i18n/core';
+import { useSprak } from '@/components/Sprak';
 
-const nyTekst = (iso: string) => {
-  const t = tidSiden(iso);
-  return t === 'i går' ? t : `${t} siden`;
+/** «12 min siden», «1 t siden», «i går», «3 dager siden» (samme avrunding som tidSiden i ./tid). */
+const nyTekst = (iso: string, t: T) => {
+  const min = Math.max(1, Math.round((Date.now() - Date.parse(iso)) / 60_000));
+  if (min < 60) return t('{n} min siden', { n: min });
+  const timer = Math.round(min / 60);
+  if (timer < 24) return t('{n} t siden', { n: timer });
+  const d = Math.round(timer / 24);
+  return d === 1 ? t('i går') : t('{n} dager siden', { n: d });
 };
 
 /**
@@ -28,7 +34,7 @@ export function ForesporselKort({
   onKjopKlipp,
   svarfrist,
   tilbudStatus,
-  lagTilbudTekst = 'Lag tilbud',
+  lagTilbudTekst,
   opptatt,
 }: {
   foresporsel: Foresporsel;
@@ -48,10 +54,11 @@ export function ForesporselKort({
   lagTilbudTekst?: string;
   opptatt?: boolean;
 }) {
+  const { t, marked, info } = useSprak();
   const opplast = !!kontakt;
-  const tittel = `${anledningNavn(f.anledning)} for ${f.gjester}`;
-  const tid = `${f.levering === 'henting' ? 'hentes' : 'før'} kl. ${f.klokkeslett}`;
-  const dato = f.dato ? `${stor(datoKort(f.dato))}, ${tid}` : `Fleksibel dato, ${tid}`;
+  const tittel = t('{hva} for {gjester}', { hva: anledningNavn(f.anledning, t), gjester: f.gjester });
+  const tid = f.levering === 'henting' ? t('hentes kl. {tid}', { tid: f.klokkeslett }) : t('før kl. {tid}', { tid: f.klokkeslett });
+  const dato = f.dato ? `${stor(datoKort(f.dato, info.intl))}, ${tid}` : t('Fleksibel dato, {tid}', { tid });
   const nokKlipp = klippsaldo >= f.klippPris;
   const mangler = f.klippPris - klippsaldo;
 
@@ -62,15 +69,15 @@ export function ForesporselKort({
           <div className="flex flex-wrap gap-1.5">
             {opplast ? (
               <>
-                <Badge tone="opplast">Opplåst</Badge>
+                <Badge tone="opplast">{t('Opplåst')}</Badge>
                 {svarfrist && <Badge tone="advarsel">{svarfrist}</Badge>}
               </>
             ) : (
-              <Badge tone="ny">Ny · {nyTekst(f.opprettet)}</Badge>
+              <Badge tone="ny">{t('Ny')} · {nyTekst(f.opprettet, t)}</Badge>
             )}
           </div>
           <h2 className="k-heading m-0 text-[30px] leading-none md:text-[34px]">{tittel}</h2>
-          <span className="text-base text-text-muted">{opplast ? `${dato} · ${budsjettNavn(f.budsjett)} per kuvert` : f.omradeVisning}</span>
+          <span className="text-base text-text-muted">{opplast ? `${dato} · ${t('{budsjett} per kuvert', { budsjett: budsjettNavn(f.budsjett, marked, t) })}` : f.omradeVisning}</span>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={anledningIllustrasjon(f.anledning)} alt="" className="k-ink hidden w-[120px] shrink-0 sm:block" />
@@ -109,11 +116,11 @@ export function ForesporselKort({
           <div className="flex flex-wrap gap-2.5">
             {onLagTilbud && (
               <Button onClick={onLagTilbud} className="min-h-[54px] flex-grow text-[17px]">
-                {lagTilbudTekst}
+                {lagTilbudTekst ?? t('Lag tilbud')}
               </Button>
             )}
             <Button variant="secondary" onClick={onSendMelding} className="min-h-[54px] px-5">
-              {meldingTekst ?? 'Send melding'}
+              {meldingTekst ?? t('Send melding')}
             </Button>
           </div>
         </>
@@ -121,30 +128,30 @@ export function ForesporselKort({
         <>
           <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border py-[18px]">
             <div>
-              <dt className="text-small font-semibold text-text-muted">Dato</dt>
+              <dt className="text-small font-semibold text-text-muted">{t('Dato')}</dt>
               <dd className="m-0 mt-0.5 text-[17px] font-semibold">{dato}</dd>
             </div>
             <div>
-              <dt className="text-small font-semibold text-text-muted">Budsjett per kuvert</dt>
-              <dd className="m-0 mt-0.5 text-[17px] font-semibold">{budsjettNavn(f.budsjett)}</dd>
+              <dt className="text-small font-semibold text-text-muted">{t('Budsjett per kuvert')}</dt>
+              <dd className="m-0 mt-0.5 text-[17px] font-semibold">{budsjettNavn(f.budsjett, marked, t)}</dd>
             </div>
             {f.servering && (
               <div>
-                <dt className="text-small font-semibold text-text-muted">Servering</dt>
-                <dd className="m-0 mt-0.5 text-[17px] font-semibold">{serveringNavn(f.servering)}</dd>
+                <dt className="text-small font-semibold text-text-muted">{t('Servering')}</dt>
+                <dd className="m-0 mt-0.5 text-[17px] font-semibold">{serveringNavn(f.servering, t)}</dd>
               </div>
             )}
             <div>
-              <dt className="text-small font-semibold text-text-muted">Kosthold og allergier</dt>
+              <dt className="text-small font-semibold text-text-muted">{t('Kosthold og allergier')}</dt>
               <dd className="m-0 mt-1 flex flex-wrap gap-1.5">
                 {f.kosthold.length === 0 ? (
-                  <span className="text-[17px] font-semibold">Ingen oppgitt</span>
+                  <span className="text-[17px] font-semibold">{t('Ingen oppgitt')}</span>
                 ) : (
                   f.kosthold.map((k) => (
                     <DietTag key={k.type} alvorlig={k.alvorlig}>
-                      {erAllergen(k.type) ? 'Allergi: ' : ''}
-                      {kostholdNavn(k.type)} {k.antall}
-                      {k.alvorlig ? ', alvorlig' : ''}
+                      {erAllergen(k.type) ? `${t('Allergi')}: ` : ''}
+                      {kostholdNavn(k.type, t)} {k.antall}
+                      {k.alvorlig ? `, ${t('alvorlig')}` : ''}
                     </DietTag>
                   ))
                 )}
@@ -156,31 +163,31 @@ export function ForesporselKort({
               <rect x="5" y="11" width="14" height="10" rx="2" />
               <path d="M8 11V8a4 4 0 0 1 8 0v3" />
             </svg>
-            <span className="text-base leading-[1.45]">Navn, firma, kontaktinfo og melding vises når du låser opp. Adressen deles når kunden velger tilbudet ditt.</span>
+            <span className="text-base leading-[1.45]">{t('Navn, firma, kontaktinfo og melding vises når du låser opp. Adressen deles når kunden velger tilbudet ditt.')}</span>
           </div>
           {nokKlipp ? (
             <>
               <div className="flex flex-wrap items-center gap-2.5">
                 <Button onClick={onLasOpp} busy={opptatt} disabled={opptatt} className="min-h-[54px] flex-grow text-[17px]">
-                  Lås opp for {f.klippPris} klipp
+                  {t('Lås opp for {n} klipp', { n: f.klippPris })}
                 </Button>
                 <Button variant="secondary" onClick={onIkkeAktuell} className="min-h-[54px] px-5">
-                  Ikke aktuell
+                  {t('Ikke aktuell')}
                 </Button>
               </div>
               <span className="text-[15px] text-text-muted">
-                Du har {klippsaldo} klipp. Etter opplåsing: {klippsaldo - f.klippPris}. Høyst {f.maksLeverandorer} leverandører kan låse opp denne forespørselen.
+                {t('Du har {saldo} klipp. Etter opplåsing: {etter}. Høyst {maks} leverandører kan låse opp denne forespørselen.', { saldo: klippsaldo, etter: klippsaldo - f.klippPris, maks: f.maksLeverandorer })}
               </span>
             </>
           ) : (
             <div className="flex flex-col gap-3">
               <Alert tone="advarsel">
-                Denne forespørselen koster <strong>{f.klippPris} klipp</strong>. Du har <strong>{klippsaldo}</strong>. Du trenger {mangler} klipp til.
+                {t('Denne forespørselen koster')} <strong>{t('{n} klipp', { n: f.klippPris })}</strong>. {t('Du har')} <strong>{klippsaldo}</strong>. {t('Du trenger {n} klipp til.', { n: mangler })}
               </Alert>
               <div className="flex flex-wrap items-center gap-4">
-                <Button onClick={onKjopKlipp}>Kjøp klipp</Button>
+                <Button onClick={onKjopKlipp}>{t('Kjøp klipp')}</Button>
                 <Button variant="text" onClick={onIkkeAktuell}>
-                  Ikke nå
+                  {t('Ikke nå')}
                 </Button>
               </div>
             </div>

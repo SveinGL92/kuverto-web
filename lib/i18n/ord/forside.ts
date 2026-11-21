@@ -9,7 +9,7 @@
 const rader: [string, string, string, string][] = [
   // Topp og bunn
   ['Hovedmeny', 'Huvudmeny', 'Hovedmenu', 'Päävalikko'],
-  ['Meny', 'Meny', 'Menu', 'Valikko'],
+  ['Meny§nav', 'Meny', 'Menu', 'Valikko'],
   ['Slik fungerer det', 'Så fungerar det', 'Sådan fungerer det', 'Näin se toimii'],
   ['Finn catering', 'Hitta catering', 'Find catering', 'Löydä catering'],
   ['For leverandører', 'För leverantörer', 'For leverandører', 'Toimittajille'],

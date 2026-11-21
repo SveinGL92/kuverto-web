@@ -6,26 +6,31 @@ import { db, innloggetEpost } from '@/lib/server/supabase';
 import { Profil } from './Profil';
 import { MARKED_INFO, type Marked } from '@/lib/markets';
 import { formaterOrgnr } from '@/lib/orgnr';
+import { sprak } from '@/lib/server/marked';
 
-export const metadata: Metadata = { title: 'Profil og område', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await sprak();
+  return { title: t('Profil og område'), robots: { index: false } };
+}
 export const dynamic = 'force-dynamic';
 
 export default async function ProfilSide() {
+  const { t, sti } = await sprak();
   const epost = await innloggetEpost();
-  if (!epost) redirect('/logg-inn?rolle=leverandor');
+  if (!epost) redirect(sti('/logg-inn?rolle=leverandor'));
   const s = db();
   const { data: l } = await s.from('leverandorer').select('*').eq('epost', epost).maybeSingle();
-  if (!l || l.status !== 'godkjent') redirect('/leverandor');
+  if (!l || l.status !== 'godkjent') redirect(sti('/leverandor'));
   const [kommuner, { data: dekning }] = await Promise.all([hentKommuner(l.marked), s.from('dekning').select('kommunenr').eq('leverandor_id', l.id)]);
   return (
     <main id="innhold" className="k-wrap">
       <div className="mx-auto flex max-w-[680px] flex-col gap-3 py-8">
-        <Link href="/leverandor" className="text-[15px] font-semibold">
-          ← Til oversikten
+        <Link href={sti('/leverandor')} className="text-[15px] font-semibold">
+          {t('← Til oversikten')}
         </Link>
-        <h1 className="k-heading m-0 text-h1">Profil og område</h1>
+        <h1 className="k-heading m-0 text-h1">{t('Profil og område')}</h1>
         <p className="m-0 text-base text-text-muted">
-          {l.navn} · {MARKED_INFO[l.marked as Marked]?.orgnr.navn ?? 'org.nr.'} {formaterOrgnr(l.marked, l.orgnr)} · {l.epost}. Skal navn, org.nr. eller e-post endres, skriver du til <a href="mailto:hei@kuverto.no">hei@kuverto.no</a>.
+          {l.navn} · {MARKED_INFO[l.marked as Marked]?.orgnr.navn ?? t('org.nr.')} {formaterOrgnr(l.marked, l.orgnr)} · {l.epost}. {t('Skal navn, org.nr. eller e-post endres, skriver du til')} <a href="mailto:hei@kuverto.no">hei@kuverto.no</a>.
         </p>
         <Profil
           kommuner={kommuner}

@@ -1,5 +1,5 @@
 import 'server-only';
-import type { Marked } from '@/lib/markets';
+import { MARKED_INFO, type Marked } from '@/lib/markets';
 import { db } from './supabase';
 
 export interface Kommune {
@@ -52,7 +52,11 @@ export async function gyldigeKommuner(nr: string[], marked: Marked = 'no'): Prom
 }
 
 /** Kort tekst om dekningen, f.eks. «Oslo og Akershus» eller «Oslo, Bærum og 3 til». Hele fylker nevnes ved navn. */
-export function dekningVisning(valgt: Kommune[], alle?: Kommune[]) {
+const OG: Record<Marked, [string, string]> = { no: ['og', 'til'], se: ['och', 'till'], dk: ['og', 'mere'], fi: ['ja', 'muuta'] };
+
+/** Kort tekst om dekningsområdet, lagret på leverandøren og vist for kunder i samme marked. */
+export function dekningVisning(valgt: Kommune[], alle?: Kommune[], marked: Marked = 'no') {
+  const [og, til] = OG[marked];
   const deler: string[] = [];
   const perFylke = new Map<string, Kommune[]>();
   for (const k of valgt) (perFylke.get(k.fylkesnr) ?? perFylke.set(k.fylkesnr, []).get(k.fylkesnr)!).push(k);
@@ -60,8 +64,8 @@ export function dekningVisning(valgt: Kommune[], alle?: Kommune[]) {
   for (const [fnr, liste] of fylker) {
     const total = alle ? alle.filter((k) => k.fylkesnr === fnr).length : 0;
     if (total && liste.length === total) deler.push(liste[0].fylke);
-    else deler.push(...liste.map((k) => k.navn).sort((a, b) => a.localeCompare(b, 'nb')));
+    else deler.push(...liste.map((k) => k.navn).sort((a, b) => a.localeCompare(b, MARKED_INFO[marked].intl)));
   }
-  if (deler.length <= 3) return deler.length > 1 ? `${deler.slice(0, -1).join(', ')} og ${deler.at(-1)}` : (deler[0] ?? '');
-  return `${deler.slice(0, 2).join(', ')} og ${deler.length - 2} til`;
+  if (deler.length <= 3) return deler.length > 1 ? `${deler.slice(0, -1).join(', ')} ${og} ${deler.at(-1)}` : (deler[0] ?? '');
+  return `${deler.slice(0, 2).join(', ')} ${og} ${deler.length - 2} ${til}`;
 }

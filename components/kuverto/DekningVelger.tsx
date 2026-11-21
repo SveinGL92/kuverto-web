@@ -1,5 +1,7 @@
 'use client';
 
+import { useSprak } from '@/components/Sprak';
+
 /** Velg dekningsområde: én avkrysning per fylke, med enkeltkommuner i en nedtrekksliste. */
 export interface Kommune {
   nr: string;
@@ -15,6 +17,7 @@ interface Fylke {
 }
 
 function FylkeRad({ fy, valgt, onChange }: { fy: Fylke; valgt: string[]; onChange: (l: string[]) => void }) {
+  const { t } = useSprak();
   const valgte = fy.kommuner.filter((k) => valgt.includes(k.nr)).length;
   const alle = valgte === fy.kommuner.length;
   const delvis = valgte > 0 && !alle;
@@ -39,7 +42,7 @@ function FylkeRad({ fy, valgt, onChange }: { fy: Fylke; valgt: string[]; onChang
         />
         <span className="flex-grow">{fy.navn}</span>
         <span id={`fylke-${fy.nr}-status`} className="text-small font-semibold text-text-muted">
-          {ettKommune ? '' : alle ? `Alle ${fy.kommuner.length} kommuner` : valgte ? `${valgte} av ${fy.kommuner.length} kommuner` : `${fy.kommuner.length} kommuner`}
+          {ettKommune ? '' : alle ? t('Alle {n} kommuner', { n: fy.kommuner.length }) : valgte ? t('{valgte} av {n} kommuner', { valgte, n: fy.kommuner.length }) : t('{n} kommuner', { n: fy.kommuner.length })}
         </span>
       </label>
       {!ettKommune && (
@@ -48,7 +51,7 @@ function FylkeRad({ fy, valgt, onChange }: { fy: Fylke; valgt: string[]; onChang
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open:rotate-90 motion-reduce:transition-none">
               <path d="M9 6l6 6-6 6" />
             </svg>
-            Velg enkeltkommuner i {fy.navn}
+            {t('Velg enkeltkommuner i {navn}', { navn: fy.navn })}
           </summary>
           <div className="grid grid-cols-1 gap-x-4 px-4 pb-3 min-[420px]:grid-cols-2 md:grid-cols-3">
             {fy.kommuner.map((k) => (
@@ -75,18 +78,19 @@ export function DekningVelger({
   onChange: (kommuner: string[]) => void;
   feilId?: string;
 }) {
+  const { t, info } = useSprak();
   const perFylke = new Map<string, Fylke>();
   for (const k of kommuner) {
     const f = perFylke.get(k.fylkesnr) ?? perFylke.set(k.fylkesnr, { nr: k.fylkesnr, navn: k.fylke, kommuner: [] }).get(k.fylkesnr)!;
     f.kommuner.push(k);
   }
   const fylker = [...perFylke.values()];
-  for (const f of fylker) f.kommuner.sort((a, b) => a.navn.localeCompare(b.navn, 'nb'));
-  fylker.sort((a, b) => a.navn.localeCompare(b.navn, 'nb'));
+  for (const f of fylker) f.kommuner.sort((a, b) => a.navn.localeCompare(b.navn, info.intl));
+  fylker.sort((a, b) => a.navn.localeCompare(b.navn, info.intl));
 
   return (
     <fieldset id="felt-kommuner" tabIndex={-1} aria-describedby={feilId} className="m-0 flex flex-col gap-3 border-0 p-0 outline-none">
-      <legend className="sr-only">Fylker og kommuner</legend>
+      <legend className="sr-only">{t('Fylker og kommuner')}</legend>
       {fylker.map((fy) => (
         <FylkeRad key={fy.nr} fy={fy} valgt={valgt} onChange={onChange} />
       ))}

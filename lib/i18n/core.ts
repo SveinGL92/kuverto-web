@@ -8,9 +8,12 @@ export function fyll(tekst: string, vars?: Vars) {
   return tekst.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
 }
 
-/** Lager t(): slår opp den norske teksten i ordboken, ellers vises norsk. */
+/**
+ * Lager t(): slår opp den norske teksten i ordboken, ellers vises norsk.
+ * Samme norske ord med ulik betydning skilles med kontekst etter §: t('Meny§nav'). Norsk viser teksten før §.
+ */
 export function lagT(ord: Ordbok) {
-  return (tekst: string, vars?: Vars) => fyll(ord[tekst] ?? tekst, vars);
+  return (tekst: string, vars?: Vars) => fyll(ord[tekst] ?? tekst.split('§')[0], vars);
 }
 
 export type T = ReturnType<typeof lagT>;

@@ -5,7 +5,7 @@ import type { BrregTreff } from '@/app/api/brreg/route';
 import { useSprak } from '@/components/Sprak';
 import { formaterOrgnr, gyldigOrgnr } from '@/lib/orgnr';
 
-/** Søk opp bedriften i Enhetsregisteret på navn eller org.nr. Tilgjengelig kombinasjonsboks (ARIA 1.2). */
+/** Søk opp bedriften i registeret (Norge: Enhetsregisteret, Finland: YTJ) på navn eller org.nr. Tilgjengelig kombinasjonsboks (ARIA 1.2). */
 export function BrregSok({
   id,
   valgt,
@@ -28,13 +28,15 @@ export function BrregSok({
   const feilId = useId();
   const status = useId();
   const input = useRef<HTMLInputElement>(null);
-  const { marked } = useSprak();
+  const { marked, info, t } = useSprak();
+  // «organisasjonsnummeret», «organisationsnummer», «Y-tunnus»
+  const orgnrTekst = marked === 'no' ? 'organisasjonsnummeret' : marked === 'se' ? info.orgnr.navn.toLowerCase() : info.orgnr.navn;
 
   useEffect(() => {
     const sok = q.trim();
     if (sok.length < 2) return;
     const ctrl = new AbortController();
-    const t = setTimeout(async () => {
+    const tid = setTimeout(async () => {
       setLaster(true);
       try {
         const r = await fetch(`/api/brreg?q=${encodeURIComponent(sok)}${marked === 'fi' ? '&m=fi' : ''}`, { signal: ctrl.signal });
@@ -50,7 +52,7 @@ export function BrregSok({
       }
     }, 250);
     return () => {
-      clearTimeout(t);
+      clearTimeout(tid);
       ctrl.abort();
     };
   }, [q]);
@@ -60,8 +62,8 @@ export function BrregSok({
   const manuell: BrregTreff | undefined = nede && gyldigOrgnr(marked, nr) ? { orgnr: nr, navn: '', form: '', sted: '', bransje: '', nettside: '' } : undefined;
   const valg = manuell ? [manuell] : treff;
 
-  const velg = (t: BrregTreff) => {
-    onVelg(t);
+  const velg = (b: BrregTreff) => {
+    onVelg(b);
     setApen(false);
     setQ('');
   };
@@ -69,12 +71,12 @@ export function BrregSok({
   if (valgt)
     return (
       <div className="flex flex-col gap-1.5">
-        <span className="text-[15px] font-semibold">Bedriften</span>
+        <span className="text-[15px] font-semibold">{t('Bedriften')}</span>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-input border-[1.5px] border-primary bg-surface-soft px-4 py-3">
           <div className="flex flex-col">
-            <strong className="text-[17px]">{valgt.navn || 'Navn hentes ved innsending'}</strong>
+            <strong className="text-[17px]">{valgt.navn || t('Navn hentes ved innsending')}</strong>
             <span className="text-[15px] text-text-muted">
-              Org.nr. {formaterOrgnr(marked, valgt.orgnr)}
+              {t('Org.nr.')} {formaterOrgnr(marked, valgt.orgnr)}
               {valgt.sted ? ` · ${valgt.sted}` : ''}
               {valgt.bransje ? ` · ${valgt.bransje}` : ''}
             </span>
@@ -87,7 +89,7 @@ export function BrregSok({
             }}
             className="min-h-touch px-2 text-[15px] font-semibold text-primary underline"
           >
-            Velg en annen bedrift
+            {t('Velg en annen bedrift')}
           </button>
         </div>
       </div>
@@ -96,10 +98,10 @@ export function BrregSok({
   return (
     <div className="relative flex flex-col gap-1.5">
       <label htmlFor={id} className="text-[15px] font-semibold">
-        Søk opp bedriften
+        {t('Søk opp bedriften')}
       </label>
       <span id={hint} className="text-small text-text-muted">
-        Skriv navnet eller organisasjonsnummeret. Vi henter opplysningene fra Enhetsregisteret.
+        {t('Skriv navnet eller {orgnr}. Vi henter opplysningene fra {register}.', { orgnr: orgnrTekst, register: info.orgnr.register })}
       </span>
       <input
         ref={input}
@@ -138,7 +140,7 @@ export function BrregSok({
             }
           } else if (e.key === 'Escape') setApen(false);
         }}
-        placeholder="Bedriftsnavn eller org.nr. (ni siffer)"
+        placeholder={marked === 'no' ? t('Bedriftsnavn eller org.nr. (ni siffer)') : t('Bedriftsnavn eller {navn}, for eksempel {eksempel}', { navn: orgnrTekst, eksempel: info.orgnr.eksempel })}
         className={`min-h-[52px] rounded-input border-[1.5px] bg-surface px-4 text-[17px] ${feil ? 'border-error' : 'border-border-input'}`}
       />
       {feil && (
@@ -147,34 +149,38 @@ export function BrregSok({
         </span>
       )}
       <span id={status} role="status" className="sr-only">
-        {q.trim().length >= 2 && !laster ? (valg.length ? `${valg.length} treff. Bruk piltastene for å velge.` : 'Ingen treff.') : ''}
+        {q.trim().length >= 2 && !laster ? (valg.length ? t('{n} treff. Bruk piltastene for å velge.', { n: valg.length }) : t('Ingen treff.')) : ''}
       </span>
       {apen && q.trim().length >= 2 && (
-        <ul id={liste} role="listbox" aria-label="Treff i Enhetsregisteret" className="absolute left-0 right-0 top-full z-20 m-0 mt-1 max-h-[340px] list-none overflow-y-auto rounded-input border border-border bg-surface p-1 shadow-lg">
-          {laster && !valg.length && <li className="px-3 py-3 text-[15px] text-text-muted">Søker …</li>}
+        <ul id={liste} role="listbox" aria-label={t('Treff i {register}', { register: info.orgnr.register })} className="absolute left-0 right-0 top-full z-20 m-0 mt-1 max-h-[340px] list-none overflow-y-auto rounded-input border border-border bg-surface p-1 shadow-lg">
+          {laster && !valg.length && <li className="px-3 py-3 text-[15px] text-text-muted">{t('Søker …')}</li>}
           {!laster && !valg.length && (
             <li className="px-3 py-3 text-[15px] text-text-muted">
-              {nede ? 'Enhetsregisteret svarer ikke akkurat nå. Skriv organisasjonsnummeret med ni siffer.' : 'Ingen aktive bedrifter med det navnet eller nummeret.'}
+              {nede
+                ? marked === 'no'
+                  ? t('Enhetsregisteret svarer ikke akkurat nå. Skriv organisasjonsnummeret med ni siffer.')
+                  : t('{register} svarer ikke akkurat nå. Skriv {orgnr}, for eksempel {eksempel}.', { register: info.orgnr.register, orgnr: orgnrTekst, eksempel: info.orgnr.eksempel })
+                : t('Ingen aktive bedrifter med det navnet eller nummeret.')}
             </li>
           )}
-          {valg.map((t, i) => (
+          {valg.map((b, i) => (
             <li
-              key={t.orgnr}
+              key={b.orgnr}
               id={`${liste}-${i}`}
               role="option"
               aria-selected={i === aktiv}
               onMouseDown={(e) => {
                 e.preventDefault();
-                velg(t);
+                velg(b);
               }}
               onMouseEnter={() => setAktiv(i)}
               className={`flex cursor-pointer flex-col rounded-[10px] px-3 py-2.5 ${i === aktiv ? 'bg-surface-soft' : ''}`}
             >
-              <span className="text-base font-semibold">{t.navn || `Bruk org.nr. ${t.orgnr}`}</span>
+              <span className="text-base font-semibold">{b.navn || t('Bruk org.nr. {nr}', { nr: b.orgnr })}</span>
               <span className="text-small text-text-muted">
-                {formaterOrgnr(marked, t.orgnr)}
-                {t.sted ? ` · ${t.sted}` : ''}
-                {t.bransje ? ` · ${t.bransje}` : ''}
+                {formaterOrgnr(marked, b.orgnr)}
+                {b.sted ? ` · ${b.sted}` : ''}
+                {b.bransje ? ` · ${b.bransje}` : ''}
               </span>
             </li>
           ))}

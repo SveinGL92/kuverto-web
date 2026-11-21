@@ -1,3 +1,4 @@
+import { fyll, type T } from './i18n/core';
 import { fraNok, type Marked } from './markets';
 import type { Budsjett } from './types';
 
@@ -29,9 +30,19 @@ export const MAKS_LEVERANDORER = 5;
 export const PILOT_GRATIS_KLIPP = 20;
 /** Klippene refunderes hvis kunden trekker forespørselen eller ikke svarer innen så mange dager. */
 export const REFUSJON_ETTER_DAGER = 7;
-/** Refusjonsregelen slik den vises for leverandører. Samme regel kjøres i databasen (trekk_foresporsel og daglig_vedlikehold). */
-export const REFUSJON_KORT = `Klippene tilbake hvis kunden trekker forespørselen, eller ikke svarer innen ${REFUSJON_ETTER_DAGER} dager etter at du sendte tilbudet.`;
-export const REFUSJON_LANG = `Du får klippene tilbake hvis kunden trekker forespørselen, eller Kuverto stopper den. Du får dem også tilbake hvis kunden ikke svarer innen ${REFUSJON_ETTER_DAGER} dager etter at du sendte tilbudet. Å svare betyr å velge tilbudet, avslå det eller skrive til deg. Sender du ikke tilbud, beholder vi klippene.`;
+/** Uten oversetter: norsk. */
+const ingen: T = (s, vars) => fyll(s, vars);
+/** Refusjonsregelen slik den vises for leverandører. Samme regel kjøres i databasen (trekk_foresporsel og daglig_vedlikehold). Send inn t for andre språk. */
+export const refusjonKort = (t: T = ingen) =>
+  t('Klippene tilbake hvis kunden trekker forespørselen, eller ikke svarer innen {dager} dager etter at du sendte tilbudet.', { dager: REFUSJON_ETTER_DAGER });
+export const refusjonLang = (t: T = ingen) =>
+  t(
+    'Du får klippene tilbake hvis kunden trekker forespørselen, eller Kuverto stopper den. Du får dem også tilbake hvis kunden ikke svarer innen {dager} dager etter at du sendte tilbudet. Å svare betyr å velge tilbudet, avslå det eller skrive til deg. Sender du ikke tilbud, beholder vi klippene.',
+    { dager: REFUSJON_ETTER_DAGER },
+  );
+/** Norsk tekst (beholdt for eldre bruk). Bruk refusjonKort(t) / refusjonLang(t). */
+export const REFUSJON_KORT = refusjonKort();
+export const REFUSJON_LANG = refusjonLang();
 
 /** Typisk pris per kuvert i øre for hvert budsjettvalg, brukt til å anslå oppdragets verdi. */
 const ANSLATT_PER_KUVERT: Record<Budsjett, number> = {
@@ -60,9 +71,12 @@ export function klippForForesporsel(gjester: number, budsjett: Budsjett): number
   return TRINN.find((t) => verdi < t.under)!.klipp;
 }
 
-/** Laveste og høyeste pris per klipp i øre, eks. mva (største og minste pakke). */
-export const prisPerKlipp = (p: Klippakke) => p.prisEksMva / p.klipp;
-export const KLIPP_PRIS_SPENN = {
-  min: Math.min(...KLIPPAKKER.map(prisPerKlipp)),
-  maks: Math.max(...KLIPPAKKER.map(prisPerKlipp)),
-};
+/** Pris per klipp i markedets valuta (minste enhet), eks. mva. Uten marked: NOK. */
+export const prisPerKlipp = (p: Klippakke, marked: Marked = 'no') => pakkePris(p, marked) / p.klipp;
+/** Laveste og høyeste pris per klipp i markedets valuta (minste enhet), eks. mva (største og minste pakke). */
+export const klippPrisSpenn = (marked: Marked = 'no') => ({
+  min: Math.min(...KLIPPAKKER.map((p) => prisPerKlipp(p, marked))),
+  maks: Math.max(...KLIPPAKKER.map((p) => prisPerKlipp(p, marked))),
+});
+/** I NOK (øre). */
+export const KLIPP_PRIS_SPENN = klippPrisSpenn('no');

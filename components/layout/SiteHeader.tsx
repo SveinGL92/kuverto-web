@@ -33,7 +33,7 @@ export function SiteHeader() {
         </Link>
         <button
           type="button"
-          aria-label={t('Meny')}
+          aria-label={t('Meny§nav')}
           aria-expanded={apen}
           aria-controls="mobilmeny"
           onClick={() => setApen((v) => !v)}
@@ -45,7 +45,7 @@ export function SiteHeader() {
         </button>
       </nav>
       {apen && (
-        <nav id="mobilmeny" aria-label={t('Meny')} className="w-full pb-2 lg:hidden">
+        <nav id="mobilmeny" aria-label={t('Meny§nav')} className="w-full pb-2 lg:hidden">
           <ul className="m-0 flex list-none flex-col p-0">
             {[...lenker, { href: sti('/logg-inn'), navn: t('Logg inn') }].map((l) => (
               <li key={l.href}>
