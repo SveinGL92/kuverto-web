@@ -60,7 +60,7 @@ export const MARKED_INFO: Record<Marked, MarkedInfo> = {
 };
 
 /** Settes til true når Sverige, Danmark og Finland er ferdig oversatt og testet. */
-export const UTLAND_LANSERT = false;
+export const UTLAND_LANSERT = true;
 
 export const erMarked = (v: unknown): v is Marked => typeof v === 'string' && (MARKEDER as readonly string[]).includes(v);
 
