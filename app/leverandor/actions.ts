@@ -1,7 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { KLIPPAKKER } from '@/lib/klipp';
+import { KLIPPAKKER, pakkePris } from '@/lib/klipp';
+import { MARKED_INFO, medPrefiks, type Marked } from '@/lib/markets';
+import { formaterOrgnr, gyldigMvaNummer, gyldigTelefon, rensMvaNummer } from '@/lib/orgnr';
 import { MAKS_VEDLEGG, TILLATTE_TYPER } from '@/lib/vedlegg';
 import { dekningVisning, gyldigeKommuner, hentKommuner } from '@/lib/server/kommuner';
 import { anledningNavn } from '@/lib/labels';
@@ -16,7 +18,7 @@ type Svar = { ok: true; melding?: string } | { ok: false; feil: string };
 async function godkjentLeverandor() {
   const epost = await innloggetEpost();
   if (!epost) return null;
-  const { data } = await db().from('leverandorer').select('id, navn, epost, status, marked').eq('epost', epost).maybeSingle();
+  const { data } = await db().from('leverandorer').select('id, navn, epost, status, marked, orgnr, mva_nummer').eq('epost', epost).maybeSingle();
   return data?.status === 'godkjent' ? data : null;
 }
 
@@ -159,28 +161,43 @@ export async function kjopKlipp(pakkeId: string): Promise<{ ok: true; url: strin
   if (!lev) return { ok: false, feil: 'Du må være logget inn som godkjent leverandør.' };
   const pakke = KLIPPAKKER.find((p) => p.id === pakkeId);
   if (!pakke) return { ok: false, feil: 'Ukjent pakke.' };
+  const marked = lev.marked as Marked;
+  const info = MARKED_INFO[marked];
+  // Sverige, Danmark og Finland: omvendt avgiftsplikt, ingen norsk mva, MVA-nummer på fakturaen.
+  if (info.omvendtAvgift && !gyldigMvaNummer(marked, lev.mva_nummer ?? '')) return { ok: false, feil: 'Legg inn MVA-nummeret (VAT) under Profil og område før du kjøper klipp.' };
+  const felt = [{ name: info.orgnr.navn.slice(0, 40), value: formaterOrgnr(marked, lev.orgnr).slice(0, 140) }];
+  if (info.omvendtAvgift && lev.mva_nummer) felt.push({ name: 'VAT ID', value: lev.mva_nummer });
   try {
     const s = stripe();
     const sesjon = await s.checkout.sessions.create({
       mode: 'payment',
-      locale: 'nb',
+      locale: ({ no: 'nb', se: 'sv', dk: 'da', fi: 'fi' } as const)[marked],
       customer_email: lev.epost,
       line_items: [
         {
           quantity: 1,
-          tax_rates: [await mvaSats()],
+          ...(info.omvendtAvgift ? {} : { tax_rates: [await mvaSats()] }),
           price_data: {
-            currency: 'nok',
-            unit_amount: pakke.prisEksMva,
-            product_data: { name: `Klipp – ${pakke.navn} (${pakke.klipp} klipp)`, description: 'Klipp for å låse opp cateringforespørsler på Kuverto' },
+            currency: info.valuta.toLowerCase(),
+            unit_amount: pakkePris(pakke, marked),
+            product_data: { name: `Kuverto – ${pakke.navn} (${pakke.klipp} klipp)`, description: 'Klipp for å låse opp cateringforespørsler på Kuverto' },
           },
         },
       ],
-      invoice_creation: { enabled: true, invoice_data: { description: `Kuverto – ${pakke.klipp} klipp`, footer: 'Puncheur AS · Org.nr. 999 552 536 MVA' } },
-      metadata: { leverandor_id: lev.id, klipp: String(pakke.klipp), pakke: pakke.id },
+      invoice_creation: {
+        enabled: true,
+        invoice_data: {
+          description: `Kuverto – ${pakke.klipp} klipp`,
+          custom_fields: felt,
+          footer: info.omvendtAvgift
+            ? 'Reverse charge: VAT to be accounted for by the recipient (Art. 196, Council Directive 2006/112/EC). Puncheur AS, org.nr. 999 552 536, Konows Gate 26, 0196 Oslo, Norway.'
+            : 'Puncheur AS · Org.nr. 999 552 536 MVA · Konows Gate 26, 0196 Oslo',
+        },
+      },
+      metadata: { leverandor_id: lev.id, klipp: String(pakke.klipp), pakke: pakke.id, marked },
       payment_intent_data: { metadata: { leverandor_id: lev.id, klipp: String(pakke.klipp) } },
-      success_url: `${siteUrl()}/leverandor?kjop=ok`,
-      cancel_url: `${siteUrl()}/leverandor?kjop=avbrutt`,
+      success_url: `${siteUrl()}${medPrefiks(marked, '/leverandor')}?kjop=ok`,
+      cancel_url: `${siteUrl()}${medPrefiks(marked, '/leverandor')}?kjop=avbrutt`,
     });
     if (!sesjon.url) return { ok: false, feil: 'Fikk ikke startet betalingen.' };
     return { ok: true, url: sesjon.url };
@@ -195,6 +212,8 @@ export interface ProfilInn {
   telefon: string;
   nettside: string;
   beskrivelse: string;
+  /** EU-MVA-nummer (Sverige, Danmark, Finland). */
+  mvaNummer?: string;
   kommuner: string[];
 }
 
@@ -205,8 +224,10 @@ export async function oppdaterProfil(inn: ProfilInn): Promise<Svar> {
   const kontaktperson = String(inn.kontaktperson ?? '').trim().slice(0, 120);
   if (!kontaktperson) return { ok: false, feil: 'Skriv navnet på kontaktpersonen.' };
   const s = db();
-  const telefon = String(inn.telefon ?? '').replace(/[^\d+]/g, '');
-  if (!/^(\+47)?\d{8}$/.test(telefon) && !/^\+\d{8,15}$/.test(telefon)) return { ok: false, feil: 'Skriv et gyldig telefonnummer med åtte siffer.' };
+  if (!gyldigTelefon(String(inn.telefon ?? ''))) return { ok: false, feil: 'Skriv et gyldig telefonnummer.' };
+  const eu = MARKED_INFO[lev.marked as Marked].omvendtAvgift;
+  const mvaNummer = eu ? rensMvaNummer(String(inn.mvaNummer ?? '')) : null;
+  if (eu && !gyldigMvaNummer(lev.marked, mvaNummer ?? '')) return { ok: false, feil: 'Skriv et gyldig MVA-nummer (VAT).' };
   const beskrivelse = String(inn.beskrivelse ?? '').trim().slice(0, 300);
   if (beskrivelse.length < 20) return { ok: false, feil: 'Skriv noen setninger om bedriften (minst 20 tegn).' };
   const valgt = await gyldigeKommuner(inn.kommuner ?? [], lev.marked);
@@ -219,6 +240,7 @@ export async function oppdaterProfil(inn: ProfilInn): Promise<Svar> {
       telefon: String(inn.telefon ?? '').trim().slice(0, 30),
       nettside: String(inn.nettside ?? '').trim().slice(0, 200) || null,
       beskrivelse,
+      ...(eu ? { mva_nummer: mvaNummer } : {}),
       dekning_visning: visning,
     })
     .eq('id', lev.id);

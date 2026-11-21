@@ -3,11 +3,15 @@
 import { ADMIN_VARSEL, mal, sendEpost } from '@/lib/server/epost';
 import { dekningVisning, gyldigeKommuner, hentKommuner } from '@/lib/server/kommuner';
 import { aktivtMarked } from '@/lib/server/marked';
+import { MARKED_INFO } from '@/lib/markets';
+import { formaterOrgnr, gyldigMvaNummer, gyldigOrgnr, gyldigTelefon, rensMvaNummer, rensOrgnr } from '@/lib/orgnr';
 import { db } from '@/lib/server/supabase';
 
 export interface RegistreringInn {
   orgnr: string;
   navn: string;
+  /** EU-MVA-nummer. Påkrevd i Sverige, Danmark og Finland (omvendt avgiftsplikt). */
+  mvaNummer?: string;
   kontaktperson: string;
   epost: string;
   telefon: string;
@@ -21,32 +25,25 @@ export interface RegistreringInn {
 
 type Svar = { ok: true } | { ok: false; feil: string; felt?: string };
 
-/** Kontrollsiffer for norske organisasjonsnumre (modulus 11). */
-function gyldigOrgnr(nr: string) {
-  if (!/^\d{9}$/.test(nr)) return false;
-  const vekt = [3, 2, 7, 6, 5, 4, 3, 2];
-  const sum = vekt.reduce((s, v, i) => s + v * Number(nr[i]), 0);
-  const rest = 11 - (sum % 11);
-  const kontroll = rest === 11 ? 0 : rest;
-  return kontroll !== 10 && kontroll === Number(nr[8]);
-}
 
 const t = (v: unknown, maks: number) => (typeof v === 'string' ? v.trim().slice(0, maks) : '');
 
 export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
   if (inn.felle) return { ok: true };
   const MARKED = await aktivtMarked();
-  const orgnr = t(inn.orgnr, 20).replace(/\s/g, '');
+  const orgnr = rensOrgnr(t(inn.orgnr, 20));
+  const info = MARKED_INFO[MARKED];
+  const mvaNummer = info.omvendtAvgift ? rensMvaNummer(t(inn.mvaNummer, 20)) : null;
   const epost = t(inn.epost, 200).toLowerCase();
   const kontaktperson = t(inn.kontaktperson, 120);
   let navn = t(inn.navn, 160);
 
-  if (!gyldigOrgnr(orgnr)) return { ok: false, felt: 'orgnr', feil: 'Organisasjonsnummeret må ha ni siffer og være gyldig.' };
+  if (!gyldigOrgnr(MARKED, orgnr)) return { ok: false, felt: 'orgnr', feil: `Sjekk ${info.orgnr.navn.toLowerCase()}, for eksempel ${info.orgnr.eksempel}.` };
+  if (info.omvendtAvgift && !gyldigMvaNummer(MARKED, mvaNummer ?? '')) return { ok: false, felt: 'mvaNummer', feil: 'Skriv et gyldig MVA-nummer (VAT).' };
   if (!kontaktperson) return { ok: false, felt: 'kontaktperson', feil: 'Skriv navnet på kontaktpersonen.' };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(epost)) return { ok: false, felt: 'epost', feil: 'Skriv en gyldig e-postadresse.' };
   const telefon = t(inn.telefon, 30);
-  const tlf = telefon.replace(/[^\d+]/g, '');
-  if (!/^(\+47)?\d{8}$/.test(tlf) && !/^\+\d{8,15}$/.test(tlf)) return { ok: false, felt: 'telefon', feil: 'Skriv et telefonnummer med åtte siffer.' };
+  if (!gyldigTelefon(telefon)) return { ok: false, felt: 'telefon', feil: 'Skriv et gyldig telefonnummer.' };
   const beskrivelse = t(inn.beskrivelse, 300);
   if (beskrivelse.length < 20) return { ok: false, felt: 'beskrivelse', feil: 'Skriv noen setninger om bedriften (minst 20 tegn).' };
   if (!inn.bekreftet) return { ok: false, felt: 'bekreftet', feil: 'Du må bekrefte at opplysningene stemmer.' };
@@ -54,17 +51,32 @@ export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
   const valgt = await gyldigeKommuner(inn.kommuner ?? [], MARKED);
   if (!valgt.length) return { ok: false, felt: 'kommuner', feil: 'Velg minst én kommune dere leverer til.' };
 
-  // Slå opp i Enhetsregisteret. Er tjenesten nede, lar vi registreringen gå og sjekker manuelt.
+  // Slå opp i registeret (Norge: Enhetsregisteret, Finland: YTJ). Sverige og Danmark: bare kontrollsiffer, admin sjekker manuelt.
+  // Er tjenesten nede, lar vi registreringen gå og sjekker manuelt.
   let brreg = 'ikke sjekket';
   try {
-    const r = await fetch(`https://data.brreg.no/enhetsregisteret/api/enheter/${orgnr}`, { signal: AbortSignal.timeout(4000), headers: { Accept: 'application/json' } });
-    if (r.status === 404 || r.status === 410) return { ok: false, felt: 'orgnr', feil: 'Vi finner ikke organisasjonsnummeret i Enhetsregisteret.' };
-    if (r.ok) {
-      const e = (await r.json()) as { navn?: string; konkurs?: boolean; underAvvikling?: boolean; naeringskode1?: { kode?: string; beskrivelse?: string } };
-      if (e.konkurs || e.underAvvikling) return { ok: false, felt: 'orgnr', feil: 'Bedriften er registrert som konkurs eller under avvikling.' };
-      if (e.navn) navn = navn || e.navn;
-      brreg = `${e.navn ?? '?'} · ${e.naeringskode1?.kode ?? ''} ${e.naeringskode1?.beskrivelse ?? ''}`.trim();
-    }
+    if (MARKED === 'no') {
+      const r = await fetch(`https://data.brreg.no/enhetsregisteret/api/enheter/${orgnr}`, { signal: AbortSignal.timeout(4000), headers: { Accept: 'application/json' } });
+      if (r.status === 404 || r.status === 410) return { ok: false, felt: 'orgnr', feil: 'Vi finner ikke organisasjonsnummeret i Enhetsregisteret.' };
+      if (r.ok) {
+        const e = (await r.json()) as { navn?: string; konkurs?: boolean; underAvvikling?: boolean; naeringskode1?: { kode?: string; beskrivelse?: string } };
+        if (e.konkurs || e.underAvvikling) return { ok: false, felt: 'orgnr', feil: 'Bedriften er registrert som konkurs eller under avvikling.' };
+        if (e.navn) navn = navn || e.navn;
+        brreg = `${e.navn ?? '?'} · ${e.naeringskode1?.kode ?? ''} ${e.naeringskode1?.beskrivelse ?? ''}`.trim();
+      }
+    } else if (MARKED === 'fi') {
+      const id = formaterOrgnr('fi', orgnr);
+      const r = await fetch(`https://avoindata.prh.fi/opendata-ytj-api/v3/companies?businessId=${id}`, { signal: AbortSignal.timeout(4000), headers: { Accept: 'application/json' } });
+      if (r.ok) {
+        const d = (await r.json()) as { companies?: { endDate?: string | null; names?: { name?: string; endDate?: string | null }[] }[] };
+        const c = d.companies?.[0];
+        if (!c) return { ok: false, felt: 'orgnr', feil: 'Vi finner ikke Y-tunnus i YTJ.' };
+        if (c.endDate) return { ok: false, felt: 'orgnr', feil: 'Bedriften er ikke lenger aktiv i YTJ.' };
+        const n = c.names?.find((x) => x.name && !x.endDate)?.name;
+        if (n) navn = navn || n;
+        brreg = `YTJ: ${n ?? '?'}`;
+      }
+    } else brreg = `${info.orgnr.register}: kontrollsiffer OK, sjekk manuelt`;
   } catch {
     // ignorer
   }
@@ -84,6 +96,7 @@ export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
       marked: MARKED,
       navn,
       orgnr,
+      mva_nummer: mvaNummer,
       epost,
       kontaktperson,
       telefon,
@@ -122,7 +135,7 @@ export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
     emne: `[Kuverto] Ny leverandør venter: ${navn}`,
     html: mal({
       tittel: 'Ny leverandør venter på godkjenning',
-      avsnitt: [`${navn} (org.nr. ${orgnr})`, `Enhetsregisteret: ${brreg}`, `Kontakt: ${kontaktperson} <${epost}> ${telefon}`, `Om bedriften: ${beskrivelse}`, `Dekning: ${dekningVisning(valgt, await hentKommuner(MARKED))} (${valgt.length} kommuner)`],
+      avsnitt: [`${navn} (${info.land}, ${info.orgnr.navn} ${formaterOrgnr(MARKED, orgnr)}${mvaNummer ? `, MVA ${mvaNummer}` : ''})`, `Register: ${brreg}`, `Kontakt: ${kontaktperson} <${epost}> ${telefon}`, `Om bedriften: ${beskrivelse}`, `Dekning: ${dekningVisning(valgt, await hentKommuner(MARKED))} (${valgt.length} kommuner)`],
       knapp: { tekst: 'Godkjenn i admin', sti: '/admin' },
     }),
   });

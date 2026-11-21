@@ -66,7 +66,8 @@ export const erMarked = (v: unknown): v is Marked => typeof v === 'string' && (M
 
 /** Legger landprefiks på en intern sti: medPrefiks('se', '/foresporsel') → '/se/foresporsel'. */
 export function medPrefiks(marked: Marked, sti: string): string {
-  if (marked === 'no' || /^https?:/.test(sti)) return sti;
+  // API, innlogging, admin og filer har ikke landprefiks (se proxy.ts).
+  if (marked === 'no' || /^https?:/.test(sti) || /^\/(api|auth|admin|logg-ut|epost)(\/|$|\?)/.test(sti)) return sti;
   if (sti === '/' || sti === '') return `/${marked}`;
   return `/${marked}${sti.startsWith('/') ? sti : `/${sti}`}`;
 }

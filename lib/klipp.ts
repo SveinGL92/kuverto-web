@@ -1,3 +1,4 @@
+import { fraNok, type Marked } from './markets';
 import type { Budsjett } from './types';
 
 /**
@@ -17,6 +18,9 @@ export const KLIPPAKKER: Klippakke[] = [
   { id: 'klipp_vanlig', navn: 'Vanlig', klipp: 50, prisEksMva: 329000 },
   { id: 'klipp_stor', navn: 'Stor', klipp: 120, prisEksMva: 699000 },
 ];
+
+/** Pakkens pris eks. mva i markedets valuta (minste enhet): SEK = NOK, DKK × 0,7, EUR ÷ 10. */
+export const pakkePris = (p: Klippakke, marked: Marked = 'no') => fraNok(p.prisEksMva, marked);
 
 export const MVA_SATS = 0.25;
 /** Flest leverandører som kan låse opp samme forespørsel. */

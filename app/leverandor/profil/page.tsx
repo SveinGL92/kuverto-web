@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { hentKommuner } from '@/lib/server/kommuner';
 import { db, innloggetEpost } from '@/lib/server/supabase';
 import { Profil } from './Profil';
+import { MARKED_INFO, type Marked } from '@/lib/markets';
+import { formaterOrgnr } from '@/lib/orgnr';
 
 export const metadata: Metadata = { title: 'Profil og område', robots: { index: false } };
 export const dynamic = 'force-dynamic';
@@ -23,7 +25,7 @@ export default async function ProfilSide() {
         </Link>
         <h1 className="k-heading m-0 text-h1">Profil og område</h1>
         <p className="m-0 text-base text-text-muted">
-          {l.navn} · org.nr. {l.orgnr} · {l.epost}. Skal navn, org.nr. eller e-post endres, skriver du til <a href="mailto:hei@kuverto.no">hei@kuverto.no</a>.
+          {l.navn} · {MARKED_INFO[l.marked as Marked]?.orgnr.navn ?? 'org.nr.'} {formaterOrgnr(l.marked, l.orgnr)} · {l.epost}. Skal navn, org.nr. eller e-post endres, skriver du til <a href="mailto:hei@kuverto.no">hei@kuverto.no</a>.
         </p>
         <Profil
           kommuner={kommuner}
@@ -32,6 +34,7 @@ export default async function ProfilSide() {
             telefon: l.telefon ?? '',
             nettside: l.nettside ?? '',
             beskrivelse: l.beskrivelse ?? '',
+            mvaNummer: l.mva_nummer ?? '',
             kommuner: (dekning ?? []).map((d) => d.kommunenr),
           }}
         />

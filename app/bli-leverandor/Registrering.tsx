@@ -8,20 +8,22 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { DekningVelger, type Kommune } from '@/components/kuverto/DekningVelger';
 import { Input, Textarea } from '@/components/ui/Input';
+import { useSprak } from '@/components/Sprak';
+import { foreslattMvaNummer, gyldigMvaNummer, gyldigOrgnr, gyldigTelefon } from '@/lib/orgnr';
 import { registrerLeverandor, type RegistreringInn } from './actions';
 
-type Felt = 'orgnr' | 'navn' | 'beskrivelse' | 'kontaktperson' | 'epost' | 'telefon' | 'kommuner' | 'bekreftet';
+type Felt = 'orgnr' | 'navn' | 'mvaNummer' | 'beskrivelse' | 'kontaktperson' | 'epost' | 'telefon' | 'kommuner' | 'bekreftet';
 
 const UTKAST = 'kuverto-registrering';
-const gyldigTelefon = (t: string) => {
-  const x = t.replace(/[^\d+]/g, '');
-  return /^(\+47)?\d{8}$/.test(x) || /^\+\d{8,15}$/.test(x);
-};
 
 export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
+  const { marked, info } = useSprak();
+  // Sverige og Danmark har ikke et åpent navnesøk. Der skriver leverandøren navn og nummer selv.
+  const medSok = marked === 'no' || marked === 'fi';
   const [v, setV] = useState<RegistreringInn>({
     orgnr: '',
     navn: '',
+    mvaNummer: '',
     kontaktperson: '',
     epost: '',
     telefon: '',
@@ -69,17 +71,23 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
   const velgBedrift = (t: BrregTreff | undefined) => {
     setBedrift(t);
     setFeil((f) => ({ ...f, orgnr: undefined }));
-    setV((x) => ({ ...x, orgnr: t?.orgnr ?? '', navn: t?.navn ?? '', nettside: x.nettside || (t?.nettside ?? '') }));
+    setV((x) => ({ ...x, orgnr: t?.orgnr ?? '', navn: t?.navn ?? '', nettside: x.nettside || (t?.nettside ?? ''), mvaNummer: x.mvaNummer || foreslattMvaNummer(marked, t?.orgnr ?? '') }));
   };
 
 
   const send = async () => {
     const f: Partial<Record<Felt, string>> = {};
-    if (!bedrift) f.orgnr = 'Søk opp og velg bedriften.';
+    if (medSok) {
+      if (!bedrift) f.orgnr = 'Søk opp og velg bedriften.';
+    } else {
+      if (!v.navn.trim()) f.navn = 'Skriv navnet på bedriften.';
+      if (!gyldigOrgnr(marked, v.orgnr)) f.orgnr = `Sjekk ${info.orgnr.navn.toLowerCase()}, for eksempel ${info.orgnr.eksempel}.`;
+    }
+    if (info.omvendtAvgift && !gyldigMvaNummer(marked, v.mvaNummer ?? "")) f.mvaNummer = `Skriv MVA-nummeret, for eksempel ${foreslattMvaNummer(marked, v.orgnr) || info.mvaPrefiks + '…'}.`;
     if (v.beskrivelse.trim().length < 20) f.beskrivelse = 'Skriv noen setninger om bedriften (minst 20 tegn).';
     if (!v.kontaktperson.trim()) f.kontaktperson = 'Skriv navnet på kontaktpersonen.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.epost.trim())) f.epost = 'Skriv en gyldig e-postadresse.';
-    if (!gyldigTelefon(v.telefon)) f.telefon = 'Skriv et telefonnummer med åtte siffer.';
+    if (!gyldigTelefon(v.telefon)) f.telefon = 'Skriv et gyldig telefonnummer.';
     if (!v.kommuner.length) f.kommuner = 'Velg minst én kommune.';
     if (!v.bekreftet) f.bekreftet = 'Du må bekrefte at opplysningene stemmer.';
     setFeil(f);
@@ -139,7 +147,38 @@ export function Registrering({ kommuner }: { kommuner: Kommune[] }) {
         <h2 id="bedrift-tittel" className="m-0 text-xl font-bold">
           Bedriften
         </h2>
-        <BrregSok id="felt-orgnr" valgt={bedrift} onVelg={velgBedrift} feil={feil.orgnr} />
+        {medSok ? (
+          <BrregSok id="felt-orgnr" valgt={bedrift} onVelg={velgBedrift} feil={feil.orgnr} />
+        ) : (
+          <div className="grid gap-5 min-[480px]:grid-cols-2">
+            <Input id="felt-navn" label="Bedriftens navn" autoComplete="organization" value={v.navn} onChange={(e) => sett('navn', e.target.value)} feil={feil.navn} required />
+            <Input
+              id="felt-orgnr"
+              label={info.orgnr.navn}
+              inputMode="numeric"
+              placeholder={info.orgnr.eksempel}
+              value={v.orgnr}
+              onChange={(e) => {
+                const nr = e.target.value;
+                setV((x) => ({ ...x, orgnr: nr, mvaNummer: x.mvaNummer && x.mvaNummer !== foreslattMvaNummer(marked, x.orgnr) ? x.mvaNummer : foreslattMvaNummer(marked, nr) }));
+                setFeil((f) => ({ ...f, orgnr: undefined }));
+              }}
+              feil={feil.orgnr}
+              required
+            />
+          </div>
+        )}
+        {info.omvendtAvgift && (
+          <Input
+            id="felt-mvaNummer"
+            label="MVA-nummer (VAT)"
+            hint="Kuverto fakturerer fra Norge med omvendt avgiftsplikt, så vi trenger bedriftens MVA-nummer."
+            value={v.mvaNummer ?? ''}
+            onChange={(e) => sett('mvaNummer', e.target.value.toUpperCase())}
+            feil={feil.mvaNummer}
+            required
+          />
+        )}
         <Textarea
           id="felt-beskrivelse"
           label="Kort om bedriften"

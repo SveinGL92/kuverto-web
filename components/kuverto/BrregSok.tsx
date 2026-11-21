@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import type { BrregTreff } from '@/app/api/brreg/route';
+import { useSprak } from '@/components/Sprak';
+import { formaterOrgnr, gyldigOrgnr } from '@/lib/orgnr';
 
 /** Søk opp bedriften i Enhetsregisteret på navn eller org.nr. Tilgjengelig kombinasjonsboks (ARIA 1.2). */
 export function BrregSok({
@@ -26,6 +28,7 @@ export function BrregSok({
   const feilId = useId();
   const status = useId();
   const input = useRef<HTMLInputElement>(null);
+  const { marked } = useSprak();
 
   useEffect(() => {
     const sok = q.trim();
@@ -34,7 +37,7 @@ export function BrregSok({
     const t = setTimeout(async () => {
       setLaster(true);
       try {
-        const r = await fetch(`/api/brreg?q=${encodeURIComponent(sok)}`, { signal: ctrl.signal });
+        const r = await fetch(`/api/brreg?q=${encodeURIComponent(sok)}${marked === 'fi' ? '&m=fi' : ''}`, { signal: ctrl.signal });
         const d = (await r.json()) as { treff: BrregTreff[]; feil?: boolean };
         setTreff(d.treff);
         setNede(!!d.feil);
@@ -52,9 +55,9 @@ export function BrregSok({
     };
   }, [q]);
 
-  const nr = q.replace(/\s/g, '');
+  const nr = q.replace(/[\s-]/g, '');
   // Er registeret nede, kan man fortsatt bruke et gyldig org.nr. Vi sjekker det igjen ved innsending.
-  const manuell: BrregTreff | undefined = nede && /^\d{9}$/.test(nr) ? { orgnr: nr, navn: '', form: '', sted: '', bransje: '', nettside: '' } : undefined;
+  const manuell: BrregTreff | undefined = nede && gyldigOrgnr(marked, nr) ? { orgnr: nr, navn: '', form: '', sted: '', bransje: '', nettside: '' } : undefined;
   const valg = manuell ? [manuell] : treff;
 
   const velg = (t: BrregTreff) => {
@@ -71,7 +74,7 @@ export function BrregSok({
           <div className="flex flex-col">
             <strong className="text-[17px]">{valgt.navn || 'Navn hentes ved innsending'}</strong>
             <span className="text-[15px] text-text-muted">
-              Org.nr. {valgt.orgnr.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')}
+              Org.nr. {formaterOrgnr(marked, valgt.orgnr)}
               {valgt.sted ? ` · ${valgt.sted}` : ''}
               {valgt.bransje ? ` · ${valgt.bransje}` : ''}
             </span>
@@ -169,7 +172,7 @@ export function BrregSok({
             >
               <span className="text-base font-semibold">{t.navn || `Bruk org.nr. ${t.orgnr}`}</span>
               <span className="text-small text-text-muted">
-                {t.orgnr.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')}
+                {formaterOrgnr(marked, t.orgnr)}
                 {t.sted ? ` · ${t.sted}` : ''}
                 {t.bransje ? ` · ${t.bransje}` : ''}
               </span>

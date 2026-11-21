@@ -6,9 +6,11 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { oppdaterProfil, type ProfilInn } from '../actions';
+import { useSprak } from '@/components/Sprak';
 
 export function Profil({ kommuner, start }: { kommuner: Kommune[]; start: ProfilInn }) {
   const [v, setV] = useState<ProfilInn>(start);
+  const { info } = useSprak();
   const [status, setStatus] = useState<{ tone: 'status' | 'feil'; tekst: string }>();
   const [sender, setSender] = useState(false);
   const sett = <K extends keyof ProfilInn>(k: K, verdi: ProfilInn[K]) => setV((x) => ({ ...x, [k]: verdi }));
@@ -38,6 +40,15 @@ export function Profil({ kommuner, start }: { kommuner: Kommune[]; start: Profil
           <Input label="Kontaktperson" autoComplete="name" value={v.kontaktperson} onChange={(e) => sett('kontaktperson', e.target.value)} required />
           <Input label="Telefon" required type="tel" inputMode="tel" autoComplete="tel" value={v.telefon} onChange={(e) => sett('telefon', e.target.value)} />
         </div>
+        {info.omvendtAvgift && (
+          <Input
+            label="MVA-nummer (VAT)"
+            required
+            hint="Står på fakturaen. Kuverto fakturerer fra Norge med omvendt avgiftsplikt."
+            value={v.mvaNummer ?? ''}
+            onChange={(e) => sett('mvaNummer', e.target.value.toUpperCase())}
+          />
+        )}
         <Input label="Nettside (valgfritt)" type="url" inputMode="url" value={v.nettside} onChange={(e) => sett('nettside', e.target.value)} />
         <Textarea
           label="Kort om bedriften" required
