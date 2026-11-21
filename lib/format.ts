@@ -9,21 +9,21 @@ const parse = (iso: string) => {
 };
 
 /** «torsdag 14. november» */
-export const datoLang = (iso: string) =>
-  new Intl.DateTimeFormat('nb-NO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(parse(iso));
+export const datoLang = (iso: string, intl = 'nb-NO') =>
+  new Intl.DateTimeFormat(intl, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(parse(iso));
 
 /** «tor. 14. nov.» uten avsluttende punktum: «tor. 14. nov» */
-export const datoKort = (iso: string) =>
-  new Intl.DateTimeFormat('nb-NO', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+export const datoKort = (iso: string, intl = 'nb-NO') =>
+  new Intl.DateTimeFormat(intl, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
     .format(parse(iso))
     .replace(/\.$/, '');
 
 /** «14. nov» */
-export const dagMnd = (iso: string) =>
-  new Intl.DateTimeFormat('nb-NO', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(parse(iso)).replace(/\.$/, '');
+export const dagMnd = (iso: string, intl = 'nb-NO') =>
+  new Intl.DateTimeFormat(intl, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(parse(iso)).replace(/\.$/, '');
 
 /** «8. november» */
-export const dagMndLang = (iso: string) =>
-  new Intl.DateTimeFormat('nb-NO', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(parse(iso));
+export const dagMndLang = (iso: string, intl = 'nb-NO') =>
+  new Intl.DateTimeFormat(intl, { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(parse(iso));
 
 export const stor = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);

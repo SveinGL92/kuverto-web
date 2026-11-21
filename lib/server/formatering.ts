@@ -1,4 +1,5 @@
 import 'server-only';
+import { fyll, type T } from '@/lib/i18n/core';
 import { anledningNavn, budsjettNavn, kostholdLinje, serveringNavn } from '@/lib/labels';
 import type { Anledning, Budsjett, Kostholdstype, Servering } from '@/lib/types';
 
@@ -11,8 +12,8 @@ export interface KostholdRad {
   alvorlig?: boolean;
 }
 
-export const kostholdTekst = (k: KostholdRad[]) =>
-  k.length ? k.map(kostholdLinje).join(', ') : 'ingen oppgitt';
+export const kostholdTekst = (k: KostholdRad[], t: T = (x, v) => fyll(x, v)) =>
+  k.length ? k.map((x) => kostholdLinje(x, t)).join(', ') : 'ingen oppgitt';
 
 /** Kort beskrivelse uten personopplysninger, trygg å vise leverandører før opplåsing. */
 export function foresporselLinjer(f: {

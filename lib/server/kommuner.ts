@@ -1,4 +1,5 @@
 import 'server-only';
+import type { Marked } from '@/lib/markets';
 import { db } from './supabase';
 
 export interface Kommune {
@@ -8,17 +9,45 @@ export interface Kommune {
   fylke: string;
 }
 
-/** Alle kommuner i Norge med fylke, sortert alfabetisk. */
-export async function hentKommuner(): Promise<Kommune[]> {
-  const { data } = await db().from('kommuner').select('kommunenr, kommunenavn, fylkesnr, fylkesnavn').order('kommunenavn');
+/** Stedsdata for Sverige, Danmark og Finland (GeoNames, CC BY 4.0), lastet ved behov. */
+export interface Stedsdata {
+  kommuner: Kommune[];
+  postnummer: Record<string, [string, string]>;
+}
+const cache = new Map<Marked, Stedsdata>();
+export async function stedsdata(marked: Exclude<Marked, 'no'>): Promise<Stedsdata> {
+  const fra = cache.get(marked);
+  if (fra) return fra;
+  const d = (marked === 'se' ? await import('./steder/se.json') : marked === 'dk' ? await import('./steder/dk.json') : await import('./steder/fi.json')).default as unknown as Stedsdata;
+  cache.set(marked, d);
+  return d;
+}
+
+/** Alle kommuner i markedet med fylke/län/region/maakunta, sortert alfabetisk. */
+export async function hentKommuner(marked: Marked = 'no'): Promise<Kommune[]> {
+  if (marked !== 'no') return (await stedsdata(marked)).kommuner;
+  const { data } = await db().from('kommuner').select('kommunenr, kommunenavn, fylkesnr, fylkesnavn').eq('marked', 'no').order('kommunenavn');
   return (data ?? []).map((r) => ({ nr: r.kommunenr, navn: r.kommunenavn, fylkesnr: r.fylkesnr, fylke: r.fylkesnavn }));
 }
 
-/** Gyldige kommuner blant de valgte numrene. */
-export async function gyldigeKommuner(nr: string[]): Promise<Kommune[]> {
-  const liste = [...new Set((nr ?? []).filter((x) => /^\d{4}$/.test(x)))].slice(0, 400);
+/** Legger utenlandske kommuner inn i public.kommuner, så admin og oppslag finner navnene. */
+export async function lagreKommuner(marked: Marked, liste: Kommune[]) {
+  if (marked === 'no' || !liste.length) return;
+  await db()
+    .from('kommuner')
+    .upsert(liste.map((k) => ({ kommunenr: k.nr, kommunenavn: k.navn, fylkesnr: k.fylkesnr, fylkesnavn: k.fylke, marked })), { onConflict: 'kommunenr', ignoreDuplicates: true });
+}
+
+/** Gyldige kommuner blant de valgte numrene, i riktig marked. */
+export async function gyldigeKommuner(nr: string[], marked: Marked = 'no'): Promise<Kommune[]> {
+  const liste = [...new Set((nr ?? []).filter((x) => typeof x === 'string'))].slice(0, 400);
   if (!liste.length) return [];
-  const { data } = await db().from('kommuner').select('kommunenr, kommunenavn, fylkesnr, fylkesnavn').in('kommunenr', liste);
+  if (marked !== 'no') {
+    const valgt = (await stedsdata(marked)).kommuner.filter((k) => liste.includes(k.nr));
+    await lagreKommuner(marked, valgt);
+    return valgt;
+  }
+  const { data } = await db().from('kommuner').select('kommunenr, kommunenavn, fylkesnr, fylkesnavn').eq('marked', 'no').in('kommunenr', liste.filter((x) => /^\d{4}$/.test(x)));
   return (data ?? []).map((r) => ({ nr: r.kommunenr, navn: r.kommunenavn, fylkesnr: r.fylkesnr, fylke: r.fylkesnavn }));
 }
 

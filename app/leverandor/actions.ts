@@ -16,7 +16,7 @@ type Svar = { ok: true; melding?: string } | { ok: false; feil: string };
 async function godkjentLeverandor() {
   const epost = await innloggetEpost();
   if (!epost) return null;
-  const { data } = await db().from('leverandorer').select('id, navn, epost, status').eq('epost', epost).maybeSingle();
+  const { data } = await db().from('leverandorer').select('id, navn, epost, status, marked').eq('epost', epost).maybeSingle();
   return data?.status === 'godkjent' ? data : null;
 }
 
@@ -209,9 +209,9 @@ export async function oppdaterProfil(inn: ProfilInn): Promise<Svar> {
   if (!/^(\+47)?\d{8}$/.test(telefon) && !/^\+\d{8,15}$/.test(telefon)) return { ok: false, feil: 'Skriv et gyldig telefonnummer med åtte siffer.' };
   const beskrivelse = String(inn.beskrivelse ?? '').trim().slice(0, 300);
   if (beskrivelse.length < 20) return { ok: false, feil: 'Skriv noen setninger om bedriften (minst 20 tegn).' };
-  const valgt = await gyldigeKommuner(inn.kommuner ?? []);
+  const valgt = await gyldigeKommuner(inn.kommuner ?? [], lev.marked);
   if (!valgt.length) return { ok: false, feil: 'Velg minst én kommune dere leverer til.' };
-  const visning = dekningVisning(valgt, await hentKommuner());
+  const visning = dekningVisning(valgt, await hentKommuner(lev.marked));
   const { error } = await s
     .from('leverandorer')
     .update({

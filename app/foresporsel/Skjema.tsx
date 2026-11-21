@@ -9,6 +9,7 @@ import { Chip } from '@/components/ui/Chip';
 import { KategoriValg } from '@/components/kuverto/KategoriValg';
 import { Datovelger } from '@/components/ui/Datovelger';
 import { Input, Textarea, feltKlasse } from '@/components/ui/Input';
+import { useSprak } from '@/components/Sprak';
 import { cn } from '@/lib/cn';
 import { datoKort, stor } from '@/lib/format';
 import { MAKS_LEVERANDORER } from '@/lib/klipp';
@@ -90,7 +91,7 @@ const telefonOk = (v: string) => {
   return sifre.length >= 8 && sifre.length <= 15;
 };
 
-function startverdi(q: URLSearchParams): Utkast {
+function startverdi(q: URLSearchParams, lengde: 4 | 5 = 4): Utkast {
   const a = q.get('anledning');
   const g = Number(q.get('gjester'));
   const anledning = anledninger.some((x) => x.id === a) ? (a as Anledning) : 'firmalunsj';
@@ -102,7 +103,7 @@ function startverdi(q: URLSearchParams): Utkast {
     tidEndret: false,
     fleksibel: false,
     adresse: '',
-    postnummer: rensPostnummer(q.get('postnummer') ?? ''),
+    postnummer: rensPostnummer(q.get('postnummer') ?? '', lengde),
     levering: 'levering',
     budsjett: 'vet_ikke',
     kosthold: {},
@@ -147,8 +148,10 @@ function Del({ tittel, children }: { tittel: string; children: ReactNode }) {
 export function Skjema() {
   const q = useSearchParams();
   const router = useRouter();
+  const { info, sti } = useSprak();
+  const lengde = info.postnummerLengde;
   const [steg, setSteg] = useState(1);
-  const [u, setU] = useState<Utkast>(() => startverdi(new URLSearchParams(q.toString())));
+  const [u, setU] = useState<Utkast>(() => startverdi(new URLSearchParams(q.toString()), lengde));
   const [feil, setFeil] = useState<Feil>({});
   const [lastet, setLastet] = useState(false);
   const [sender, setSender] = useState(false);
@@ -160,7 +163,7 @@ export function Skjema() {
   // Slå opp postnummeret når det har fire siffer.
   useEffect(() => {
     const nr = u.postnummer;
-    if (!/^\d{4}$/.test(nr)) return;
+    if (nr.length !== lengde) return;
     let aktiv = true;
     const t = setTimeout(async () => {
       try {
@@ -172,7 +175,7 @@ export function Skjema() {
       aktiv = false;
       clearTimeout(t);
     };
-  }, [u.postnummer]);
+  }, [u.postnummer, lengde]);
   const startet = useRef(0);
   useEffect(() => {
     startet.current = Date.now();
@@ -249,8 +252,8 @@ export function Skjema() {
         if (!u.fleksibel) f.dato = 'Velg en dato, eller kryss av for at datoen ikke er bestemt.';
       } else if (u.dato < iDag()) f.dato = 'Datoen har passert. Velg en dato fra i dag og fremover.';
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(u.klokkeslett)) f.klokkeslett = 'Velg et klokkeslett.';
-      if (!gyldigPostnummer(u.postnummer))
-        f.postnummer = u.postnummer.length === 4 ? 'Vi finner ikke dette postnummeret.' : 'Skriv postnummeret med fire siffer, for eksempel 0150.';
+      if (!gyldigPostnummer(u.postnummer, lengde))
+        f.postnummer = u.postnummer.length === lengde ? 'Vi finner ikke dette postnummeret.' : `Skriv postnummeret med ${lengde === 4 ? 'fire' : 'fem'} siffer, for eksempel ${info.postnummerEksempel}.`;
       else if (pn?.nr === u.postnummer && !pn.svar.ok) f.postnummer = 'Vi finner ikke dette postnummeret. Sjekk at det stemmer.';
     }
     if (s === 2) {
@@ -313,7 +316,7 @@ export function Skjema() {
 
   const pnSvar = pn?.nr === u.postnummer ? pn.svar : undefined;
   const sted = pnSvar?.ok ? pnSvar.poststed : undefined;
-  const postOk = gyldigPostnummer(u.postnummer);
+  const postOk = gyldigPostnummer(u.postnummer, lengde);
   const postHint = !postOk
     ? 'Du får tilbud fra leverandører som leverer i området ditt.'
     : !pnSvar
@@ -571,9 +574,9 @@ export function Skjema() {
                       label="Postnummer"
                       inputMode="numeric"
                       autoComplete="postal-code"
-                      maxLength={4}
+                      maxLength={lengde}
                       value={u.postnummer}
-                      onChange={(e) => sett('postnummer', rensPostnummer(e.target.value))}
+                      onChange={(e) => sett('postnummer', rensPostnummer(e.target.value, lengde))}
                       hint={postHint}
                       feil={feil.postnummer}
                       required

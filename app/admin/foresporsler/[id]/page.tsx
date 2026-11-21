@@ -100,7 +100,7 @@ export default async function AdminForesporsel({ params }: { params: Promise<{ i
             <Rad navn="Leverandører ser">{f.omrade_visning}</Rad>
             {f.servering && <Rad navn="Servering">{serveringNavn(f.servering as Servering)}</Rad>}
             <Rad navn="Budsjett">{budsjettNavn(f.budsjett as Budsjett)}</Rad>
-            <Rad navn="Kosthold">{kosthold.length ? kosthold.map(kostholdLinje).join(', ') : 'Ingen oppgitt'}</Rad>
+            <Rad navn="Kosthold">{kosthold.length ? kosthold.map((x) => kostholdLinje(x)).join(', ') : 'Ingen oppgitt'}</Rad>
             <Rad navn="Maks leverandører">{f.maks_leverandorer}</Rad>
           </dl>
         </Kort>

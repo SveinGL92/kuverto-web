@@ -2,6 +2,7 @@
 
 import { ADMIN_VARSEL, mal, sendEpost } from '@/lib/server/epost';
 import { dekningVisning, gyldigeKommuner, hentKommuner } from '@/lib/server/kommuner';
+import { aktivtMarked } from '@/lib/server/marked';
 import { db } from '@/lib/server/supabase';
 
 export interface RegistreringInn {
@@ -34,6 +35,7 @@ const t = (v: unknown, maks: number) => (typeof v === 'string' ? v.trim().slice(
 
 export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
   if (inn.felle) return { ok: true };
+  const MARKED = await aktivtMarked();
   const orgnr = t(inn.orgnr, 20).replace(/\s/g, '');
   const epost = t(inn.epost, 200).toLowerCase();
   const kontaktperson = t(inn.kontaktperson, 120);
@@ -49,7 +51,7 @@ export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
   if (beskrivelse.length < 20) return { ok: false, felt: 'beskrivelse', feil: 'Skriv noen setninger om bedriften (minst 20 tegn).' };
   if (!inn.bekreftet) return { ok: false, felt: 'bekreftet', feil: 'Du må bekrefte at opplysningene stemmer.' };
 
-  const valgt = await gyldigeKommuner(inn.kommuner ?? []);
+  const valgt = await gyldigeKommuner(inn.kommuner ?? [], MARKED);
   if (!valgt.length) return { ok: false, felt: 'kommuner', feil: 'Velg minst én kommune dere leverer til.' };
 
   // Slå opp i Enhetsregisteret. Er tjenesten nede, lar vi registreringen gå og sjekker manuelt.
@@ -70,7 +72,7 @@ export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
 
   const s = db();
   const [{ data: a }, { data: b }] = await Promise.all([
-    s.from('leverandorer').select('id').eq('orgnr', orgnr).eq('status', 'godkjent').limit(1),
+    s.from('leverandorer').select('id').eq('marked', MARKED).eq('orgnr', orgnr).eq('status', 'godkjent').limit(1),
     s.from('leverandorer').select('id').eq('epost', epost).limit(1),
   ]);
   if (b?.length) return { ok: false, feil: 'E-postadressen er allerede registrert. Logg inn med den, eller skriv til hei@kuverto.no.' };
@@ -79,6 +81,7 @@ export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
   const { data: lev, error } = await s
     .from('leverandorer')
     .insert({
+      marked: MARKED,
       navn,
       orgnr,
       epost,
@@ -86,7 +89,7 @@ export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
       telefon,
       nettside: t(inn.nettside, 200) || null,
       beskrivelse,
-      dekning_visning: dekningVisning(valgt, await hentKommuner()),
+      dekning_visning: dekningVisning(valgt, await hentKommuner(MARKED)),
       markedsforing_samtykke: !!inn.markedsforing,
     })
     .select('id')
@@ -119,7 +122,7 @@ export async function registrerLeverandor(inn: RegistreringInn): Promise<Svar> {
     emne: `[Kuverto] Ny leverandør venter: ${navn}`,
     html: mal({
       tittel: 'Ny leverandør venter på godkjenning',
-      avsnitt: [`${navn} (org.nr. ${orgnr})`, `Enhetsregisteret: ${brreg}`, `Kontakt: ${kontaktperson} <${epost}> ${telefon}`, `Om bedriften: ${beskrivelse}`, `Dekning: ${dekningVisning(valgt, await hentKommuner())} (${valgt.length} kommuner)`],
+      avsnitt: [`${navn} (org.nr. ${orgnr})`, `Enhetsregisteret: ${brreg}`, `Kontakt: ${kontaktperson} <${epost}> ${telefon}`, `Om bedriften: ${beskrivelse}`, `Dekning: ${dekningVisning(valgt, await hentKommuner(MARKED))} (${valgt.length} kommuner)`],
       knapp: { tekst: 'Godkjenn i admin', sti: '/admin' },
     }),
   });

@@ -1,9 +1,10 @@
 // Fase 1: enkel validering og noen få poststeder som mock.
 // Fase 2: oppslag mot Postens postnummerregister (postnummer → kommune → fylke).
 
-export const rensPostnummer = (v: string) => v.replace(/\D/g, '').slice(0, 4);
+/** Bare sifre, høyst så mange som markedet bruker (4 i Norge og Danmark, 5 i Sverige og Finland). */
+export const rensPostnummer = (v: string, lengde: 4 | 5 = 4) => v.replace(/\D/g, '').slice(0, lengde);
 
-export const gyldigPostnummer = (v: string) => /^\d{4}$/.test(v) && v !== '0000';
+export const gyldigPostnummer = (v: string, lengde: 4 | 5 = 4) => new RegExp(`^\\d{${lengde}}$`).test(v) && !/^0+$/.test(v);
 
 const kjente: Record<string, string> = {
   '0150': 'Oslo sentrum',

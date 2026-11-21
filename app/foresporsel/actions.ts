@@ -7,6 +7,7 @@ import { anledninger, budsjetter, erAllergen, kostholdstyper, leveringer } from 
 import { mal, sendEpost } from '@/lib/server/epost';
 import { fullstendigeLinjer, type KostholdRad } from '@/lib/server/formatering';
 import { finnPostnummer, leverandorerIKommune } from '@/lib/server/postnummer';
+import { aktivtMarked } from '@/lib/server/marked';
 import { db } from '@/lib/server/supabase';
 import type { Budsjett } from '@/lib/types';
 
@@ -39,7 +40,7 @@ export type PostnummerSvar = { ok: true; poststed: string; kommune: string; leve
 
 /** Slår opp postnummeret mens kunden skriver: poststed, kommune og om noen leverandører leverer der. */
 export async function sjekkPostnummer(nr: string): Promise<PostnummerSvar> {
-  const pn = await finnPostnummer(String(nr ?? '').trim());
+  const pn = await finnPostnummer(String(nr ?? '').trim(), await aktivtMarked());
   if (!pn) return { ok: false, feil: 'Vi finner ikke dette postnummeret.' };
   return { ok: true, poststed: pn.poststed, kommune: pn.kommunenavn, leverandorer: await leverandorerIKommune(pn.kommunenr) };
 }
@@ -58,7 +59,8 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
   const gjester = Math.round(Number(inn.gjester));
   const epost = tekst(inn.epost, 200).toLowerCase();
   const navn = tekst(inn.navn, 120);
-  const postnummer = tekst(inn.postnummer, 4);
+  const marked = await aktivtMarked();
+  const postnummer = tekst(inn.postnummer, 6).replace(/\s/g, '');
   const dato = /^\d{4}-\d{2}-\d{2}$/.test(inn.dato ?? '') ? inn.dato : '';
 
   if (!anledning || !levering || !budsjett) return { ok: false, feil: 'Noe i skjemaet mangler. Last siden på nytt og prøv igjen.' };
@@ -76,8 +78,8 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
   const adresse = levering === 'levering' ? tekst(inn.adresse, 200) || null : null;
 
   const s = db();
-  const pn = await finnPostnummer(postnummer);
-  if (!pn) return { ok: false, felt: 'postnummer', feil: 'Vi finner ikke dette postnummeret. Sjekk at det har fire siffer.' };
+  const pn = await finnPostnummer(postnummer, marked);
+  if (!pn) return { ok: false, felt: 'postnummer', feil: 'Vi finner ikke dette postnummeret.' };
   const antallLev = await leverandorerIKommune(pn.kommunenr);
 
   // Begrensning: høyst 5 forespørsler per e-post og 10 per IP-adresse i timen.
@@ -93,6 +95,7 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
 
   const omrade = pn.poststed === pn.kommunenavn ? `${pn.poststed} (${postnummer.slice(0, 2)}xx)` : `${pn.poststed}, ${pn.kommunenavn} (${postnummer.slice(0, 2)}xx)`;
   const rad = {
+    marked,
     kunde_epost: epost,
     anledning,
     gjester,

@@ -3,6 +3,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { PILOT_GRATIS_KLIPP, REFUSJON_KORT } from '@/lib/klipp';
 import { hentKommuner } from '@/lib/server/kommuner';
+import { aktivtMarked } from '@/lib/server/marked';
 import { Registrering } from './Registrering';
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function BliLeverandor() {
-  const kommuner = await hentKommuner();
+  const kommuner = await hentKommuner(await aktivtMarked());
   return (
     <>
       <SiteHeader />

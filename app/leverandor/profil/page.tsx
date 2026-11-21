@@ -14,7 +14,7 @@ export default async function ProfilSide() {
   const s = db();
   const { data: l } = await s.from('leverandorer').select('*').eq('epost', epost).maybeSingle();
   if (!l || l.status !== 'godkjent') redirect('/leverandor');
-  const [kommuner, { data: dekning }] = await Promise.all([hentKommuner(), s.from('dekning').select('kommunenr').eq('leverandor_id', l.id)]);
+  const [kommuner, { data: dekning }] = await Promise.all([hentKommuner(l.marked), s.from('dekning').select('kommunenr').eq('leverandor_id', l.id)]);
   return (
     <main id="innhold" className="k-wrap">
       <div className="mx-auto flex max-w-[680px] flex-col gap-3 py-8">

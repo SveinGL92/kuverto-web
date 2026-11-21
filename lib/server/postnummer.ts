@@ -1,5 +1,7 @@
 import 'server-only';
 import postnumre from './postnumre.json';
+import { MARKED_INFO, type Marked } from '@/lib/markets';
+import { lagreKommuner, stedsdata } from './kommuner';
 import { db } from './supabase';
 
 export interface Postnummer {
@@ -20,18 +22,29 @@ const storForbokstav = (s: string) =>
  * Slår opp et postnummer i hele Norge. Tabellen public.postnummer fylles på etter hvert som postnumre brukes,
  * med data fra Postens register (lib/server/postnumre.json, hentet fra npm-pakken «postnummer») og kommunenavn fra public.kommuner.
  */
-export async function finnPostnummer(nr: string): Promise<Postnummer | null> {
-  if (!/^\d{4}$/.test(nr)) return null;
+export async function finnPostnummer(nr: string, marked: Marked = 'no'): Promise<Postnummer | null> {
+  nr = String(nr ?? '').replace(/\s/g, '');
+  if (!new RegExp(`^\\d{${MARKED_INFO[marked].postnummerLengde}}$`).test(nr)) return null;
   const s = db();
-  const { data: finnes } = await s.from('postnummer').select('postnummer, poststed, kommunenr, kommunenavn, fylkesnr').eq('postnummer', nr).maybeSingle();
+  const { data: finnes } = await s.from('postnummer').select('postnummer, poststed, kommunenr, kommunenavn, fylkesnr').eq('marked', marked).eq('postnummer', nr).maybeSingle();
   if (finnes) return finnes as Postnummer;
+  if (marked !== 'no') {
+    const d = await stedsdata(marked);
+    const p = d.postnummer[nr];
+    const k = p && d.kommuner.find((x) => x.nr === p[0]);
+    if (!p || !k) return null;
+    await lagreKommuner(marked, [k]);
+    const rad = { marked, postnummer: nr, poststed: p[1], kommunenr: k.nr, kommunenavn: k.navn, fylkesnr: k.fylkesnr };
+    await s.from('postnummer').upsert(rad, { onConflict: 'marked,postnummer', ignoreDuplicates: true });
+    return { postnummer: nr, poststed: p[1], kommunenr: k.nr, kommunenavn: k.navn, fylkesnr: k.fylkesnr };
+  }
   const treff = (postnumre as unknown as Record<string, [string, string]>)[nr];
   if (!treff) return null;
   const j = { kommunenummer: treff[0], poststed: treff[1] };
   const { data: k } = await s.from('kommuner').select('kommunenr, kommunenavn, fylkesnr').eq('kommunenr', j.kommunenummer).maybeSingle();
   if (!k) return null; // Svalbard, Jan Mayen og utgåtte kommunenumre
-  const rad = { postnummer: nr, poststed: storForbokstav(j.poststed), kommunenr: k.kommunenr, kommunenavn: k.kommunenavn };
-  await s.from('postnummer').upsert(rad, { onConflict: 'postnummer', ignoreDuplicates: true });
+  const rad = { marked: 'no', postnummer: nr, poststed: storForbokstav(j.poststed), kommunenr: k.kommunenr, kommunenavn: k.kommunenavn, fylkesnr: k.kommunenr.slice(0, 2) };
+  await s.from('postnummer').upsert(rad, { onConflict: 'marked,postnummer', ignoreDuplicates: true });
   return { ...rad, fylkesnr: k.fylkesnr };
 }
 

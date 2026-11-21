@@ -5,10 +5,13 @@ import { useState, type FormEvent } from 'react';
 import { KategoriValg } from './KategoriValg';
 import { gyldigPostnummer, rensPostnummer } from '@/lib/postnummer';
 import { cn } from '@/lib/cn';
+import { useSprak } from '@/components/Sprak';
 
 /** Hurtigstart på forsiden. Sender verdiene videre til skjemaet, som fortsetter derfra. */
 export function HeroForm({ standardAnledning = 'firmalunsj', standardGjester = 25, knapp = 'Få tilbud' }: { standardAnledning?: string; standardGjester?: number; knapp?: string } = {}) {
   const router = useRouter();
+  const { info, sti } = useSprak();
+  const lengde = info.postnummerLengde;
   const [anledning, setAnledning] = useState(standardAnledning);
   const [gjester, setGjester] = useState(String(standardGjester));
   const [postnummer, setPostnummer] = useState('');
@@ -16,14 +19,14 @@ export function HeroForm({ standardAnledning = 'firmalunsj', standardGjester = 2
 
   const send = (e: FormEvent) => {
     e.preventDefault();
-    if (postnummer && !gyldigPostnummer(postnummer)) {
+    if (postnummer && !gyldigPostnummer(postnummer, lengde)) {
       setFeil(true);
       return;
     }
     const q = new URLSearchParams({ anledning });
     if (gjester) q.set('gjester', gjester);
     if (postnummer) q.set('postnummer', postnummer);
-    router.push(`/foresporsel?${q}`);
+    router.push(`${sti('/foresporsel')}?${q}`);
   };
 
   const labelMobil = 'flex flex-col gap-1.5 text-small font-bold text-text-muted';
@@ -60,12 +63,12 @@ export function HeroForm({ standardAnledning = 'firmalunsj', standardGjester = 2
           <input
             inputMode="numeric"
             autoComplete="postal-code"
-            placeholder="0150"
+            placeholder={info.postnummerEksempel}
             value={postnummer}
             aria-invalid={feil || undefined}
             aria-describedby={feil ? 'hero-postnummer-feil' : undefined}
             onChange={(e) => {
-              setPostnummer(rensPostnummer(e.target.value));
+              setPostnummer(rensPostnummer(e.target.value, lengde));
               setFeil(false);
             }}
             className={cn(feltMobil, 'placeholder:text-text-muted placeholder:font-medium', feil && 'border-2 border-error')}
@@ -80,7 +83,7 @@ export function HeroForm({ standardAnledning = 'firmalunsj', standardGjester = 2
       </button>
       {feil && (
         <p id="hero-postnummer-feil" role="alert" className="m-0 w-full px-3.5 text-small font-semibold text-error">
-          Skriv postnummeret med fire siffer, for eksempel 0150.
+          Skriv postnummeret med {lengde === 4 ? 'fire' : 'fem'} siffer, for eksempel {info.postnummerEksempel}.
         </p>
       )}
     </form>
