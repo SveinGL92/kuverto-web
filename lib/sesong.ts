@@ -1,3 +1,4 @@
+import type { T } from './i18n/core';
 import type { Anledning } from './types';
 
 /** Sesongseksjonen på forsiden. Velges ut fra dagens dato i Oslo. */
@@ -89,6 +90,21 @@ export const SESONGER: Sesong[] = [
     bilde: { src: '/bilder/hero-langbord.webp', alt: 'Langbord med smørbrød, salat og fat' },
   },
 ];
+
+/**
+ * Sesongen med tekstene på markedets språk. Send inn tInnhold(marked).
+ * Oversettelsene i lib/i18n/ord/innhold.ts er tilpasset hvert land (julbord, julefrokost, pikkujoulut, midsommar osv.).
+ */
+export function oversettSesong(s: Sesong, t: T): Sesong {
+  return {
+    ...s,
+    tittel: t(s.tittel),
+    tekst: t(s.tekst),
+    knapp: t(s.knapp),
+    lesMer: t(s.lesMer),
+    bilde: { ...s.bilde, alt: t(s.bilde.alt) },
+  };
+}
 
 /** Sesongen som gjelder for en dato (standard: i dag i Oslo). */
 export function aktivSesong(dato = new Date()): Sesong {

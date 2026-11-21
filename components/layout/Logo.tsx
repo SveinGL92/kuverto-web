@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useSprak } from '@/components/Sprak';
 import { cn } from '@/lib/cn';
 
 export function Symbol({ size = 34, className }: { size?: number; className?: string }) {
@@ -15,12 +18,14 @@ export function Symbol({ size = 34, className }: { size?: number; className?: st
 export function Logo({
   size = 'responsive',
   className,
-  href = '/',
+  href,
 }: {
   size?: 'responsive' | 'lg' | 'md' | 'sm';
   className?: string;
+  /** Standard: forsiden i markedet. */
   href?: string;
 }) {
+  const { t, sti } = useSprak();
   const s = {
     responsive: { sym: 'h-[26px] w-[26px] md:h-[34px] md:w-[34px]', txt: 'text-[25px] md:text-[30px]' },
     lg: { sym: 'h-[34px] w-[34px]', txt: 'text-[30px]' },
@@ -28,10 +33,10 @@ export function Logo({
     sm: { sym: 'h-[22px] w-[22px]', txt: 'text-xl' },
   }[size];
   return (
-    <Link href={href} className={cn('inline-flex items-center gap-2 text-primary no-underline hover:text-primary md:gap-2.5', className)}>
+    <Link href={href ?? sti('/')} className={cn('inline-flex items-center gap-2 text-primary no-underline hover:text-primary md:gap-2.5', className)}>
       <Symbol className={s.sym} />
       <span className={cn('k-heading leading-none', s.txt)}>kuverto</span>
-      <span className="sr-only">, til forsiden</span>
+      <span className="sr-only">{t(', til forsiden')}</span>
     </Link>
   );
 }

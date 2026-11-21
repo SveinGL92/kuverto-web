@@ -7,10 +7,10 @@ import { gyldigPostnummer, rensPostnummer } from '@/lib/postnummer';
 import { cn } from '@/lib/cn';
 import { useSprak } from '@/components/Sprak';
 
-/** Hurtigstart på forsiden. Sender verdiene videre til skjemaet, som fortsetter derfra. */
+/** Hurtigstart på forsiden. Sender verdiene videre til skjemaet, som fortsetter derfra. knapp gis på norsk og oversettes her. */
 export function HeroForm({ standardAnledning = 'firmalunsj', standardGjester = 25, knapp = 'Få tilbud' }: { standardAnledning?: string; standardGjester?: number; knapp?: string } = {}) {
   const router = useRouter();
-  const { info, sti } = useSprak();
+  const { info, sti, t } = useSprak();
   const lengde = info.postnummerLengde;
   const [anledning, setAnledning] = useState(standardAnledning);
   const [gjester, setGjester] = useState(String(standardGjester));
@@ -38,18 +38,18 @@ export function HeroForm({ standardAnledning = 'firmalunsj', standardGjester = 2
     <form
       onSubmit={send}
       noValidate
-      aria-label="Start en forespørsel"
+      aria-label={t('Start en forespørsel')}
       className="flex flex-col gap-3.5 rounded-[28px] bg-surface p-[18px] shadow-[0_10px_30px_rgba(28,34,16,0.10)] md:flex-row md:flex-wrap md:items-center md:gap-1 md:rounded-media md:p-2"
     >
       <label className={cn(labelMobil, celle, 'md:flex-[1.4_1_130px]')}>
-        Hva gjelder det?
+        {t('Hva gjelder det?')}
         <select value={anledning} onChange={(e) => setAnledning(e.target.value)} className={feltMobil}>
           <KategoriValg />
         </select>
       </label>
       <div className="grid grid-cols-2 gap-2.5 md:contents">
         <label className={cn(labelMobil, celle, 'md:flex-[0.7_1_70px] md:border-l md:border-border')}>
-          Gjester
+          {t('Gjester')}
           <input
             inputMode="numeric"
             autoComplete="off"
@@ -59,7 +59,7 @@ export function HeroForm({ standardAnledning = 'firmalunsj', standardGjester = 2
           />
         </label>
         <label className={cn(labelMobil, celle, 'md:flex-[0.9_1_90px] md:border-l md:border-border')}>
-          Postnummer
+          {t('Postnummer')}
           <input
             inputMode="numeric"
             autoComplete="postal-code"
@@ -79,11 +79,14 @@ export function HeroForm({ standardAnledning = 'firmalunsj', standardGjester = 2
         type="submit"
         className="min-h-[58px] rounded-pill bg-primary px-[22px] text-[17px] font-bold text-primary-on transition-colors hover:bg-primary-hover md:h-[60px] md:flex-[1_1_160px] md:whitespace-nowrap"
       >
-        {knapp}
+        {t(knapp)}
       </button>
       {feil && (
         <p id="hero-postnummer-feil" role="alert" className="m-0 w-full px-3.5 text-small font-semibold text-error">
-          Skriv postnummeret med {lengde === 4 ? 'fire' : 'fem'} siffer, for eksempel {info.postnummerEksempel}.
+          {t('Skriv postnummeret med {antall} siffer, for eksempel {eksempel}.', {
+            antall: lengde === 4 ? t('fire') : t('fem'),
+            eksempel: info.postnummerEksempel,
+          })}
         </p>
       )}
     </form>

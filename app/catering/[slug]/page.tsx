@@ -8,7 +8,11 @@ import { KategoriLenker } from '@/components/innhold/KategoriLenker';
 import { StegListe, type Steg } from '@/components/innhold/StegListe';
 import { Trygghet } from '@/components/innhold/Trygghet';
 import { HeroForm } from '@/components/kuverto/HeroForm';
-import { anledningerInnhold, finnAnledningInnhold } from '@/lib/anledninger-innhold';
+import { anledningerInnhold, finnAnledningInnhold, oversettAnledning } from '@/lib/anledninger-innhold';
+import { tInnhold } from '@/lib/i18n';
+import { MAKS_LEVERANDORER } from '@/lib/klipp';
+import { MARKEDER, MARKED_INFO, medPrefiks } from '@/lib/markets';
+import { sprak } from '@/lib/server/marked';
 
 export const dynamicParams = false;
 
@@ -18,51 +22,63 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const a = finnAnledningInnhold(slug);
-  if (!a) return {};
+  const funnet = finnAnledningInnhold(slug);
+  if (!funnet) return {};
+  const { marked, sti } = await sprak();
+  const a = oversettAnledning(funnet, tInnhold(marked));
+  const url = sti(`/catering/${a.slug}`);
   return {
     title: a.tittel,
     description: a.beskrivelse,
-    alternates: { canonical: `/catering/${a.slug}` },
-    openGraph: { title: a.tittel, description: a.beskrivelse, url: `/catering/${a.slug}` },
+    alternates: {
+      canonical: url,
+      languages: Object.fromEntries(MARKEDER.map((m) => [MARKED_INFO[m].htmlLang, medPrefiks(m, `/catering/${a.slug}`)])),
+    },
+    openGraph: { title: a.tittel, description: a.beskrivelse, url },
   };
 }
 
 export default async function AnledningSide({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const a = finnAnledningInnhold(slug);
-  if (!a) notFound();
+  const funnet = finnAnledningInnhold(slug);
+  if (!funnet) notFound();
+  const { marked, sti } = await sprak();
+  const t = tInnhold(marked);
+  const a = oversettAnledning(funnet, t);
+  const andre = anledningerInnhold.filter((x) => x.slug !== a.slug).map((x) => ({ ...x, kortnavn: t(x.kortnavn) }));
 
   const steg: Steg[] = [
     {
-      tittel: 'Beskriv behovet',
-      tekst: 'Dato, antall gjester, sted, kosthold og budsjett. Det tar et par minutter.',
+      tittel: t('Beskriv behovet'),
+      tekst: t('Dato, antall gjester, sted, kosthold og budsjett. Det tar et par minutter.'),
       illustrasjon: '/illustrasjoner/bordkort.svg',
     },
     {
-      tittel: a.rolig ? 'Få forslag' : 'Motta tilbud',
-      tekst: 'Godkjente leverandører i nærheten sender forslag til meny og pris per kuvert.',
+      tittel: a.rolig ? t('Få forslag') : t('Motta tilbud'),
+      tekst: t('Godkjente leverandører i nærheten sender forslag til meny og pris per kuvert.'),
       illustrasjon: '/illustrasjoner/tom-tallerken.svg',
     },
     {
-      tittel: 'Velg det som passer',
-      tekst: 'Sammenlign side om side. Du forplikter deg først når du velger.',
+      tittel: t('Velg det som passer'),
+      tekst: t('Sammenlign side om side. Du forplikter deg først når du velger.'),
       illustrasjon: '/illustrasjoner/tallerken-hake.svg',
     },
   ];
 
   const sporsmal = [
-    { sporsmal: 'Hva koster det å bruke Kuverto?', svar: 'Det er gratis å sende forespørsel og å få tilbud. Du betaler leverandøren du velger direkte, og Kuverto tar ingen provisjon.' },
+    { sporsmal: t('Hva koster det å bruke Kuverto?'), svar: t('Det er gratis å sende forespørsel og å få tilbud. Du betaler leverandøren du velger direkte, og Kuverto tar ingen provisjon.') },
     {
-      sporsmal: 'Hvor mange tilbud får jeg?',
-      svar: 'Høyst fem leverandører kan svare på samme forespørsel. Du får bare tilbud fra leverandører som har oppgitt at de leverer i området ditt.',
+      sporsmal: t('Hvor mange tilbud får jeg?'),
+      svar: t('Høyst {maks} leverandører kan svare på samme forespørsel. Du får bare tilbud fra leverandører som har oppgitt at de leverer i området ditt.', {
+        maks: MAKS_LEVERANDORER === 5 ? t('fem') : MAKS_LEVERANDORER,
+      }),
     },
     {
-      sporsmal: 'Hvem ser forespørselen min?',
-      svar: 'Godkjente leverandører i området ser behovet og området. Navn og kontaktinfo ser bare de som låser opp forespørselen for å svare, og gateadressen deles først når du velger et tilbud.',
+      sporsmal: t('Hvem ser forespørselen min?'),
+      svar: t('Godkjente leverandører i området ser behovet og området. Navn og kontaktinfo ser bare de som låser opp forespørselen for å svare, og gateadressen deles først når du velger et tilbud.'),
     },
-    { sporsmal: 'Kan jeg stille spørsmål før jeg velger?', svar: 'Ja. Du kan skrive med hver leverandør direkte på Kuverto, og du får e-post når de svarer.' },
-    { sporsmal: 'Må jeg takke ja til et tilbud?', svar: 'Nei. Det er helt uforpliktende, og du kan trekke forespørselen når du vil.' },
+    { sporsmal: t('Kan jeg stille spørsmål før jeg velger?'), svar: t('Ja. Du kan skrive med hver leverandør direkte på Kuverto, og du får e-post når de svarer.') },
+    { sporsmal: t('Må jeg takke ja til et tilbud?'), svar: t('Nei. Det er helt uforpliktende, og du kan trekke forespørselen når du vil.') },
   ];
   const faq = {
     '@context': 'https://schema.org',
@@ -74,8 +90,8 @@ export default async function AnledningSide({ params }: { params: Promise<{ slug
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Kuverto', item: 'https://kuverto.no/' },
-      { '@type': 'ListItem', position: 2, name: a.navn, item: `https://kuverto.no/catering/${a.slug}` },
+      { '@type': 'ListItem', position: 1, name: 'Kuverto', item: `https://kuverto.no${sti('/')}` },
+      { '@type': 'ListItem', position: 2, name: a.navn, item: `https://kuverto.no${sti(`/catering/${a.slug}`)}` },
     ],
   };
 
@@ -85,17 +101,17 @@ export default async function AnledningSide({ params }: { params: Promise<{ slug
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq) }} />
       <SiteHeader />
       <main id="innhold">
-        <nav aria-label="Brødsmuler" className="k-wrap pt-2 text-[15px]">
+        <nav aria-label={t('Brødsmuler')} className="k-wrap pt-2 text-[15px]">
           <ol className="m-0 flex list-none flex-wrap items-center gap-1.5 p-0 text-text-muted">
             <li>
-              <Link href="/" className="inline-flex min-h-touch items-center text-text-muted">
-                Forside
+              <Link href={sti('/')} className="inline-flex min-h-touch items-center text-text-muted">
+                {t('Forside')}
               </Link>
             </li>
             <li aria-hidden="true">/</li>
             <li>
-              <Link href="/#anledninger" className="inline-flex min-h-touch items-center text-text-muted">
-                Kategorier
+              <Link href={`${sti('/')}#anledninger`} className="inline-flex min-h-touch items-center text-text-muted">
+                {t('Kategorier')}
               </Link>
             </li>
             <li aria-hidden="true">/</li>
@@ -112,7 +128,7 @@ export default async function AnledningSide({ params }: { params: Promise<{ slug
             </h1>
             <p className="m-0 max-w-[44ch] text-[17px] leading-normal text-text-muted md:text-[19px]">{a.ingress}</p>
             <HeroForm standardAnledning={a.id} standardGjester={a.standardGjester} knapp={a.rolig ? 'Be om forslag' : 'Få tilbud'} />
-            <p className="m-0 text-[15px] text-text-muted">Gratis og uforpliktende. Du velger selv om du vil takke ja.</p>
+            <p className="m-0 text-[15px] text-text-muted">{t('Gratis og uforpliktende. Du velger selv om du vil takke ja.')}</p>
           </div>
           <div className="relative h-[260px] min-w-0 overflow-hidden rounded-media bg-[var(--k-photo-placeholder)] md:h-[clamp(360px,36vw,500px)] md:flex-[1_1_380px] md:rounded-panel">
             {a.bilde ? (
@@ -138,9 +154,9 @@ export default async function AnledningSide({ params }: { params: Promise<{ slug
           <div className="grid gap-6 rounded-card bg-surface p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:gap-12 md:p-10">
             <div className="flex flex-col gap-2">
               <h2 id="oppgi-tittel" className="k-heading m-0 text-[26px] leading-[1.1] md:text-[32px]">
-                Dette er nyttig å ha klart
+                {t('Dette er nyttig å ha klart')}
               </h2>
-              <p className="m-0 text-base text-text-muted">Jo mer leverandørene vet, desto mer treffende blir tilbudene. Et omtrentlig svar holder.</p>
+              <p className="m-0 text-base text-text-muted">{t('Jo mer leverandørene vet, desto mer treffende blir tilbudene. Et omtrentlig svar holder.')}</p>
             </div>
             <ul className="m-0 flex list-none flex-col gap-3 p-0">
               {a.oppgi.map((o) => (
@@ -158,9 +174,9 @@ export default async function AnledningSide({ params }: { params: Promise<{ slug
         {a.ideer && (
           <section aria-labelledby="ideer-tittel" className="k-wrap pt-14 md:pt-20">
             <h2 id="ideer-tittel" className="k-heading mb-2 mt-0 text-[26px] leading-[1.1] md:text-[32px]">
-              Ideer til hva du kan be om
+              {t('Ideer til hva du kan be om')}
             </h2>
-            <p className="m-0 mb-5 max-w-[60ch] text-base text-text-muted">Leverandørene foreslår gjerne alternativer. Skriv det du ser for deg under «Andre ønsker» i forespørselen.</p>
+            <p className="m-0 mb-5 max-w-[60ch] text-base text-text-muted">{t('Leverandørene foreslår gjerne alternativer. Skriv det du ser for deg under «Andre ønsker» i forespørselen.')}</p>
             <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-4">
               {a.ideer.map((i) => (
                 <li key={i} className="rounded-card bg-surface p-5 text-base font-semibold leading-snug">
@@ -173,7 +189,7 @@ export default async function AnledningSide({ params }: { params: Promise<{ slug
 
         <section aria-labelledby="anledning-steg" className="k-wrap pt-14 md:pt-20">
           <h2 id="anledning-steg" className="k-heading mb-6 mt-0 text-[30px] leading-[1.05] md:mb-9 md:text-[clamp(32px,3.2vw,44px)]">
-            Slik fungerer det
+            {t('Slik fungerer det')}
           </h2>
           <StegListe steg={steg} />
         </section>
@@ -184,7 +200,7 @@ export default async function AnledningSide({ params }: { params: Promise<{ slug
 
         <section aria-labelledby="sporsmal-tittel" className="k-wrap pt-14 md:pt-20">
           <h2 id="sporsmal-tittel" className="k-heading mb-6 mt-0 text-[26px] leading-[1.1] md:mb-8 md:text-[32px]">
-            Spørsmål og svar
+            {t('Spørsmål og svar')}
           </h2>
           <div className="flex max-w-[760px] flex-col gap-2">
             {sporsmal.map((q) => (
@@ -203,10 +219,10 @@ export default async function AnledningSide({ params }: { params: Promise<{ slug
 
         <section aria-labelledby="andre-tittel" className="k-wrap flex flex-col gap-6 pt-14 md:pt-20">
           <h2 id="andre-tittel" className="k-heading m-0 text-[26px] leading-[1.1] md:text-[32px]">
-            Flere kategorier
+            {t('Flere kategorier')}
           </h2>
-          <KategoriLenker tittel="Anledninger" liste={anledningerInnhold.filter((x) => x.slug !== a.slug && x.gruppe !== 'mattype')} />
-          <KategoriLenker tittel="Type mat" liste={anledningerInnhold.filter((x) => x.slug !== a.slug && x.gruppe === 'mattype')} />
+          <KategoriLenker tittel={t('Anledninger')} liste={andre.filter((x) => x.gruppe !== 'mattype')} />
+          <KategoriLenker tittel={t('Type mat')} liste={andre.filter((x) => x.gruppe === 'mattype')} />
         </section>
       </main>
       <SiteFooter />

@@ -1,3 +1,4 @@
+import type { T } from "./i18n/core";
 import type { Anledning } from "./types";
 
 /**
@@ -513,6 +514,22 @@ export const anledningerInnhold: AnledningInnhold[] = [
     standardGjester: 25,
   },
 ];
+
+/** Innholdet på markedets språk (bare på serveren). Send inn tInnhold(marked). Slug og id endres ikke. */
+export function oversettAnledning(a: AnledningInnhold, t: T): AnledningInnhold {
+  return {
+    ...a,
+    navn: t(a.navn),
+    kortnavn: t(a.kortnavn),
+    bilde: a.bilde && { ...a.bilde, alt: t(a.bilde.alt) },
+    ideer: a.ideer?.map((x) => t(x)),
+    tittel: t(a.tittel),
+    beskrivelse: t(a.beskrivelse),
+    h1: t(a.h1),
+    ingress: t(a.ingress),
+    oppgi: a.oppgi.map((x) => t(x)),
+  };
+}
 
 export const finnAnledningInnhold = (slug: string) =>
   anledningerInnhold.find((a) => a.slug === slug);

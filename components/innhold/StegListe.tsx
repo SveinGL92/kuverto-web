@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn';
+import { sprak } from '@/lib/server/marked';
 
 export interface Steg {
   tittel: string;
@@ -7,7 +8,8 @@ export interface Steg {
 }
 
 /** Tre (eller flere) nummererte steg. Vannrett på desktop, loddrett på mobil. */
-export function StegListe({ steg, className }: { steg: Steg[]; className?: string }) {
+export async function StegListe({ steg, className }: { steg: Steg[]; className?: string }) {
+  const { t } = await sprak();
   return (
     <ol className={cn('m-0 grid list-none gap-3 p-0 md:grid-cols-3 md:gap-5', className)}>
       {steg.map((s, i) => (
@@ -17,7 +19,7 @@ export function StegListe({ steg, className }: { steg: Steg[]; className?: strin
           <div className="flex flex-col gap-1.5">
             <h3 className="m-0 flex items-baseline gap-2.5 text-[19px] font-bold leading-snug md:text-xl">
               <span>
-                <span className="sr-only">Steg {i + 1}: </span>
+                <span className="sr-only">{t('Steg {nr}: ', { nr: i + 1 })}</span>
                 {s.tittel}
               </span>
             </h3>

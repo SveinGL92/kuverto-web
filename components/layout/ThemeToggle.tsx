@@ -1,6 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { useSprak } from '@/components/Sprak';
 
 type Tema = 'system' | 'light' | 'dark';
 const valg: { id: Tema; navn: string }[] = [
@@ -38,16 +39,17 @@ export function ThemeToggle() {
     les,
     () => 'system' as Tema,
   );
+  const { t } = useSprak();
   return (
     <fieldset className="m-0 flex items-center gap-1 border-0 p-0">
-      <legend className="sr-only">Fargetema</legend>
+      <legend className="sr-only">{t('Fargetema')}</legend>
       {valg.map((v) => (
         <label
           key={v.id}
           className="relative flex min-h-touch cursor-pointer items-center rounded-pill px-3 text-small font-semibold text-text-muted has-[:checked]:bg-surface-soft has-[:checked]:text-text has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-primary"
         >
           <input type="radio" name="tema" value={v.id} checked={tema === v.id} onChange={() => sett(v.id)} className="sr-only" />
-          {v.navn}
+          {t(v.navn)}
         </label>
       ))}
     </fieldset>

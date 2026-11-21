@@ -1,9 +1,12 @@
+'use client';
+
 import Link from 'next/link';
+import { useSprak } from '@/components/Sprak';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { Symbol } from './Logo';
 
-/** Olivenhode for innloggede kunder. På mobil vises en tilbakelenke i stedet for menyen. */
+/** Olivenhode for innloggede kunder. På mobil vises en tilbakelenke i stedet for menyen. tilbake.href og tilbake.navn gis ferdig oversatt og med landprefiks av siden som kaller. */
 export function AppHeader({
   tilbake,
   aktiv,
@@ -13,6 +16,7 @@ export function AppHeader({
   aktiv: 'foresporsler' | 'meldinger';
   children: ReactNode;
 }) {
+  const { t, sti } = useSprak();
   const lenke = (href: string, navn: string, id: string) => (
     <Link
       href={href}
@@ -28,16 +32,16 @@ export function AppHeader({
   return (
     <header className="bg-panel text-panel-on">
       <div className="mx-auto hidden max-w-[1200px] flex-wrap items-center justify-between gap-3 px-6 py-3.5 md:flex">
-        <Link href="/" className="flex items-center gap-2 text-panel-on no-underline hover:text-panel-on">
+        <Link href={sti('/')} className="flex items-center gap-2 text-panel-on no-underline hover:text-panel-on">
           <Symbol size={28} />
           <span className="k-heading text-[28px] leading-none tracking-[-0.035em]">kuverto</span>
-          <span className="sr-only">, til forsiden</span>
+          <span className="sr-only">{t(', til forsiden')}</span>
         </Link>
-        <nav aria-label="Konto" className="flex flex-wrap gap-1 text-base font-semibold">
-          {lenke('/mine-foresporsler', 'Mine forespørsler', 'foresporsler')}
+        <nav aria-label={t('Konto')} className="flex flex-wrap gap-1 text-base font-semibold">
+          {lenke(sti('/mine-foresporsler'), t('Mine forespørsler'), 'foresporsler')}
           <form action="/logg-ut" method="post">
             <button type="submit" className="px-3.5 py-3 font-semibold text-panel-on-muted hover:text-panel-on">
-              Logg ut
+              {t('Logg ut')}
             </button>
           </form>
         </nav>

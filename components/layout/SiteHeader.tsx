@@ -2,37 +2,38 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useSprak } from '@/components/Sprak';
 import { Logo } from './Logo';
-
-const lenker = [
-  { href: '/#slik-fungerer-det', navn: 'Slik fungerer det' },
-  { href: '/#anledninger', navn: 'Finn catering' },
-  { href: '/for-leverandorer', navn: 'For leverandører' },
-];
 
 export function SiteHeader() {
   const [apen, setApen] = useState(false);
+  const { t, sti } = useSprak();
+  const lenker = [
+    { href: `${sti('/')}#slik-fungerer-det`, navn: t('Slik fungerer det') },
+    { href: `${sti('/')}#anledninger`, navn: t('Finn catering') },
+    { href: sti('/for-leverandorer'), navn: t('For leverandører') },
+  ];
   return (
     <header className="k-wrap flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3 md:py-6">
       <Logo />
-      <nav aria-label="Hovedmeny" className="flex items-center gap-1 text-base font-semibold">
+      <nav aria-label={t('Hovedmeny')} className="flex items-center gap-1 text-base font-semibold">
         {lenker.map((l) => (
           <Link key={l.href} href={l.href} className="hidden px-3 py-3 text-text no-underline hover:text-primary lg:block">
             {l.navn}
           </Link>
         ))}
-        <Link href="/logg-inn" className="hidden px-3 py-3 text-text no-underline hover:text-primary md:block">
-          Logg inn
+        <Link href={sti('/logg-inn')} className="hidden px-3 py-3 text-text no-underline hover:text-primary md:block">
+          {t('Logg inn')}
         </Link>
         <Link
-          href="/foresporsel"
+          href={sti('/foresporsel')}
           className="ml-1 flex min-h-touch items-center whitespace-nowrap rounded-pill bg-primary px-4 text-[15px] font-bold text-primary-on no-underline hover:bg-primary-hover hover:text-primary-on md:ml-2 md:min-h-[48px] md:px-6 md:text-base"
         >
-          Få tilbud
+          {t('Få tilbud')}
         </Link>
         <button
           type="button"
-          aria-label="Meny"
+          aria-label={t('Meny')}
           aria-expanded={apen}
           aria-controls="mobilmeny"
           onClick={() => setApen((v) => !v)}
@@ -44,9 +45,9 @@ export function SiteHeader() {
         </button>
       </nav>
       {apen && (
-        <nav id="mobilmeny" aria-label="Meny" className="w-full pb-2 lg:hidden">
+        <nav id="mobilmeny" aria-label={t('Meny')} className="w-full pb-2 lg:hidden">
           <ul className="m-0 flex list-none flex-col p-0">
-            {[...lenker, { href: '/logg-inn', navn: 'Logg inn' }].map((l) => (
+            {[...lenker, { href: sti('/logg-inn'), navn: t('Logg inn') }].map((l) => (
               <li key={l.href}>
                 <Link
                   href={l.href}
