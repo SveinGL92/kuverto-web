@@ -1,20 +1,33 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
+import { erMarked, medPrefiks } from '@/lib/markets';
 import { signerVedlegg, tilForesporsel, tilTilbud } from '@/lib/server/data';
+import { sprak } from '@/lib/server/marked';
 import { db, erAdmin, innloggetEpost } from '@/lib/server/supabase';
 import { TilbudSide } from './TilbudSide';
 
-export const metadata: Metadata = { title: 'Tilbud', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await sprak();
+  return { title: t('Tilbud'), robots: { index: false } };
+}
 export const dynamic = 'force-dynamic';
 
-export default async function Side({ params }: { params: Promise<{ id: string }> }) {
+export default async function Side({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
+  const { marked, t, sti } = await sprak();
   const epost = await innloggetEpost();
-  if (!epost) redirect(`/logg-inn`);
+  if (!epost) redirect(sti('/logg-inn'));
   const s = db();
   const { data: f } = await s.from('foresporsler').select('*').eq('id', id).maybeSingle();
   if (!f || (f.kunde_epost !== epost && !(await erAdmin(epost)))) notFound();
+  // Vis forespørselen på landsiden den ble sendt fra (språk og valuta i tilbudene).
+  if (erMarked(f.marked) && f.marked !== marked) {
+    const sp = new URLSearchParams();
+    for (const [k, v] of Object.entries(await searchParams)) for (const x of [v ?? []].flat()) sp.append(k, x);
+    const q = sp.toString();
+    redirect(medPrefiks(f.marked, `/foresporsler/${id}${q ? `?${q}` : ''}`));
+  }
   const { data: k } = await s.from('foresporsel_kontakt').select('adresse').eq('foresporsel_id', id).maybeSingle();
   const { data: rader } = await s.from('tilbud').select('*').eq('foresporsel_id', id).neq('status', 'trukket').order('opprettet');
   const levIder = [...new Set((rader ?? []).map((t) => t.leverandor_id))];
@@ -25,7 +38,7 @@ export default async function Side({ params }: { params: Promise<{ id: string }>
   const samtaleIder = [...new Set((ms ?? []).map((m) => m.leverandor_id))];
   const manglerNavn = samtaleIder.filter((x) => !lev?.some((l) => l.id === x));
   const { data: flere } = manglerNavn.length ? await s.from('leverandorer').select('id, navn').in('id', manglerNavn) : { data: [] };
-  const navnPa = (lid: string) => lev?.find((l) => l.id === lid)?.navn ?? flere?.find((l) => l.id === lid)?.navn ?? 'Leverandør';
+  const navnPa = (lid: string) => lev?.find((l) => l.id === lid)?.navn ?? flere?.find((l) => l.id === lid)?.navn ?? t('Leverandør');
   const samtaler = samtaleIder.map((lid) => {
     const egne = (ms ?? []).filter((m) => m.leverandor_id === lid);
     const sist = egne.at(-1);
@@ -37,6 +50,6 @@ export default async function Side({ params }: { params: Promise<{ id: string }>
       sist: sist ? { tekst: sist.tekst, fra: sist.fra, opprettet: sist.opprettet } : undefined,
     };
   });
-  const tilbud = (rader ?? []).map((t, i) => tilTilbud(t, lev?.find((l) => l.id === t.leverandor_id) ?? { navn: 'Leverandør' }, i, lenker));
+  const tilbud = (rader ?? []).map((r, i) => tilTilbud(r, lev?.find((l) => l.id === r.leverandor_id) ?? { navn: t('Leverandør') }, i, lenker));
   return <TilbudSide foresporsel={tilForesporsel(f)} tilbud={tilbud} adresse={k?.adresse ?? undefined} samtaler={samtaler} />;
 }

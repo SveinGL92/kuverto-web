@@ -3,16 +3,22 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { hentSamtale, sendChatMelding, type ChatMelding } from '@/app/samtale/actions';
 import { cn } from '@/lib/cn';
+import type { T } from '@/lib/i18n/core';
+import type { Marked } from '@/lib/markets';
 import { Button } from '@/components/ui/Button';
+import { useSprak } from '@/components/Sprak';
 
-const tid = (iso: string) => new Date(iso).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Oslo' });
-const dag = (iso: string) => {
-  const d = new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
-  const idag = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
-  const igar = new Date(Date.now() - 86_400_000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
-  if (d === idag) return 'I dag';
-  if (d === igar) return 'I går';
-  const t = new Date(iso).toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Oslo' });
+/** Finland ligger én time foran Norge, Sverige og Danmark. */
+const sone = (marked: Marked) => (marked === 'fi' ? 'Europe/Helsinki' : 'Europe/Oslo');
+const tid = (iso: string, intl: string, tz: string) => new Date(iso).toLocaleTimeString(intl, { hour: '2-digit', minute: '2-digit', timeZone: tz });
+const dag = (iso: string, intl: string, tz: string, tr: T) => {
+  // sv-SE gir ÅÅÅÅ-MM-DD, som er lett å sammenligne.
+  const d = new Date(iso).toLocaleDateString('sv-SE', { timeZone: tz });
+  const idag = new Date().toLocaleDateString('sv-SE', { timeZone: tz });
+  const igar = new Date(Date.now() - 86_400_000).toLocaleDateString('sv-SE', { timeZone: tz });
+  if (d === idag) return tr('I dag');
+  if (d === igar) return tr('I går');
+  const t = new Date(iso).toLocaleDateString(intl, { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz });
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 
@@ -21,6 +27,8 @@ const dag = (iso: string) => {
  * leverandorId trengs når kunden er innlogget; for leverandøren utledes den på serveren.
  */
 export function Samtale({ foresporselId, leverandorId, tittel, kompakt = false }: { foresporselId: string; leverandorId?: string; tittel?: string; kompakt?: boolean }) {
+  const { marked, info, t: tr } = useSprak();
+  const tz = sone(marked);
   const [meldinger, setMeldinger] = useState<ChatMelding[]>();
   const [meg, setMeg] = useState<'kunde' | 'leverandor'>();
   const [motpart, setMotpart] = useState('');
@@ -47,10 +55,10 @@ export function Samtale({ foresporselId, leverandorId, tittel, kompakt = false }
     setKanSende(svar.kanSende);
     setGrunn(svar.grunn);
     const fraMotpart = svar.meldinger.filter((m) => m.fra !== svar.meg);
-    if (sistFraMotpart.current >= 0 && fraMotpart.length > sistFraMotpart.current) setNytt(`Ny melding fra ${svar.motpart}: ${fraMotpart.at(-1)?.tekst ?? ''}`);
+    if (sistFraMotpart.current >= 0 && fraMotpart.length > sistFraMotpart.current) setNytt(tr('Ny melding fra {navn}: {tekst}', { navn: svar.motpart, tekst: fraMotpart.at(-1)?.tekst ?? '' }));
     sistFraMotpart.current = fraMotpart.length;
     setMeldinger(svar.meldinger);
-  }, [foresporselId, leverandorId]);
+  }, [foresporselId, leverandorId, tr]);
 
   useEffect(() => {
     let aktiv = true;
@@ -92,25 +100,26 @@ export function Samtale({ foresporselId, leverandorId, tittel, kompakt = false }
   return (
     <section aria-labelledby={tittelId} className="flex min-h-0 flex-col gap-3">
       <h2 id={tittelId} className={cn('m-0', kompakt ? 'text-[17px] font-bold' : 'k-heading pr-10 text-[26px]')}>
-        {tittel ?? (motpart ? `Samtale med ${motpart}` : 'Samtale')}
+        {tittel ?? (motpart ? tr('Samtale med {navn}', { navn: motpart }) : tr('Samtale'))}
       </h2>
       <div
         ref={logg}
         role="log"
-        aria-label={`Meldinger${motpart ? ` med ${motpart}` : ''}`}
+        aria-label={motpart ? tr('Meldinger med {navn}', { navn: motpart }) : tr('Meldinger')}
         tabIndex={0}
         className={cn('flex flex-col gap-2 overflow-y-auto rounded-alert bg-surface-soft p-3', kompakt ? 'max-h-[260px] min-h-[120px]' : 'h-[min(52dvh,440px)]')}
       >
         {!meldinger ? (
-          <p className="m-auto text-[15px] text-text-muted">Henter meldinger …</p>
+          <p className="m-auto text-[15px] text-text-muted">{tr('Henter meldinger …')}</p>
         ) : meldinger.length === 0 ? (
           <p className="m-auto max-w-[36ch] text-center text-[15px] text-text-muted">
-            Ingen meldinger ennå. {meg === 'kunde' ? 'Still spørsmål om menyen, allergier eller levering.' : 'Spør kunden om det du trenger for å gi et godt tilbud.'}
+            {tr('Ingen meldinger ennå.')}{' '}
+            {meg === 'kunde' ? tr('Still spørsmål om menyen, allergier eller levering.') : tr('Spør kunden om det du trenger for å gi et godt tilbud.')}
           </p>
         ) : (
           meldinger.map((m) => {
             const min = m.fra === meg;
-            const d = dag(m.opprettet);
+            const d = dag(m.opprettet, info.intl, tz, tr);
             const visDag = d !== forrigeDag;
             forrigeDag = d;
             return (
@@ -118,12 +127,12 @@ export function Samtale({ foresporselId, leverandorId, tittel, kompakt = false }
                 {visDag && <p className="m-0 mt-1 text-center text-small font-semibold text-text-muted">{d}</p>}
                 <div className={cn('flex max-w-[85%] flex-col gap-0.5', min ? 'self-end items-end' : 'self-start items-start')}>
                   <p className={cn('m-0 whitespace-pre-wrap break-words rounded-[18px] px-3.5 py-2 text-base leading-normal', min ? 'rounded-br-[6px] bg-primary text-primary-on' : 'rounded-bl-[6px] bg-surface text-text')}>
-                    <span className="sr-only">{min ? 'Du' : motpart}: </span>
+                    <span className="sr-only">{min ? tr('Du') : motpart}: </span>
                     {m.tekst}
                   </p>
                   <span className="px-1 text-small text-text-muted">
-                    {tid(m.opprettet)}
-                    {min && m.lest ? ' · Lest' : ''}
+                    {tid(m.opprettet, info.intl, tz)}
+                    {min && m.lest ? ` · ${tr('Lest')}` : ''}
                   </span>
                 </div>
               </div>
@@ -145,7 +154,7 @@ export function Samtale({ foresporselId, leverandorId, tittel, kompakt = false }
         >
           <div className="flex min-w-0 flex-grow flex-col gap-1">
             <label htmlFor={feltId} className="sr-only">
-              Skriv en melding{motpart ? ` til ${motpart}` : ''}
+              {motpart ? tr('Skriv en melding til {navn}', { navn: motpart }) : tr('Skriv en melding')}
             </label>
             <textarea
               id={feltId}
@@ -159,16 +168,16 @@ export function Samtale({ foresporselId, leverandorId, tittel, kompakt = false }
                   send();
                 }
               }}
-              placeholder={`Skriv til ${motpart || 'motparten'} …`}
+              placeholder={`${tr('Skriv til {navn}', { navn: motpart || tr('motparten') })} …`}
               aria-describedby={`${feltId}-hjelp`}
               className="min-h-[52px] w-full resize-none rounded-input border-[1.5px] border-border-input bg-surface px-3.5 py-3 text-base focus:border-2 focus:border-primary"
             />
             <span id={`${feltId}-hjelp`} className="text-small text-text-muted">
-              Enter sender, Shift + Enter gir ny linje.
+              {tr('Enter sender, Shift + Enter gir ny linje.')}
             </span>
           </div>
           <Button type="submit" busy={sender} disabled={sender || !tekst.trim()} className="mb-6 shrink-0">
-            Send
+            {tr('Send')}
           </Button>
         </form>
       ) : (

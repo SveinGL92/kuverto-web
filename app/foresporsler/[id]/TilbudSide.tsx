@@ -17,7 +17,9 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { PriceRing } from '@/components/ui/PriceRing';
 import { cn } from '@/lib/cn';
-import { dagMndLang, datoKort, datoLang, kr } from '@/lib/format';
+import { dagMndLang, datoKort, datoLang } from '@/lib/format';
+import type { T } from '@/lib/i18n/core';
+import { useSprak } from '@/components/Sprak';
 import { anledningNavn, budsjettNavn, kostholdKort as kostholdOrd } from '@/lib/labels';
 import type { Foresporsel, Tilbud } from '@/lib/types';
 
@@ -33,12 +35,12 @@ const inkludertPoeng = (t: Tilbud) => Number(t.levering.inkludert) + Number(t.op
 /** Bokstaven fra «[Leverandør A]», brukt i korte knappetekster på mobil. */
 const kortnavn = (t: Tilbud) => t.leverandorNavn.match(/\b([A-ZÆØÅ])\]?$/)?.[1] ?? t.leverandorNavn;
 
-function gjelderTil(iso: string) {
+function gjelderTil(iso: string, intl?: string, tr: T = (x) => x) {
   const d = dagerTil(iso);
-  if (d < 0) return { tekst: 'Utløpt', haster: true, utlopt: true };
-  if (d === 0) return { tekst: 'I dag', haster: true };
-  if (d === 1) return { tekst: 'I morgen', haster: true };
-  return { tekst: dagMndLang(iso), haster: false };
+  if (d < 0) return { tekst: tr('Utløpt'), haster: true, utlopt: true };
+  if (d === 0) return { tekst: tr('I dag'), haster: true };
+  if (d === 1) return { tekst: tr('I morgen'), haster: true };
+  return { tekst: dagMndLang(iso, intl), haster: false };
 }
 
 const Hake = () => (
@@ -57,6 +59,11 @@ export interface SamtaleOversikt {
 
 export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: { foresporsel: Foresporsel; tilbud: Tilbud[]; adresse?: string; samtaler?: SamtaleOversikt[] }) {
   const q = useSearchParams();
+  // tr: oversetter (t brukes om tilbudet i løkkene under).
+  const { marked, info, t: tr, sti, penger } = useSprak();
+  const gjelder = (iso: string) => gjelderTil(iso, info.intl, tr);
+  /** Bildeteksten fra serveren er norsk: «Bilde fra X» eller illustrasjonsteksten. */
+  const bildeAlt = (alt: string) => (alt.startsWith('Bilde fra ') ? tr('Bilde fra {navn}', { navn: alt.slice(10) }) : tr(alt));
   const [samtaleMed, setSamtaleMed] = useState<string | undefined>(() => q.get('samtale') ?? undefined);
   const samtaleNavn = samtaler.find((x) => x.leverandorId === samtaleMed)?.navn ?? tilbud.find((t) => t.leverandorId === samtaleMed)?.leverandorNavn;
   const [sortering, setSortering] = useState<Sortering>('pris');
@@ -84,12 +91,12 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
   const valgtTilbud = tilbud.find((t) => t.id === valgt);
   const apentTilbud = tilbud.find((t) => t.id === apent);
 
-  const anledning = anledningNavn(f.anledning).toLowerCase();
-  const kostholdTekst = f.kosthold.map((k) => `${kostholdOrd(k.type)} ${k.antall}`).join(' · ');
+  const anledning = anledningNavn(f.anledning, tr).toLowerCase();
+  const kostholdTekst = f.kosthold.map((k) => `${kostholdOrd(k.type, tr)} ${k.antall}`).join(' · ');
   // «Vegetar og nøttefritt» ut fra det kunden har oppgitt.
   const kostholdKort = (() => {
-    const ord = f.kosthold.map((k) => kostholdOrd(k.type));
-    const tekst = ord.length > 1 ? `${ord.slice(0, -1).join(', ')} og ${ord.at(-1)}` : (ord[0] ?? '');
+    const ord = f.kosthold.map((k) => kostholdOrd(k.type, tr));
+    const tekst = ord.length > 1 ? tr('{liste} og {siste}', { liste: ord.slice(0, -1).join(', '), siste: ord.at(-1) ?? '' }) : (ord[0] ?? '');
     return tekst.charAt(0).toUpperCase() + tekst.slice(1);
   })();
   const velg = async (id: string, adresse: string) => {
@@ -123,16 +130,16 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
       }}
       className={cn('font-semibold', className)}
     >
-      Se hele tilbudet<span className="sr-only"> fra {t.leverandorNavn}</span>
+      {tr('Se hele tilbudet')}<span className="sr-only">{` ${tr('fra {navn}', { navn: t.leverandorNavn })}`}</span>
     </Button>
   );
 
   const velgKnapp = (t: Tilbud, tekst: string, className?: string) =>
     avslatte.includes(t.id) ? (
-      <span className={cn('inline-flex min-h-[52px] items-center justify-center rounded-pill bg-neutral-bg px-4 font-bold text-text-muted', className)}>Avslått</span>
+      <span className={cn('inline-flex min-h-[52px] items-center justify-center rounded-pill bg-neutral-bg px-4 font-bold text-text-muted', className)}>{tr('Avslått')}</span>
     ) : valgt === t.id ? (
       <span className={cn('inline-flex min-h-[52px] items-center justify-center gap-2 rounded-pill bg-success-bg px-4 font-bold text-success', className)}>
-        <Hake /> Valgt
+        <Hake /> {tr('Valgt')}
       </span>
     ) : (
       <Button
@@ -141,7 +148,7 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
           setBekreftVelg(true);
           setApent(t.id);
         }}
-        disabled={!!valgt || !aktiv || !!gjelderTil(t.gyldigTil).utlopt}
+        disabled={!!valgt || !aktiv || !!gjelder(t.gyldigTil).utlopt}
         className={className}
       >
         {tekst}
@@ -149,7 +156,7 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
     );
 
   const sorteringsknapper = (tone: 'lys' | 'panel') => (
-    <div role="group" aria-label="Sorter tilbudene" className={cn('flex flex-wrap', tone === 'panel' ? 'gap-5' : 'gap-2')}>
+    <div role="group" aria-label={tr('Sorter tilbudene')} className={cn('flex flex-wrap', tone === 'panel' ? 'gap-5' : 'gap-2')}>
       {sorteringer.map((s) => {
         const pa = sortering === s.id;
         return tone === 'panel' ? (
@@ -160,7 +167,7 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
             onClick={() => setSortering(s.id)}
             className={cn('min-h-touch border-b-[3px] text-base', pa ? 'border-accent font-bold text-panel-on' : 'border-transparent font-semibold text-panel-on-muted hover:text-panel-on')}
           >
-            {s.navn}
+            {tr(s.navn)}
           </button>
         ) : (
           <button
@@ -173,7 +180,7 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
               pa ? 'border-2 border-primary bg-primary font-bold text-primary-on' : 'border-[1.5px] border-border-input bg-surface font-semibold text-text',
             )}
           >
-            {s.navn}
+            {tr(s.navn)}
           </button>
         );
       })}
@@ -182,17 +189,22 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
 
   return (
     <>
-      <AppHeader tilbake={{ href: '/mine-foresporsler', navn: 'Mine forespørsler' }} aktiv="foresporsler">
+      <AppHeader tilbake={{ href: sti('/mine-foresporsler'), navn: tr('Mine forespørsler') }} aktiv="foresporsler">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-1.5 md:gap-2">
             <h1 className="k-heading m-0 text-[34px] leading-[1.02] md:text-[52px] md:leading-none md:tracking-[-0.04em]">
-              {tilbud.length === 0 ? `Ingen tilbud ennå på ${anledning}` : `${tilbud.length} tilbud på ${anledning}`}
+              {tilbud.length === 0
+                ? tr('Ingen tilbud ennå på {anledning}', { anledning })
+                : tr(tilbud.length === 1 ? '1 tilbud på {anledning}' : '{antall} tilbud på {anledning}', { antall: tilbud.length, anledning })}
             </h1>
             <p className="m-0 text-[15px] text-panel-on-muted md:hidden">
-              {f.gjester} kuverter · {f.dato ? datoKort(f.dato) : 'fleksibel dato'} · {f.postnummer} {f.poststed}
+              {tr('{gjester} kuverter', { gjester: f.gjester })} · {f.dato ? datoKort(f.dato, info.intl) : tr('fleksibel dato')} · {f.postnummer} {f.poststed}
             </p>
             <p className="m-0 hidden text-[17px] text-panel-on-muted md:block">
-              {f.gjester} kuverter · {f.dato ? `${datoLang(f.dato)} kl. ${f.klokkeslett}` : 'fleksibel dato'} · {f.postnummer} {f.poststed} · budsjett {budsjettNavn(f.budsjett)}{f.budsjett === 'vet_ikke' ? '' : ' per kuvert'}
+              {tr('{gjester} kuverter', { gjester: f.gjester })} ·{' '}
+              {f.dato ? tr('{dato} kl. {klokkeslett}', { dato: datoLang(f.dato, info.intl), klokkeslett: f.klokkeslett ?? '' }) : tr('fleksibel dato')} · {f.postnummer} {f.poststed} ·{' '}
+              {tr('budsjett {budsjett}', { budsjett: budsjettNavn(f.budsjett, marked, tr) })}
+              {f.budsjett === 'vet_ikke' ? '' : ` ${tr('per kuvert')}`}
             </p>
           </div>
           {tilbud.length > 1 && <div className="hidden md:block">{sorteringsknapper('panel')}</div>}
@@ -208,14 +220,18 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
         {f.status === 'venter_bekreftelse' && (
           <div className="mx-4 mt-4 md:mx-0 md:mb-6 md:mt-0">
             <Alert tone="advarsel">
-              Forespørselen er ikke sendt ennå. Trykk «Bekreft og send» i e-posten vi sendte deg, så får leverandørene beskjed.
+              {tr('Forespørselen er ikke sendt ennå. Trykk «Bekreft og send» i e-posten vi sendte deg, så får leverandørene beskjed.')}
             </Alert>
           </div>
         )}
         {!aktiv && !valgt && f.status !== 'venter_bekreftelse' && (
           <div className="mx-4 mt-4 md:mx-0 md:mb-6 md:mt-0">
             <Alert tone="advarsel">
-              {f.status === 'trukket' ? 'Du har trukket denne forespørselen. Leverandørene har fått beskjed.' : f.status === 'avvist' ? 'Forespørselen er stoppet av Kuverto. Ta kontakt på hei@kuverto.no hvis du har spørsmål.' : 'Forespørselen er ikke lenger aktiv.'}
+              {f.status === 'trukket'
+                ? tr('Du har trukket denne forespørselen. Leverandørene har fått beskjed.')
+                : f.status === 'avvist'
+                  ? tr('Forespørselen er stoppet av Kuverto. Ta kontakt på hei@kuverto.no hvis du har spørsmål.')
+                  : tr('Forespørselen er ikke lenger aktiv.')}
             </Alert>
           </div>
         )}
@@ -232,7 +248,7 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
                     setApent(valgtTilbud.id);
                   }}
                 >
-                  Se tilbudet
+                  {tr('Se tilbudet')}
                 </Button>
               }
             />
@@ -242,7 +258,7 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
         {samtaler.length > 0 && (
           <section aria-labelledby="samtaler-tittel" className="mx-4 mt-6 flex flex-col gap-3 md:mx-0 md:mb-8 md:mt-0">
             <h2 id="samtaler-tittel" className="k-heading m-0 text-2xl">
-              Meldinger
+              {tr('Meldinger')}
             </h2>
             <ul className="m-0 grid list-none gap-2 p-0 md:grid-cols-2">
               {samtaler.map((x) => (
@@ -256,15 +272,15 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
                       <strong className="text-base">{x.navn}</strong>
                       {x.sist && (
                         <span className="truncate text-[15px] text-text-muted">
-                          {x.sist.fra === 'kunde' ? 'Du: ' : ''}
+                          {x.sist.fra === 'kunde' ? `${tr('Du')}: ` : ''}
                           {x.sist.tekst}
                         </span>
                       )}
                     </span>
                     {x.uleste > 0 ? (
-                      <span className="shrink-0 rounded-pill bg-accent px-2.5 py-1 text-small font-bold text-accent-on">{x.uleste} nye</span>
+                      <span className="shrink-0 rounded-pill bg-accent px-2.5 py-1 text-small font-bold text-accent-on">{tr('{antall} nye', { antall: x.uleste })}</span>
                     ) : (
-                      <span className="shrink-0 text-small font-semibold text-text-muted">Åpne</span>
+                      <span className="shrink-0 text-small font-semibold text-text-muted">{tr('Åpne')}</span>
                     )}
                   </button>
                 </li>
@@ -277,16 +293,16 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
           <div className="px-4 pt-8 md:px-0">
             <EmptyState
               illustrasjon="/illustrasjoner/tom-tallerken.svg"
-              tittel="Ingen tilbud ennå"
+              tittel={tr('Ingen tilbud ennå')}
               handling={
-                <Link href="/mine-foresporsler" className="font-semibold">
-                  Til mine forespørsler
+                <Link href={sti('/mine-foresporsler')} className="font-semibold">
+                  {tr('Til mine forespørsler')}
                 </Link>
               }
             >
               {aktiv
-                ? `Leverandørene i området har fått forespørselen. Du får en e-post hver gang et tilbud kommer, og høyst ${f.maksLeverandorer} kan svare. Er noe feil, kan du trekke forespørselen nederst på siden og sende en ny.`
-                : 'Det har ikke kommet noen tilbud på denne forespørselen.'}
+                ? tr('Leverandørene i området har fått forespørselen. Du får en e-post hver gang et tilbud kommer, og høyst {maks} kan svare. Er noe feil, kan du trekke forespørselen nederst på siden og sende en ny.', { maks: f.maksLeverandorer })
+                : tr('Det har ikke kommet noen tilbud på denne forespørselen.')}
             </EmptyState>
           </div>
         ) : (
@@ -296,47 +312,50 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
               {tilbud.length > 1 && <div className="px-4 pb-2 pt-4">{sorteringsknapper('lys')}</div>}
               {sortert.length > 2 && (
                 <p className="m-0 px-4 pb-3 text-small text-text-muted" id="sveip-hint">
-                  Sveip for å se tilbud {kortnavn(sortert[2])}
+                  {tr('Sveip for å se tilbud {navn}', { navn: kortnavn(sortert[2]) })}
                 </p>
               )}
               <ul
                 tabIndex={0}
-                aria-label="Tilbud"
+                aria-label={tr('Tilbud')}
                 aria-describedby={sortert.length > 2 ? 'sveip-hint' : undefined}
                 className="k-scroll-snap relative m-0 flex list-none gap-3 overflow-x-auto px-4 pb-4 [scroll-padding-inline:16px]"
               >
                 {sortert.map((t) => {
-                  const g = gjelderTil(t.gyldigTil);
+                  const g = gjelder(t.gyldigTil);
                   return (
                     <li key={t.id} className="flex w-[172px] shrink-0 flex-col gap-3">
                       <article aria-label={t.leverandorNavn} className={cn('flex flex-grow flex-col gap-3', avslatte.includes(t.id) && 'opacity-60')}>
                         <div className="relative h-[130px] overflow-hidden rounded-card bg-[var(--k-photo-placeholder)]">
-                          <Image src={t.bilde.src} alt={t.bilde.alt} unoptimized={t.bilde.src.startsWith('http')} fill sizes="172px" className="object-cover" />
+                          <Image src={t.bilde.src} alt={bildeAlt(t.bilde.alt)} unoptimized={t.bilde.src.startsWith('http')} fill sizes="172px" className="object-cover" />
                         </div>
                         <h2 className="m-0 text-[15px] font-bold">{t.leverandorNavn}</h2>
                         <div className="flex min-h-[84px] flex-col items-start">
                           <PriceRing ringed={t.id === fremhevet} className={cn('text-[36px]', t.id === fremhevet && 'mb-1.5 ml-2.5 mt-2')}>
-                            {kr(t.prisPerKuvert)}
+                            {penger(t.prisPerKuvert)}
                           </PriceRing>
-                          <span className="pl-1.5 text-small font-semibold">per kuvert inkl. mva{t.id === lavest ? ' · lavest' : ''}</span>
+                          <span className="pl-1.5 text-small font-semibold">
+                            {tr('per kuvert inkl. mva')}
+                            {t.id === lavest ? ` · ${tr('lavest')}` : ''}
+                          </span>
                         </div>
                         <dl className="m-0 flex flex-col gap-3 text-[15px]">
                           <div className="min-h-touch">
-                            <dt className="text-small text-text-muted">Totalt inkl. mva</dt>
-                            <dd className="k-num m-0 font-bold">{kr(t.totalInklMva)}</dd>
+                            <dt className="text-small text-text-muted">{tr('Totalt inkl. mva')}</dt>
+                            <dd className="k-num m-0 font-bold">{penger(t.totalInklMva)}</dd>
                           </div>
                           <div className="min-h-[88px]">
-                            <dt className="text-small text-text-muted">Meny</dt>
+                            <dt className="text-small text-text-muted">{tr('Meny')}</dt>
                             <dd className="m-0 leading-[1.4]">{t.meny}</dd>
                           </div>
                           <div className="min-h-[112px]">
-                            <dt className="text-small text-text-muted">Inkludert</dt>
+                            <dt className="text-small text-text-muted">{tr('Inkludert')}</dt>
                             <dd className="m-0 leading-[1.6]">
                               <ul className="m-0 list-none p-0">
                                 {t.levering.inkludert && (
                                   <li>
                                     <Hake />
-                                    Levering
+                                    {tr('Levering')}
                                   </li>
                                 )}
                                 {f.kosthold.length > 0 &&
@@ -349,7 +368,7 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
                                     <>
                                       <li>
                                         <Hake />
-                                        {t.kosthold.tekst.replace(/ dekket\.?$/, '')}
+                                        {tr(t.kosthold.tekst).replace(/ dekket\.?$/, '')}
                                       </li>
                                       {t.kosthold.merknad && <li className="font-semibold text-warning">{t.kosthold.merknad.replace(/\.$/, '')}</li>}
                                     </>
@@ -357,22 +376,22 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
                                 {t.oppsettOgRydding ? (
                                   <li>
                                     <Hake />
-                                    Oppsett og rydding
+                                    {tr('Oppsett og rydding')}
                                   </li>
                                 ) : (
-                                  <li className="text-text-muted">Uten oppsett</li>
+                                  <li className="text-text-muted">{tr('Uten oppsett')}</li>
                                 )}
-                                {!t.levering.inkludert && t.levering.pris && <li className="text-text-muted">Levering {kr(t.levering.pris)}</li>}
+                                {!t.levering.inkludert && t.levering.pris && <li className="text-text-muted">{`${tr('Levering')} ${penger(t.levering.pris)}`}</li>}
                               </ul>
                             </dd>
                           </div>
                           <div>
-                            <dt className="text-small text-text-muted">Gjelder til</dt>
+                            <dt className="text-small text-text-muted">{tr('Gjelder til')}</dt>
                             <dd className={cn('m-0 font-semibold', g.haster && 'text-warning')}>{g.tekst}</dd>
                           </div>
                         </dl>
                         <div className="mt-auto flex flex-col items-center gap-1">
-                          {velgKnapp(t, `Velg ${kortnavn(t)}`, 'w-full')}
+                          {velgKnapp(t, tr('Velg {navn}', { navn: kortnavn(t) }), 'w-full')}
                           {seHele(t)}
                         </div>
                       </article>
@@ -386,7 +405,10 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
             <div className="relative hidden overflow-x-auto md:block">
               <table className="w-full min-w-[860px] table-fixed border-collapse">
                 <caption className="sr-only">
-                  {tilbud.length} tilbud side om side, sortert etter {sorteringer.find((s) => s.id === sortering)?.navn.toLowerCase()}
+                  {tr('{antall} tilbud side om side, sortert etter {sortering}', {
+                    antall: tilbud.length,
+                    sortering: tr(sorteringer.find((s) => s.id === sortering)?.navn ?? '').toLowerCase(),
+                  })}
                 </caption>
                 <colgroup>
                   <col className="w-[22%]" />
@@ -397,13 +419,13 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
                 <thead>
                   <tr className="border-b-2 border-text">
                     <th scope="col" className="pb-4 pr-4 text-left align-bottom text-[15px] font-semibold text-text-muted">
-                      Tilbud
+                      {tr('Tilbud')}
                     </th>
                     {sortert.map((t) => (
                       <th key={t.id} scope="col" className="px-3 pb-4 text-left align-top">
                         <div className="flex flex-col gap-3">
                           <div className="relative h-[170px] overflow-hidden rounded-card bg-[var(--k-photo-placeholder)]">
-                            <Image src={t.bilde.src} alt={t.bilde.alt} unoptimized={t.bilde.src.startsWith('http')} fill sizes="(min-width: 1200px) 300px, 25vw" className="object-cover" />
+                            <Image src={t.bilde.src} alt={bildeAlt(t.bilde.alt)} unoptimized={t.bilde.src.startsWith('http')} fill sizes="(min-width: 1200px) 300px, 25vw" className="object-cover" />
                           </div>
                           <span className="text-[17px] font-bold">{t.leverandorNavn}</span>
                           {t.leverandorBeskrivelse && <span className="line-clamp-2 text-[15px] font-normal leading-snug text-text-muted">{t.leverandorBeskrivelse}</span>}
@@ -415,27 +437,27 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
                 <tbody className="[&>tr]:border-b [&>tr]:border-border [&_th]:py-[18px] [&_th]:pr-4 [&_th]:text-left [&_th]:align-top [&_th]:text-[15px] [&_th]:font-semibold [&_th]:text-text-muted [&_td]:px-3 [&_td]:py-[18px] [&_td]:align-top">
                   <tr>
                     <th scope="row" className="!align-middle">
-                      Pris per kuvert
-                      <span className="block text-small font-normal">inkl. mva</span>
+                      {tr('Pris per kuvert')}
+                      <span className="block text-small font-normal">{tr('inkl. mva')}</span>
                     </th>
                     {sortert.map((t) => (
                       <td key={t.id} className={cn('!py-3', avslatte.includes(t.id) && 'opacity-60')}>
                         <PriceRing ringed={t.id === fremhevet} className="px-2 text-[44px]">
-                          {kr(t.prisPerKuvert)}
+                          {penger(t.prisPerKuvert)}
                         </PriceRing>
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row">Totalt inkl. mva</th>
+                    <th scope="row">{tr('Totalt inkl. mva')}</th>
                     {sortert.map((t) => (
                       <td key={t.id} className="k-num font-bold">
-                        {kr(t.totalInklMva)}
+                        {penger(t.totalInklMva)}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row">Meny</th>
+                    <th scope="row">{tr('Meny')}</th>
                     {sortert.map((t) => (
                       <td key={t.id} className="leading-normal">
                         {t.meny}
@@ -447,35 +469,35 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
                       <th scope="row">{kostholdTekst.charAt(0).toUpperCase() + kostholdTekst.slice(1)}</th>
                       {sortert.map((t) => (
                         <td key={t.id} className="font-bold leading-tight">
-                          <span className="text-success">{t.kosthold.tekst}</span>
+                          <span className="text-success">{tr(t.kosthold.tekst)}</span>
                           {t.kosthold.merknad && <span className="text-warning"> {t.kosthold.merknad}</span>}
                         </td>
                       ))}
                     </tr>
                   )}
                   <tr>
-                    <th scope="row">Levering</th>
+                    <th scope="row">{tr('Levering')}</th>
                     {sortert.map((t) => (
-                      <td key={t.id}>{t.levering.inkludert ? 'Inkludert' : t.levering.pris ? kr(t.levering.pris) : 'Ikke inkludert'}</td>
+                      <td key={t.id}>{t.levering.inkludert ? tr('Inkludert') : t.levering.pris ? penger(t.levering.pris) : tr('Ikke inkludert')}</td>
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row">Oppsett og rydding</th>
+                    <th scope="row">{tr('Oppsett og rydding')}</th>
                     {sortert.map((t) => (
                       <td key={t.id} className={cn(!t.oppsettOgRydding && 'text-text-muted')}>
-                        {t.oppsettOgRydding ? 'Inkludert' : 'Ikke inkludert'}
+                        {t.oppsettOgRydding ? tr('Inkludert') : tr('Ikke inkludert')}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row">Servise</th>
+                    <th scope="row">{tr('Servise')}</th>
                     {sortert.map((t) => (
-                      <td key={t.id}>{t.servise}</td>
+                      <td key={t.id}>{tr(t.servise)}</td>
                     ))}
                   </tr>
                   {sortert.some((t) => t.betingelser) && (
                     <tr>
-                      <th scope="row">Betingelser</th>
+                      <th scope="row">{tr('Betingelser')}</th>
                       {sortert.map((t) => (
                         <td key={t.id} className="text-[15px] leading-normal text-text-muted">
                           {t.betingelser ?? '–'}
@@ -484,9 +506,9 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
                     </tr>
                   )}
                   <tr>
-                    <th scope="row">Gjelder til</th>
+                    <th scope="row">{tr('Gjelder til')}</th>
                     {sortert.map((t) => {
-                      const g = gjelderTil(t.gyldigTil);
+                      const g = gjelder(t.gyldigTil);
                       return (
                         <td key={t.id} className={cn(g.haster && 'font-bold text-warning')}>
                           {g.tekst}
@@ -499,7 +521,7 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
                     {sortert.map((t) => (
                       <td key={t.id} className="!pt-5">
                         <div className="flex flex-col items-start gap-1.5">
-                          {velgKnapp(t, 'Velg dette tilbudet', 'min-h-[54px] w-full')}
+                          {velgKnapp(t, tr('Velg dette tilbudet'), 'min-h-[54px] w-full')}
                           {seHele(t, '!px-0')}
                         </div>
                       </td>
@@ -513,47 +535,49 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/illustrasjoner/tallerken-hake.svg" alt="" className="k-ink w-[84px] shrink-0 md:ml-3 md:w-[80px]" />
               <p className="m-0 max-w-[60ch] text-[15px] leading-normal text-text-muted md:text-base">
-                Du forplikter deg først når du velger. Leverandørene du ikke velger, får beskjed automatisk.
-                <span className="hidden md:inline"> Kuverto tar ingen provisjon.</span>
+                {tr('Du forplikter deg først når du velger. Leverandørene du ikke velger, får beskjed automatisk.')}
+                <span className="hidden md:inline">{` ${tr('Kuverto tar ingen provisjon.')}`}</span>
               </p>
             </div>
 
             <section className="mx-4 mt-6 flex flex-col gap-2.5 md:hidden">
-              <h2 className="k-heading m-0 text-2xl">Spørsmål til en leverandør?</h2>
-              <p className="m-0 text-[15px] text-text-muted">Trykk «Se hele tilbudet» og skriv til leverandøren. Dere skriver sammen her på Kuverto, og du får e-post når de svarer.</p>
+              <h2 className="k-heading m-0 text-2xl">{tr('Spørsmål til en leverandør?')}</h2>
+              <p className="m-0 text-[15px] text-text-muted">
+                {tr('Trykk «Se hele tilbudet» og skriv til leverandøren. Dere skriver sammen her på Kuverto, og du får e-post når de svarer.')}
+              </p>
             </section>
           </>
         )}
         {aktiv && (
           <div className="mx-4 mt-8 flex flex-col gap-3 border-t border-border pt-6 md:mx-0">
             {bekreftTrekk ? (
-              <div role="group" aria-label="Bekreft at du vil trekke forespørselen" className="flex flex-col gap-3 rounded-alert border border-border p-4">
-                <p className="m-0 text-[15px]">Leverandørene får beskjed, og du kan ikke velge noen av tilbudene etterpå.</p>
+              <div role="group" aria-label={tr('Bekreft at du vil trekke forespørselen')} className="flex flex-col gap-3 rounded-alert border border-border p-4">
+                <p className="m-0 text-[15px]">{tr('Leverandørene får beskjed, og du kan ikke velge noen av tilbudene etterpå.')}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="danger" size="sm" onClick={trekk}>
-                    Trekk forespørselen
+                    {tr('Trekk forespørselen')}
                   </Button>
                   <Button variant="secondary" size="sm" onClick={() => setBekreftTrekk(false)}>
-                    Avbryt
+                    {tr('Avbryt')}
                   </Button>
                 </div>
               </div>
             ) : (
               <Button variant="text" size="sm" onClick={() => setBekreftTrekk(true)} className="self-start !px-0 font-semibold">
-                Trekk forespørselen
+                {tr('Trekk forespørselen')}
               </Button>
             )}
           </div>
         )}
       </main>
-      <Dialog apen={!!apentTilbud} onLukk={() => setApent(undefined)} label={apentTilbud ? `Tilbud fra ${apentTilbud.leverandorNavn}` : 'Tilbud'} className="max-w-[600px]">
+      <Dialog apen={!!apentTilbud} onLukk={() => setApent(undefined)} label={apentTilbud ? tr('Tilbud fra {navn}', { navn: apentTilbud.leverandorNavn }) : tr('Tilbud')} className="max-w-[600px]">
         {apentTilbud && (
           <TilbudDetalj
             tilbud={apentTilbud}
             foresporsel={f}
             valgtId={valgt}
             startMedBekreftelse={bekreftVelg}
-            utlopt={!!gjelderTil(apentTilbud.gyldigTil).utlopt}
+            utlopt={!!gjelder(apentTilbud.gyldigTil).utlopt}
             avslatt={avslatte.includes(apentTilbud.id)}
             levering={f.levering === 'levering'}
             startAdresse={adresse}
@@ -568,10 +592,10 @@ export function TilbudSide({ foresporsel: f, tilbud, adresse, samtaler = [] }: {
         apen={!!samtaleMed}
         onLukk={() => {
           setSamtaleMed(undefined);
-          if (q.get('samtale')) router.replace(`/foresporsler/${f.id}`, { scroll: false });
+          if (q.get('samtale')) router.replace(sti(`/foresporsler/${f.id}`), { scroll: false });
           router.refresh();
         }}
-        label={samtaleNavn ? `Samtale med ${samtaleNavn}` : 'Samtale'}
+        label={samtaleNavn ? tr('Samtale med {navn}', { navn: samtaleNavn }) : tr('Samtale')}
         className="max-w-[640px]"
       >
         {samtaleMed && (

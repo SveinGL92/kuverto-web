@@ -5,11 +5,13 @@ import { lagOpplasting } from '@/app/leverandor/actions';
 import { filstorrelse, kanVises, MAKS_VEDLEGG } from '@/lib/vedlegg';
 import { supabaseKlient } from '@/lib/supabaseKlient';
 import type { VedleggFil } from '@/lib/types';
+import { useSprak } from '@/components/Sprak';
 
 type Fil = VedleggFil & { url?: string };
 
 /** Last opp bilder og PDF-er til et tilbud. Filene går rett til lagringen med en signert URL. */
 export function VedleggOpplaster({ foresporselId, vedlegg, onChange }: { foresporselId: string; vedlegg: Fil[]; onChange: (v: Fil[]) => void }) {
+  const { t } = useSprak();
   const input = useRef<HTMLInputElement>(null);
   const [laster, setLaster] = useState<string[]>([]);
   const [feil, setFeil] = useState<string[]>([]);
@@ -21,7 +23,7 @@ export function VedleggOpplaster({ foresporselId, vedlegg, onChange }: { forespo
   const lastOpp = async (filer: File[]) => {
     setFeil([]);
     const nye = filer.slice(0, Math.max(0, plass));
-    const feilListe: string[] = filer.length > nye.length ? [`Du kan legge ved høyst ${MAKS_VEDLEGG} filer.`] : [];
+    const feilListe: string[] = filer.length > nye.length ? [t('Du kan legge ved høyst {antall} filer.', { antall: MAKS_VEDLEGG })] : [];
     setLaster((l) => [...l, ...nye.map((f) => f.name)]);
     const ferdige: Fil[] = [];
     for (const fil of nye) {
@@ -32,7 +34,7 @@ export function VedleggOpplaster({ foresporselId, vedlegg, onChange }: { forespo
         feilListe.push(svar.feil);
       } else {
         const { error } = await supabaseKlient().storage.from('vedlegg').uploadToSignedUrl(svar.sti, svar.token, fil, { contentType: type });
-        if (error) feilListe.push(`${fil.name} ble ikke lastet opp. Prøv igjen.`);
+        if (error) feilListe.push(t('{fil} ble ikke lastet opp. Prøv igjen.', { fil: fil.name }));
         else ferdige.push({ sti: svar.sti, navn: fil.name, type, storrelse: fil.size, url: kanVises(type) ? URL.createObjectURL(fil) : undefined });
       }
       setLaster((l) => l.filter((n) => n !== fil.name));
@@ -44,9 +46,9 @@ export function VedleggOpplaster({ foresporselId, vedlegg, onChange }: { forespo
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[15px] font-semibold">Bilder og filer (valgfritt)</span>
+      <span className="text-[15px] font-semibold">{t('Bilder og filer (valgfritt)')}</span>
       <span id={hint} className="-mt-1 text-small text-text-muted">
-        Bilder av maten, menykort eller prisliste. JPG, PNG, WebP, HEIC eller PDF, høyst 10 MB per fil og {MAKS_VEDLEGG} filer. Det første bildet vises øverst i tilbudet.
+        {t('Bilder av maten, menykort eller prisliste. JPG, PNG, WebP, HEIC eller PDF, høyst 10 MB per fil og {antall} filer. Det første bildet vises øverst i tilbudet.', { antall: MAKS_VEDLEGG })}
       </span>
       {vedlegg.length > 0 && (
         <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 min-[480px]:grid-cols-3">
@@ -57,7 +59,7 @@ export function VedleggOpplaster({ foresporselId, vedlegg, onChange }: { forespo
                 <img src={v.url} alt="" className="h-24 w-full object-cover" />
               ) : (
                 <div className="flex h-24 items-center justify-center bg-surface-soft text-small font-bold uppercase text-text-muted" aria-hidden="true">
-                  {v.type === 'application/pdf' ? 'PDF' : 'Bilde'}
+                  {v.type === 'application/pdf' ? 'PDF' : t('Bilde')}
                 </div>
               )}
               <div className="flex items-center justify-between gap-1 p-2">
@@ -69,7 +71,7 @@ export function VedleggOpplaster({ foresporselId, vedlegg, onChange }: { forespo
                 <button
                   type="button"
                   onClick={() => onChange(vedlegg.filter((x) => x.sti !== v.sti))}
-                  aria-label={`Fjern ${v.navn}`}
+                  aria-label={t('Fjern {navn}', { navn: v.navn })}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-text-muted hover:bg-surface-soft hover:text-text"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
@@ -104,9 +106,9 @@ export function VedleggOpplaster({ foresporselId, vedlegg, onChange }: { forespo
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
             </svg>
-            Legg til bilder eller PDF
+            {t('Legg til bilder eller PDF')}
           </button>
-          <span className="text-small text-text-muted">eller dra filene hit</span>
+          <span className="text-small text-text-muted">{t('eller dra filene hit')}</span>
           <input
             ref={input}
             type="file"
@@ -120,7 +122,7 @@ export function VedleggOpplaster({ foresporselId, vedlegg, onChange }: { forespo
         </div>
       )}
       <div id={status} aria-live="polite" className="flex flex-col gap-1">
-        {laster.length > 0 && <span className="text-small font-semibold">Laster opp {laster.join(', ')} …</span>}
+        {laster.length > 0 && <span className="text-small font-semibold">{t('Laster opp {filer} …', { filer: laster.join(', ') })}</span>}
         {feil.map((f) => (
           <span key={f} className="text-small font-semibold text-error">
             {f}

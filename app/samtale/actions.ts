@@ -1,9 +1,14 @@
 'use server';
 
+import { tFor } from '@/lib/i18n';
 import { anledningNavn } from '@/lib/labels';
+import { erMarked, type Marked } from '@/lib/markets';
 import { mal, sendEpost } from '@/lib/server/epost';
+import { sprak } from '@/lib/server/marked';
 import { db, innloggetEpost } from '@/lib/server/supabase';
 import type { Anledning } from '@/lib/types';
+
+const markedAv = (v: unknown): Marked => (erMarked(v) ? v : 'no');
 
 export interface ChatMelding {
   id: string;
@@ -23,7 +28,7 @@ async function tilgang(foresporselId: string, leverandorId?: string | null) {
   const epost = await innloggetEpost();
   if (!epost) return null;
   const s = db();
-  const { data: f } = await s.from('foresporsler').select('id, kunde_epost, status, anledning, gjester').eq('id', foresporselId).maybeSingle();
+  const { data: f } = await s.from('foresporsler').select('id, kunde_epost, status, anledning, gjester, marked').eq('id', foresporselId).maybeSingle();
   if (!f) return null;
   let meg: 'kunde' | 'leverandor';
   let levId: string;
@@ -39,19 +44,21 @@ async function tilgang(foresporselId: string, leverandorId?: string | null) {
   }
   const [{ data: oppl }, { data: lev }, { data: t }, { data: k }] = await Promise.all([
     s.from('opplasinger').select('status').eq('foresporsel_id', f.id).eq('leverandor_id', levId).maybeSingle(),
-    s.from('leverandorer').select('id, navn, epost').eq('id', levId).maybeSingle(),
+    s.from('leverandorer').select('id, navn, epost, marked').eq('id', levId).maybeSingle(),
     s.from('tilbud').select('status').eq('foresporsel_id', f.id).eq('leverandor_id', levId).maybeSingle(),
     s.from('foresporsel_kontakt').select('navn').eq('foresporsel_id', f.id).maybeSingle(),
   ]);
   if (!oppl || oppl.status !== 'aktiv' || !lev) return null;
   const kanSende = f.status === 'aktiv' || t?.status === 'godtatt';
+  // Norsk her; oversettes der den sendes til nettleseren.
   const grunn = kanSende ? undefined : 'Forespørselen er avsluttet, så samtalen er lukket.';
-  return { s, f, lev, meg, kanSende, grunn, kundeNavn: k?.navn ?? 'Kunden' };
+  return { s, f, lev, meg, kanSende, grunn, kundeNavn: (k?.navn as string | null | undefined) ?? null };
 }
 
 export async function hentSamtale(foresporselId: string, leverandorId?: string | null): Promise<SamtaleSvar> {
+  const { t } = await sprak();
   const a = await tilgang(foresporselId, leverandorId);
-  if (!a) return { ok: false, feil: 'Fant ikke samtalen.' };
+  if (!a) return { ok: false, feil: t('Fant ikke samtalen.') };
   const { s, f, lev, meg } = a;
   const { data } = await s
     .from('meldinger')
@@ -66,24 +73,25 @@ export async function hentSamtale(foresporselId: string, leverandorId?: string |
   return {
     ok: true,
     meg,
-    motpart: meg === 'kunde' ? lev.navn : a.kundeNavn,
+    motpart: meg === 'kunde' ? lev.navn : (a.kundeNavn ?? t('Kunden')),
     kanSende: a.kanSende,
-    grunn: a.grunn,
+    grunn: a.grunn ? t(a.grunn) : undefined,
     meldinger: (data ?? []).map((m) => ({ id: m.id, fra: m.fra, tekst: m.tekst, opprettet: m.opprettet, lest: !!m.lest })),
   };
 }
 
 export async function sendChatMelding(foresporselId: string, leverandorId: string | null, tekst: string): Promise<{ ok: true; melding: ChatMelding } | { ok: false; feil: string }> {
+  const { t: tSide } = await sprak();
   const a = await tilgang(foresporselId, leverandorId);
-  if (!a) return { ok: false, feil: 'Fant ikke samtalen.' };
+  if (!a) return { ok: false, feil: tSide('Fant ikke samtalen.') };
   const { s, f, lev, meg } = a;
-  if (!a.kanSende) return { ok: false, feil: a.grunn ?? 'Samtalen er lukket.' };
+  if (!a.kanSende) return { ok: false, feil: tSide(a.grunn ?? 'Samtalen er lukket.') };
   const t = String(tekst ?? '').trim().slice(0, 2000);
-  if (!t) return { ok: false, feil: 'Skriv en melding.' };
+  if (!t) return { ok: false, feil: tSide('Skriv en melding.') };
 
   const tiMin = new Date(Date.now() - 10 * 60_000).toISOString();
   const { count } = await s.from('meldinger').select('id', { count: 'exact', head: true }).eq('foresporsel_id', f.id).eq('leverandor_id', lev.id).eq('fra', meg).gte('opprettet', tiMin);
-  if ((count ?? 0) >= 30) return { ok: false, feil: 'Du har sendt mange meldinger på kort tid. Vent litt.' };
+  if ((count ?? 0) >= 30) return { ok: false, feil: tSide('Du har sendt mange meldinger på kort tid. Vent litt.') };
 
   // Varsle på e-post, men ikke for hver melding: hopp over hvis motparten allerede har en ulest melding fra deg fra den siste halvtimen.
   const halvtime = new Date(Date.now() - 30 * 60_000).toISOString();
@@ -99,20 +107,24 @@ export async function sendChatMelding(foresporselId: string, leverandorId: strin
   const { data: ny, error } = await s.from('meldinger').insert({ foresporsel_id: f.id, leverandor_id: lev.id, fra: meg, tekst: t }).select('id, fra, tekst, opprettet').single();
   if (error || !ny) {
     console.error('[chat]', error);
-    return { ok: false, feil: 'Meldingen ble ikke sendt. Prøv igjen.' };
+    return { ok: false, feil: tSide('Meldingen ble ikke sendt. Prøv igjen.') };
   }
 
   if (!uleste) {
-    const hva = `${anledningNavn(f.anledning as Anledning).toLowerCase()} for ${f.gjester} gjester`;
-    const avsender = meg === 'kunde' ? a.kundeNavn : lev.navn;
+    // Mottakerens språk: leverandørens marked når kunden skriver, ellers forespørselens.
+    const mottakerMarked = markedAv(meg === 'kunde' ? lev.marked : f.marked);
+    const tM = tFor(mottakerMarked);
+    const hva = tM('{anledning} for {gjester} gjester', { anledning: anledningNavn(f.anledning as Anledning, tM).toLowerCase(), gjester: f.gjester });
+    const avsender = meg === 'kunde' ? (a.kundeNavn ?? tM('Kunden')) : lev.navn;
     await sendEpost({
       til: meg === 'kunde' ? lev.epost : f.kunde_epost,
-      emne: `Ny melding fra ${avsender} på Kuverto`,
+      emne: tM('Ny melding fra {navn} på Kuverto', { navn: avsender }),
       html: mal({
-        tittel: `Ny melding fra ${avsender}`,
-        avsnitt: [`Om ${hva}:`, t.length > 400 ? `${t.slice(0, 400)} …` : t, 'Trykk på knappen for å svare. Da holdes hele samtalen samlet på Kuverto.'],
-        knapp: { tekst: 'Svar på Kuverto', sti: meg === 'kunde' ? `/leverandor?samtale=${f.id}` : `/foresporsler/${f.id}?samtale=${lev.id}` },
-        fot: 'Du får bare én e-post selv om det kommer flere meldinger, til du har lest dem.',
+        marked: mottakerMarked,
+        tittel: tM('Ny melding fra {navn}', { navn: avsender }),
+        avsnitt: [tM('Om {hva}:', { hva }), t.length > 400 ? `${t.slice(0, 400)} …` : t, tM('Trykk på knappen for å svare. Da holdes hele samtalen samlet på Kuverto.')],
+        knapp: { tekst: tM('Svar på Kuverto'), sti: meg === 'kunde' ? `/leverandor?samtale=${f.id}` : `/foresporsler/${f.id}?samtale=${lev.id}` },
+        fot: tM('Du får bare én e-post selv om det kommer flere meldinger, til du har lest dem.'),
       }),
     });
   }
