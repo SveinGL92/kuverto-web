@@ -3,20 +3,25 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { ButtonLink } from '@/components/ui/Button';
 import { MAKS_LEVERANDORER } from '@/lib/klipp';
+import { sprak } from '@/lib/server/marked';
 import { db } from '@/lib/server/supabase';
 import { varsleOmForesporsel } from '@/lib/server/varsle';
 
-export const metadata: Metadata = { title: 'Bekreft forespørselen', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await sprak();
+  return { title: t('Bekreft forespørselen'), robots: { index: false } };
+}
 export const dynamic = 'force-dynamic';
 
 export default async function Bekreft({ searchParams }: { searchParams: Promise<{ t?: string }> }) {
-  const { t } = await searchParams;
+  const { t: token } = await searchParams;
+  const { t, sti } = await sprak();
   let resultat: 'ok' | 'allerede' | 'ugyldig' = 'ugyldig';
   let epost = '';
-  if (t && /^[A-Za-z0-9_-]{20,64}$/.test(t)) {
+  if (token && /^[A-Za-z0-9_-]{20,64}$/.test(token)) {
     const s = db();
     // Bytt status bare én gang, selv om lenken åpnes flere ganger.
-    const { data } = await s.from('foresporsler').update({ status: 'aktiv', bekreft_token: null }).eq('bekreft_token', t).eq('status', 'venter_bekreftelse').select('id, kunde_epost');
+    const { data } = await s.from('foresporsler').update({ status: 'aktiv', bekreft_token: null }).eq('bekreft_token', token).eq('status', 'venter_bekreftelse').select('id, kunde_epost');
     if (data?.length) {
       resultat = 'ok';
       epost = data[0].kunde_epost;
@@ -32,24 +37,24 @@ export default async function Bekreft({ searchParams }: { searchParams: Promise<
           <img src="/illustrasjoner/tallerken-hake.svg" alt="" className="k-ink w-[120px]" />
           {resultat === 'ok' ? (
             <>
-              <h1 className="k-heading m-0 text-h1">Forespørselen er sendt</h1>
+              <h1 className="k-heading m-0 text-h1">{t('Forespørselen er sendt')}</h1>
               <p className="m-0 text-[17px] leading-normal text-text-muted">
-                Takk! Godkjente leverandører i området har fått beskjed. Du får en e-post hver gang et tilbud kommer inn, og høyst {MAKS_LEVERANDORER} leverandører kan svare.
+                {t('Takk! Godkjente leverandører i området har fått beskjed. Du får en e-post hver gang et tilbud kommer inn, og høyst {maks} leverandører kan svare.', { maks: MAKS_LEVERANDORER })}
               </p>
-              <ButtonLink href={`/logg-inn?epost=${encodeURIComponent(epost)}`} className="self-start">
-                Logg inn og følg forespørselen
+              <ButtonLink href={sti(`/logg-inn?epost=${encodeURIComponent(epost)}`)} className="self-start">
+                {t('Logg inn og følg forespørselen')}
               </ButtonLink>
             </>
           ) : (
             <>
-              <h1 className="k-heading m-0 text-h1">{resultat === 'allerede' ? 'Lenken er allerede brukt' : 'Ugyldig lenke'}</h1>
+              <h1 className="k-heading m-0 text-h1">{resultat === 'allerede' ? t('Lenken er allerede brukt') : t('Ugyldig lenke')}</h1>
               <p className="m-0 text-[17px] leading-normal text-text-muted">
                 {resultat === 'allerede'
-                  ? 'Forespørselen er trolig allerede bekreftet og sendt til leverandørene. Logg inn for å se den.'
-                  : 'Vi kjenner ikke igjen lenken. Kopier hele lenken fra e-posten, eller send en ny forespørsel.'}
+                  ? t('Forespørselen er trolig allerede bekreftet og sendt til leverandørene. Logg inn for å se den.')
+                  : t('Vi kjenner ikke igjen lenken. Kopier hele lenken fra e-posten, eller send en ny forespørsel.')}
               </p>
-              <ButtonLink href="/logg-inn" variant="secondary" className="self-start">
-                Logg inn
+              <ButtonLink href={sti('/logg-inn')} variant="secondary" className="self-start">
+                {t('Logg inn')}
               </ButtonLink>
             </>
           )}

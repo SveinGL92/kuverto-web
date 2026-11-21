@@ -1,3 +1,6 @@
+'use client';
+
+import { useSprak } from '@/components/Sprak';
 import { cn } from '@/lib/cn';
 
 /** Plassholder mens innhold lastes. Animasjonen stoppes ved prefers-reduced-motion. */
@@ -5,10 +8,11 @@ export function Skeleton({ className }: { className?: string }) {
   return <div aria-hidden="true" className={cn('animate-pulse rounded-card bg-neutral-bg motion-reduce:animate-none', className)} />;
 }
 
-export function LoadingState({ tekst = 'Laster' }: { tekst?: string }) {
+export function LoadingState({ tekst }: { tekst?: string }) {
+  const { t } = useSprak();
   return (
     <div role="status" aria-live="polite" className="flex flex-col gap-4">
-      <span className="sr-only">{tekst} …</span>
+      <span className="sr-only">{tekst ?? t('Laster')} …</span>
       <Skeleton className="h-[130px] rounded-card" />
       <Skeleton className="h-6 w-1/2 rounded-pill" />
       <Skeleton className="h-10 w-2/3 rounded-pill" />

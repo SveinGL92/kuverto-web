@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, type ReactNode } from 'react';
+import { useSprak } from '@/components/Sprak';
 import { cn } from '@/lib/cn';
 
 /** Modal basert på <dialog>: nettleseren holder fokus inne, Esc lukker, og fokus går tilbake ved lukking. */
@@ -17,6 +18,7 @@ export function Dialog({
   children: ReactNode;
   className?: string;
 }) {
+  const { t } = useSprak();
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const d = ref.current;
@@ -38,7 +40,7 @@ export function Dialog({
       <div className="relative max-h-[calc(100dvh-32px)] overflow-y-auto rounded-[28px]">
         <button
           type="button"
-          aria-label="Lukk"
+          aria-label={t('Lukk')}
           autoFocus
           onClick={onLukk}
           className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-pill bg-bg text-text"

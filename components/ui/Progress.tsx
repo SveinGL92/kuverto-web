@@ -1,5 +1,10 @@
+'use client';
+
+import { useSprak } from '@/components/Sprak';
+
 /** Fremdrift i sju kuverter: ferdige tallerkener er fylt, aktiv har sitronkjerne. */
 export function Progress({ steg, totalt = 7, navn }: { steg: number; totalt?: number; navn?: string }) {
+  const { t } = useSprak();
   return (
     <div
       className="flex items-center gap-2.5"
@@ -7,7 +12,7 @@ export function Progress({ steg, totalt = 7, navn }: { steg: number; totalt?: nu
       aria-valuemin={1}
       aria-valuemax={totalt}
       aria-valuenow={steg}
-      aria-label={`Steg ${steg} av ${totalt}${navn ? ` · ${navn}` : ''}`}
+      aria-label={`${t('Steg {steg} av {totalt}', { steg, totalt })}${navn ? ` · ${navn}` : ''}`}
     >
       {Array.from({ length: totalt }, (_, i) => i + 1).map((n) => (
         <svg key={n} width="28" height="28" viewBox="0 0 28 28" aria-hidden="true" className="shrink-0">

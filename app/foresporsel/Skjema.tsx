@@ -148,7 +148,7 @@ function Del({ tittel, children }: { tittel: string; children: ReactNode }) {
 export function Skjema() {
   const q = useSearchParams();
   const router = useRouter();
-  const { info, sti } = useSprak();
+  const { marked, info, t, sti } = useSprak();
   const lengde = info.postnummerLengde;
   const [steg, setSteg] = useState(1);
   const [u, setU] = useState<Utkast>(() => startverdi(new URLSearchParams(q.toString()), lengde));
@@ -192,7 +192,7 @@ export function Skjema() {
     try {
       if (q.get('anledning') || q.get('gjester') || q.get('postnummer')) {
         sessionStorage.removeItem(LAGER);
-        router.replace('/foresporsel', { scroll: false });
+        router.replace(sti('/foresporsel'), { scroll: false });
       } else {
         const lagret = sessionStorage.getItem(LAGER);
         // eslint-disable-next-line react-hooks/set-state-in-effect -- engangs gjenoppretting fra sessionStorage
@@ -247,19 +247,24 @@ export function Skjema() {
   const validerSteg = (s: number): Feil => {
     const f: Feil = {};
     if (s === 1) {
-      if (u.gjester < 1) f.gjester = 'Skriv antall gjester, minst 1.';
+      if (u.gjester < 1) f.gjester = t('Skriv antall gjester, minst 1.');
       if (!u.dato) {
-        if (!u.fleksibel) f.dato = 'Velg en dato, eller kryss av for at datoen ikke er bestemt.';
-      } else if (u.dato < iDag()) f.dato = 'Datoen har passert. Velg en dato fra i dag og fremover.';
-      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(u.klokkeslett)) f.klokkeslett = 'Velg et klokkeslett.';
+        if (!u.fleksibel) f.dato = t('Velg en dato, eller kryss av for at datoen ikke er bestemt.');
+      } else if (u.dato < iDag()) f.dato = t('Datoen har passert. Velg en dato fra i dag og fremover.');
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(u.klokkeslett)) f.klokkeslett = t('Velg et klokkeslett.');
       if (!gyldigPostnummer(u.postnummer, lengde))
-        f.postnummer = u.postnummer.length === lengde ? 'Vi finner ikke dette postnummeret.' : `Skriv postnummeret med ${lengde === 4 ? 'fire' : 'fem'} siffer, for eksempel ${info.postnummerEksempel}.`;
-      else if (pn?.nr === u.postnummer && !pn.svar.ok) f.postnummer = 'Vi finner ikke dette postnummeret. Sjekk at det stemmer.';
+        f.postnummer =
+          u.postnummer.length === lengde
+            ? t('Vi finner ikke dette postnummeret.')
+            : lengde === 4
+              ? t('Skriv postnummeret med fire siffer, for eksempel {eksempel}.', { eksempel: info.postnummerEksempel })
+              : t('Skriv postnummeret med fem siffer, for eksempel {eksempel}.', { eksempel: info.postnummerEksempel });
+      else if (pn?.nr === u.postnummer && !pn.svar.ok) f.postnummer = t('Vi finner ikke dette postnummeret. Sjekk at det stemmer.');
     }
     if (s === 2) {
-      if (!u.navn.trim()) f.navn = 'Skriv navnet ditt.';
-      if (!epostOk(u.epost)) f.epost = u.epost.includes('@') ? 'E-postadressen mangler domene, for eksempel @firma.no.' : 'Skriv e-postadressen din, for eksempel kari@firma.no.';
-      if (u.telefon.trim() && !telefonOk(u.telefon)) f.telefon = 'Telefonnummeret må ha minst åtte siffer, for eksempel 912 34 567.';
+      if (!u.navn.trim()) f.navn = t('Skriv navnet ditt.');
+      if (!epostOk(u.epost)) f.epost = u.epost.includes('@') ? t('E-postadressen mangler domene, for eksempel @firma.no.') : t('Skriv e-postadressen din, for eksempel kari@firma.no.');
+      if (u.telefon.trim() && !telefonOk(u.telefon)) f.telefon = t('Telefonnummeret må ha minst åtte siffer, for eksempel 912 34 567.');
     }
     return f;
   };
@@ -307,30 +312,30 @@ export function Skjema() {
         setSendeFeil(svar.feil);
       }
     } catch {
-      setSendeFeil('Vi fikk ikke kontakt. Sjekk nettforbindelsen og prøv igjen. Det du har fylt ut, er tatt vare på.');
+      setSendeFeil(t('Vi fikk ikke kontakt. Sjekk nettforbindelsen og prøv igjen. Det du har fylt ut, er tatt vare på.'));
     } finally {
       setSender(false);
     }
   };
-  const tilbake = () => (steg === 1 ? router.push('/') : setSteg(1));
+  const tilbake = () => (steg === 1 ? router.push(sti('/')) : setSteg(1));
 
   const pnSvar = pn?.nr === u.postnummer ? pn.svar : undefined;
   const sted = pnSvar?.ok ? pnSvar.poststed : undefined;
   const postOk = gyldigPostnummer(u.postnummer, lengde);
   const postHint = !postOk
-    ? 'Du får tilbud fra leverandører som leverer i området ditt.'
+    ? t('Du får tilbud fra leverandører som leverer i området ditt.')
     : !pnSvar
-      ? 'Sjekker postnummeret …'
+      ? t('Sjekker postnummeret …')
       : !pnSvar.ok
-        ? 'Vi finner ikke dette postnummeret.'
+        ? t('Vi finner ikke dette postnummeret.')
         : pnSvar.leverandorer > 0
-          ? `${pnSvar.poststed}${pnSvar.kommune !== pnSvar.poststed ? `, ${pnSvar.kommune}` : ''}. Du får tilbud fra leverandørene som leverer her.`
-          : `${pnSvar.poststed}${pnSvar.kommune !== pnSvar.poststed ? `, ${pnSvar.kommune}` : ''}. Ingen leverandører har oppgitt at de leverer her ennå, men du kan sende forespørselen likevel.`;
+          ? `${pnSvar.poststed}${pnSvar.kommune !== pnSvar.poststed ? `, ${pnSvar.kommune}` : ''}. ${t('Du får tilbud fra leverandørene som leverer her.')}`
+          : `${pnSvar.poststed}${pnSvar.kommune !== pnSvar.poststed ? `, ${pnSvar.kommune}` : ''}. ${t('Ingen leverandører har oppgitt at de leverer her ennå, men du kan sende forespørselen likevel.')}`;
   const kostholdValgt = (Object.entries(u.kosthold) as [Kostholdstype, KostholdValg][]).sort(
     (a, b) => kostholdstyper.findIndex((k) => k.id === a[0]) - kostholdstyper.findIndex((k) => k.id === b[0]),
   );
-  const kostholdListe = kostholdValgt.map(([type, v]) => kostholdLinje({ type, ...v }));
-  const tidLabel = u.levering === 'henting' ? 'Hentes kl.' : 'Må leveres før kl.';
+  const kostholdListe = kostholdValgt.map(([type, v]) => kostholdLinje({ type, ...v }, t));
+  const tidLabel = u.levering === 'henting' ? t('Hentes kl.') : t('Må leveres før kl.');
   const kostholdChips = (gruppe: 'kosthold' | 'allergen') => (
     <div className="flex flex-wrap gap-2">
       {kostholdstyper
@@ -339,7 +344,7 @@ export function Skjema() {
           const valgt = !!u.kosthold[k.id];
           return (
             <Chip key={k.id} pressed={valgt} onClick={() => settKosthold(k.id, valgt ? undefined : { antall: 1, alvorlig: false })}>
-              {k.navn}
+              {kostholdNavn(k.id, t)}
             </Chip>
           );
         })}
@@ -347,54 +352,61 @@ export function Skjema() {
   );
 
   if (steg > ANTALL_STEG) {
+    const [sendtFor, sendtEtter] = t('Vi har sendt en e-post til {epost}. Trykk på «Bekreft og send» i e-posten, så går forespørselen til leverandørene.').split('{epost}');
     return (
       <main id="innhold" className="flex min-h-dvh flex-col">
         <div className="bg-panel px-6 pb-8 pt-14 text-panel-on">
           <div className="mx-auto flex max-w-[640px] flex-col gap-4">
             <h1 ref={tittel} tabIndex={-1} className="k-heading m-0 text-[38px] leading-[1.02] outline-none md:text-h1">
-              Sjekk e-posten din
+              {t('Sjekk e-posten din')}
             </h1>
             <p className="m-0 text-[17px] leading-[1.55] text-panel-on-muted">
-              Vi har sendt en e-post til <strong className="text-panel-on">{u.epost}</strong>. Trykk på «Bekreft og send» i e-posten, så går forespørselen til leverandørene.
+              {sendtFor}
+              <strong className="text-panel-on">{u.epost}</strong>
+              {sendtEtter}
             </p>
           </div>
         </div>
         <div className="mx-auto flex w-full max-w-[640px] flex-grow flex-col gap-6 p-6">
           <div className="flex flex-col gap-1 border-b border-border pb-4">
             <strong className="text-[17px]">
-              {anledningNavn(u.anledning)} · {u.gjester} kuverter
+              {anledningNavn(u.anledning, t)} · {t('{antall} kuverter', { antall: u.gjester })}
             </strong>
             <span className="text-[15px] text-text-muted">
-              {u.dato ? stor(datoKort(u.dato)) : 'Fleksibel dato'} · {[u.postnummer, sted].filter(Boolean).join(' ')} · {budsjettNavn(u.budsjett)}
+              {u.dato ? stor(datoKort(u.dato, info.intl)) : t('Fleksibel dato')} · {[u.postnummer, sted].filter(Boolean).join(' ')} · {budsjettNavn(u.budsjett, marked, t)}
             </span>
           </div>
           <section aria-labelledby="hva-na" className="flex flex-col gap-3">
             <h2 id="hva-na" className="k-heading m-0 text-2xl">
-              Hva skjer nå?
+              {t('Hva skjer nå?')}
             </h2>
             <ol className="m-0 flex list-none flex-col gap-3 p-0 text-base leading-normal">
               <li className="flex gap-3">
                 <Hake />
                 <span>
                   {ingenLev
-                    ? `Ingen leverandører har oppgitt at de leverer ${sted ? `i ${sted}` : 'i området ditt'} ennå. Når du har bekreftet, ligger forespørselen klar, og leverandører som begynner å levere der, ser den.`
-                    : `Når du har bekreftet, får godkjente leverandører som leverer ${sted ? `i ${sted}` : 'i området ditt'} beskjed om forespørselen.`}
+                    ? sted
+                      ? t('Ingen leverandører har oppgitt at de leverer i {sted} ennå. Når du har bekreftet, ligger forespørselen klar, og leverandører som begynner å levere der, ser den.', { sted })
+                      : t('Ingen leverandører har oppgitt at de leverer i området ditt ennå. Når du har bekreftet, ligger forespørselen klar, og leverandører som begynner å levere der, ser den.')
+                    : sted
+                      ? t('Når du har bekreftet, får godkjente leverandører som leverer i {sted} beskjed om forespørselen.', { sted })
+                      : t('Når du har bekreftet, får godkjente leverandører som leverer i området ditt beskjed om forespørselen.')}
                 </span>
               </li>
               <li className="flex gap-3">
                 <Hake />
-                <span>Du får en e-post hver gang et tilbud kommer inn. Høyst {MAKS_LEVERANDORER} leverandører kan svare.</span>
+                <span>{t('Du får en e-post hver gang et tilbud kommer inn. Høyst {maks} leverandører kan svare.', { maks: MAKS_LEVERANDORER })}</span>
               </li>
               <li className="flex gap-3">
                 <Hake />
-                <span>Sammenlign tilbudene og velg det som passer, eller la være. Det er helt uforpliktende.</span>
+                <span>{t('Sammenlign tilbudene og velg det som passer, eller la være. Det er helt uforpliktende.')}</span>
               </li>
             </ol>
           </section>
           <div className="mt-auto flex flex-col gap-2">
-            <p className="m-0 text-[15px] text-text-muted">Finner du ikke e-posten? Sjekk søppelpost, eller skriv til hei@kuverto.no.</p>
-            <ButtonLink href="/" variant="secondary">
-              Til forsiden
+            <p className="m-0 text-[15px] text-text-muted">{t('Finner du ikke e-posten? Sjekk søppelpost, eller skriv til hei@kuverto.no.')}</p>
+            <ButtonLink href={sti('/')} variant="secondary">
+              {t('Til forsiden')}
             </ButtonLink>
           </div>
         </div>
@@ -407,15 +419,15 @@ export function Skjema() {
     <main id="innhold" className="flex min-h-dvh flex-col">
       <div className="mx-auto flex w-full max-w-[680px] flex-grow flex-col">
         <div className="flex shrink-0 items-center justify-between px-2 pt-2">
-          <button type="button" aria-label={steg === 1 ? 'Tilbake til forsiden' : 'Tilbake til behovet'} onClick={tilbake} className="flex h-11 w-11 items-center justify-center rounded-pill">
+          <button type="button" aria-label={steg === 1 ? t('Tilbake til forsiden') : t('Tilbake til behovet')} onClick={tilbake} className="flex h-11 w-11 items-center justify-center rounded-pill">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" />
             </svg>
           </button>
           <span className="text-[15px] font-semibold" aria-hidden="true">
-            Steg {steg} av {ANTALL_STEG}
+            {t('Steg {steg} av {totalt}', { steg, totalt: ANTALL_STEG })}
           </span>
-          <Link href="/" aria-label="Lukk skjemaet. Valgene om behovet og maten blir lagret i denne fanen." className="flex h-11 w-11 items-center justify-center rounded-pill text-text">
+          <Link href={sti('/')} aria-label={t('Lukk skjemaet. Valgene om behovet og maten blir lagret i denne fanen.')} className="flex h-11 w-11 items-center justify-center rounded-pill text-text">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
@@ -427,7 +439,7 @@ export function Skjema() {
           aria-valuemin={1}
           aria-valuemax={ANTALL_STEG}
           aria-valuenow={steg}
-          aria-label={`Steg ${steg} av ${ANTALL_STEG}`}
+          aria-label={t('Steg {steg} av {totalt}', { steg, totalt: ANTALL_STEG })}
         >
           <div className="h-full rounded-pill bg-primary transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${(steg / ANTALL_STEG) * 100}%` }} />
         </div>
@@ -444,10 +456,10 @@ export function Skjema() {
           <div className="flex flex-grow flex-col gap-6 px-4 pb-8 pt-6">
             <div className="flex flex-col gap-2">
               <h1 id="skjema-tittel" ref={tittel} tabIndex={-1} className="k-heading m-0 text-h1 leading-[1.02] outline-none">
-                {steg === 1 ? 'Fortell om ditt behov' : 'Hvor skal vi sende tilbudene?'}
+                {steg === 1 ? t('Fortell om ditt behov') : t('Hvor skal vi sende tilbudene?')}
               </h1>
               <p className="m-0 text-base text-text-muted">
-                {steg === 1 ? 'Tar rundt to minutter. Et omtrentlig svar holder, leverandørene kan foreslå alternativer.' : 'Du trenger ikke lage konto. Vi sender lenke til tilbudene på e-post.'}
+                {steg === 1 ? t('Tar rundt to minutter. Et omtrentlig svar holder, leverandørene kan foreslå alternativer.') : t('Du trenger ikke lage konto. Vi sender lenke til tilbudene på e-post.')}
               </p>
             </div>
 
@@ -456,7 +468,7 @@ export function Skjema() {
                 <div className="grid grid-cols-1 gap-5 min-[480px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="felt-anledning" className="text-[15px] font-semibold">
-                      Hva gjelder det?
+                      {t('Hva gjelder det?')}
                     </label>
                     <select id="felt-anledning" value={u.anledning} onChange={(e) => velgAnledning(e.target.value as Anledning)} className={feltKlasse()}>
                       <KategoriValg />
@@ -464,12 +476,12 @@ export function Skjema() {
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="felt-gjester" className="text-[15px] font-semibold">
-                      Antall gjester
+                      {t('Antall gjester')}
                     </label>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        aria-label="Færre gjester"
+                        aria-label={t('Færre gjester')}
                         onClick={() => sett('gjester', Math.max(1, u.gjester - 1))}
                         className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-pill border-[1.5px] border-border-input bg-surface hover:border-primary"
                       >
@@ -489,7 +501,7 @@ export function Skjema() {
                       />
                       <button
                         type="button"
-                        aria-label="Flere gjester"
+                        aria-label={t('Flere gjester')}
                         onClick={() => sett('gjester', Math.min(9999, u.gjester + 1))}
                         className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-pill border-[1.5px] border-border-input bg-surface hover:border-primary"
                       >
@@ -508,7 +520,7 @@ export function Skjema() {
 
                 <div className="flex flex-col gap-2">
                   <div className="grid grid-cols-1 gap-5 min-[480px]:grid-cols-2">
-                    <Datovelger id="felt-dato" label="Dato" min={iDag()} value={u.dato} onChange={(v) => sett('dato', v)} feil={feil.dato} required={!u.fleksibel} />
+                    <Datovelger id="felt-dato" label={t('Dato')} min={iDag()} value={u.dato} onChange={(v) => sett('dato', v)} feil={feil.dato} required={!u.fleksibel} />
                     <div className="flex flex-col gap-1.5">
                       <label htmlFor="felt-klokkeslett" className="text-[15px] font-semibold">
                         {tidLabel}
@@ -524,9 +536,9 @@ export function Skjema() {
                         className={cn(feltKlasse(!!feil.klokkeslett), 'k-num')}
                       >
                         {!KLOKKESLETT.includes(u.klokkeslett) && <option value={u.klokkeslett}>{u.klokkeslett}</option>}
-                        {KLOKKESLETT.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
+                        {KLOKKESLETT.map((kl) => (
+                          <option key={kl} value={kl}>
+                            {kl}
                           </option>
                         ))}
                       </select>
@@ -543,16 +555,16 @@ export function Skjema() {
                       }}
                       className="h-6 w-6 shrink-0 accent-[var(--k-primary)]"
                     />
-                    Datoen er fleksibel eller ikke bestemt
+                    {t('Datoen er fleksibel eller ikke bestemt')}
                   </label>
                 </div>
 
                 <div className="flex flex-col gap-5">
-                  <Gruppe legend="Levering eller henting">
+                  <Gruppe legend={t('Levering eller henting')}>
                     <div className="flex flex-wrap gap-2">
                       {leveringer.map((l) => (
                         <Chip key={l.id} tone="soft" pressed={u.levering === l.id} onClick={() => sett('levering', l.id)} className="min-h-[52px] px-5 text-base">
-                          {l.navn}
+                          {t(l.navn)}
                         </Chip>
                       ))}
                     </div>
@@ -561,17 +573,17 @@ export function Skjema() {
                     {u.levering === 'levering' && (
                       <Input
                         id="felt-adresse"
-                        label="Leveringsadresse (valgfritt nå)"
+                        label={t('Leveringsadresse (valgfritt nå)')}
                         autoComplete="street-address"
-                        placeholder="Gate og nummer"
+                        placeholder={t('Gate og nummer')}
                         value={u.adresse}
                         onChange={(e) => sett('adresse', e.target.value)}
-                        hint="Deles bare med leverandøren du velger."
+                        hint={t('Deles bare med leverandøren du velger.')}
                       />
                     )}
                     <Input
                       id="felt-postnummer"
-                      label="Postnummer"
+                      label={t('Postnummer')}
                       inputMode="numeric"
                       autoComplete="postal-code"
                       maxLength={lengde}
@@ -584,38 +596,38 @@ export function Skjema() {
                   </div>
                 </div>
 
-                <Del tittel="Maten">
-                  <Gruppe legend="Budsjett per kuvert inkl. mva">
+                <Del tittel={t('Maten')}>
+                  <Gruppe legend={t('Budsjett per kuvert inkl. mva')}>
                     <div className="flex flex-wrap gap-2">
                       {budsjetter.map((b) => (
                         <Chip key={b.id} tone="soft" pressed={u.budsjett === b.id} onClick={() => sett('budsjett', b.id)}>
-                          {b.navn}
+                          {budsjettNavn(b.id, marked, t)}
                         </Chip>
                       ))}
                     </div>
                   </Gruppe>
 
-                  <Gruppe legend="Kosthold" hjelp="Velg det som gjelder, og hvor mange det gjelder.">
+                  <Gruppe legend={t('Kosthold')} hjelp={t('Velg det som gjelder, og hvor mange det gjelder.')}>
                     {kostholdChips('kosthold')}
                   </Gruppe>
-                  <Gruppe legend="Allergier" hjelp="De 14 allergenene leverandøren skal merke etter Mattilsynets regler.">
+                  <Gruppe legend={t('Allergier')} hjelp={t('De 14 allergenene leverandøren skal merke etter Mattilsynets regler.')}>
                     {kostholdChips('allergen')}
                   </Gruppe>
                   {kostholdValgt.length > 0 && (
-                    <ul aria-label="Valgt kosthold og allergier" className="m-0 -mt-1 flex list-none flex-col rounded-alert bg-surface-soft px-3 py-1 md:px-4">
+                    <ul aria-label={t('Valgt kosthold og allergier')} className="m-0 -mt-1 flex list-none flex-col rounded-alert bg-surface-soft px-3 py-1 md:px-4">
                       {kostholdValgt.map(([type, v]) => {
-                        const navn = kostholdNavn(type);
+                        const navn = kostholdNavn(type, t);
                         const allergen = erAllergen(type);
                         return (
                           <li key={type} className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border py-3 last:border-0">
                             <span className="flex min-w-[160px] flex-grow basis-full items-center justify-between gap-2 sm:basis-auto">
                               <span id={`kosthold-${type}-navn`} className="text-base font-semibold">
-                                {allergen ? `Allergi: ${navn.toLowerCase()}` : navn}
+                                {allergen ? t('Allergi: {navn}', { navn: navn.toLowerCase() }) : navn}
                               </span>
                               <button
                                 type="button"
                                 onClick={() => settKosthold(type, undefined)}
-                                aria-label={`Fjern ${allergen ? `allergi mot ${navn.toLowerCase()}` : navn.toLowerCase()}`}
+                                aria-label={allergen ? t('Fjern allergi mot {navn}', { navn: navn.toLowerCase() }) : t('Fjern {navn}', { navn: navn.toLowerCase() })}
                                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-text-muted hover:bg-surface hover:text-text sm:hidden"
                               >
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
@@ -626,7 +638,7 @@ export function Skjema() {
                             <span className="flex items-center gap-1.5" role="group" aria-labelledby={`kosthold-${type}-navn`}>
                               <button
                                 type="button"
-                                aria-label={`Én person færre med ${navn.toLowerCase()}`}
+                                aria-label={t('Én person færre med {navn}', { navn: navn.toLowerCase() })}
                                 disabled={v.antall <= 1}
                                 onClick={() => settKosthold(type, { ...v, antall: Math.max(1, v.antall - 1) })}
                                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill border-[1.5px] border-border-input bg-surface hover:border-primary disabled:opacity-40"
@@ -638,7 +650,7 @@ export function Skjema() {
                               <input
                                 id={`kosthold-${type}`}
                                 inputMode="numeric"
-                                aria-label={`Antall personer, ${navn.toLowerCase()}`}
+                                aria-label={t('Antall personer, {navn}', { navn: navn.toLowerCase() })}
                                 value={v.antall || ''}
                                 onChange={(e) => settKosthold(type, { ...v, antall: Math.min(u.gjester || 9999, Number(e.target.value.replace(/\D/g, '')) || 0) })}
                                 onBlur={() => !v.antall && settKosthold(type, { ...v, antall: 1 })}
@@ -646,7 +658,7 @@ export function Skjema() {
                               />
                               <button
                                 type="button"
-                                aria-label={`Én person til med ${navn.toLowerCase()}`}
+                                aria-label={t('Én person til med {navn}', { navn: navn.toLowerCase() })}
                                 disabled={v.antall >= u.gjester}
                                 onClick={() => settKosthold(type, { ...v, antall: Math.min(u.gjester || 9999, v.antall + 1) })}
                                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill border-[1.5px] border-border-input bg-surface hover:border-primary disabled:opacity-40"
@@ -656,7 +668,7 @@ export function Skjema() {
                                 </svg>
                               </button>
                               <span className="pl-1 text-[15px] text-text-muted" aria-hidden="true">
-                                {v.antall === 1 ? 'person' : 'personer'}
+                                {v.antall === 1 ? t('person') : t('personer')}
                               </span>
                             </span>
                             {allergen && (
@@ -667,13 +679,13 @@ export function Skjema() {
                                   onChange={(e) => settKosthold(type, { ...v, alvorlig: e.target.checked })}
                                   className="h-6 w-6 shrink-0 accent-[var(--k-primary)]"
                                 />
-                                Alvorlig
+                                {t('Alvorlig')}
                               </label>
                             )}
                             <button
                               type="button"
                               onClick={() => settKosthold(type, undefined)}
-                              aria-label={`Fjern ${allergen ? `allergi mot ${navn.toLowerCase()}` : navn.toLowerCase()}`}
+                              aria-label={allergen ? t('Fjern allergi mot {navn}', { navn: navn.toLowerCase() }) : t('Fjern {navn}', { navn: navn.toLowerCase() })}
                               className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-pill text-text-muted hover:bg-surface hover:text-text sm:flex"
                             >
                               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
@@ -687,8 +699,8 @@ export function Skjema() {
                   )}
 
                   <Textarea
-                    label="Andre ønsker (valgfritt)"
-                    hint="For eksempel servering, drikke, servise, andre allergier eller fast levering. Vises bare for leverandørene som låser opp forespørselen."
+                    label={t('Andre ønsker (valgfritt)')}
+                    hint={t('For eksempel servering, drikke, servise, andre allergier eller fast levering. Vises bare for leverandørene som låser opp forespørselen.')}
                     value={u.melding}
                     onChange={(e) => sett('melding', e.target.value)}
                     rows={3}
@@ -703,28 +715,29 @@ export function Skjema() {
                 <section aria-labelledby="oppsummering" className="flex items-start justify-between gap-3 rounded-card border border-border bg-surface p-4 md:p-5">
                   <div className="flex min-w-0 flex-col gap-1">
                     <h2 id="oppsummering" className="m-0 text-[17px] font-bold">
-                      {anledningNavn(u.anledning)} · {u.gjester} gjester
+                      {anledningNavn(u.anledning, t)} · {t('{antall} gjester', { antall: u.gjester })}
                     </h2>
                     <p className="m-0 text-[15px] leading-normal text-text-muted">
-                      {u.dato ? stor(datoKort(u.dato)) : 'Fleksibel dato'}, {tidLabel.toLowerCase()} {u.klokkeslett} · {[u.levering === 'levering' ? u.adresse.trim() : '', [u.postnummer, sted].filter(Boolean).join(' ')].filter(Boolean).join(', ')} ·{' '}
-                      {leveringer.find((l) => l.id === u.levering)?.navn.toLowerCase()}
+                      {u.dato ? stor(datoKort(u.dato, info.intl)) : t('Fleksibel dato')}, {tidLabel.toLowerCase()} {u.klokkeslett} · {[u.levering === 'levering' ? u.adresse.trim() : '', [u.postnummer, sted].filter(Boolean).join(' ')].filter(Boolean).join(', ')} ·{' '}
+                      {t(leveringer.find((l) => l.id === u.levering)?.navn ?? '').toLowerCase()}
                     </p>
                     <p className="m-0 text-[15px] leading-normal text-text-muted">
-                      {budsjettNavn(u.budsjett)}
-                      {u.budsjett === 'vet_ikke' ? '' : ' per kuvert'}
+                      {budsjettNavn(u.budsjett, marked, t)}
+                      {u.budsjett === 'vet_ikke' ? '' : ` ${t('per kuvert')}`}
                       {kostholdListe.length ? ` · ${kostholdListe.join(', ')}` : ''}
                     </p>
                   </div>
                   <Button variant="text" size="sm" onClick={tilbake} className="shrink-0 font-semibold">
-                    Endre<span className="sr-only"> behovet</span>
+                    {t('Endre')}
+                    <span className="sr-only"> {t('behovet')}</span>
                   </Button>
                 </section>
 
                 <div className="flex flex-col gap-5">
-                  <Input id="felt-navn" label="Navn" autoComplete="name" value={u.navn} onChange={(e) => sett('navn', e.target.value)} feil={feil.navn} required />
+                  <Input id="felt-navn" label={t('Navn')} autoComplete="name" value={u.navn} onChange={(e) => sett('navn', e.target.value)} feil={feil.navn} required />
                   <Input
                     id="felt-epost"
-                    label="E-post"
+                    label={t('E-post')}
                     type="email"
                     autoComplete="email"
                     inputMode="email"
@@ -736,7 +749,7 @@ export function Skjema() {
                   <div className="grid grid-cols-1 gap-5 min-[480px]:grid-cols-2">
                     <Input
                       id="felt-telefon"
-                      label="Telefon (valgfritt)"
+                      label={t('Telefon (valgfritt)')}
                       type="tel"
                       autoComplete="tel"
                       inputMode="tel"
@@ -744,17 +757,18 @@ export function Skjema() {
                       onChange={(e) => sett('telefon', e.target.value)}
                       feil={feil.telefon}
                     />
-                    <Input id="felt-firma" label="Bedrift (valgfritt)" autoComplete="organization" value={u.firma} onChange={(e) => sett('firma', e.target.value)} />
+                    <Input id="felt-firma" label={t('Bedrift (valgfritt)')} autoComplete="organization" value={u.firma} onChange={(e) => sett('firma', e.target.value)} />
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5 rounded-alert bg-surface-soft p-4 text-[15px] leading-normal">
-                  <strong className="text-base">Hvem ser hva?</strong>
-                  <p className="m-0">Leverandører i området ser behovet og maten, ikke hvem du er.</p>
+                  <strong className="text-base">{t('Hvem ser hva?')}</strong>
+                  <p className="m-0">{t('Leverandører i området ser behovet og maten, ikke hvem du er.')}</p>
                   <p className="m-0">
-                    Navn, kontaktinfo og ønskene dine ser bare de som låser opp forespørselen, høyst {MAKS_LEVERANDORER}. Gateadressen deles først når du velger et tilbud.{' '}
-                    <Link href="/personvern" target="_blank">
-                      Personvern<span className="sr-only"> (åpnes i ny fane)</span>
+                    {t('Navn, kontaktinfo og ønskene dine ser bare de som låser opp forespørselen, høyst {maks}. Gateadressen deles først når du velger et tilbud.', { maks: MAKS_LEVERANDORER })}{' '}
+                    <Link href={sti('/personvern')} target="_blank">
+                      {t('Personvern')}
+                      <span className="sr-only"> {t('(åpnes i ny fane)')}</span>
                     </Link>
                   </p>
                 </div>
@@ -764,16 +778,16 @@ export function Skjema() {
 
           <div aria-hidden="true" className="absolute left-[-9999px] h-px w-px overflow-hidden">
             <label>
-              Nettside
+              {t('Nettside')}
               <input tabIndex={-1} autoComplete="off" value={nettside} onChange={(e) => setNettside(e.target.value)} />
             </label>
           </div>
           <div className="sticky bottom-0 flex shrink-0 flex-col gap-2 border-t border-border bg-bg px-4 pb-6 pt-3">
             {sendeFeil && <Alert tone="feil">{sendeFeil}</Alert>}
             <Button type="submit" className="min-h-14 w-full text-[17px]" busy={sender} disabled={sender}>
-              {steg === 1 ? 'Neste: kontaktinfo' : sender ? 'Sender' : 'Send forespørsel'}
+              {steg === 1 ? t('Neste: kontaktinfo') : sender ? t('Sender') : t('Send forespørsel')}
             </Button>
-            <span className="text-center text-small text-text-muted">{steg === 1 ? 'Ingenting sendes før neste steg.' : 'Gratis og uforpliktende.'}</span>
+            <span className="text-center text-small text-text-muted">{steg === 1 ? t('Ingenting sendes før neste steg.') : t('Gratis og uforpliktende.')}</span>
           </div>
         </form>
       </div>

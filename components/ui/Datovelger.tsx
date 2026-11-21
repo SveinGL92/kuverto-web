@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useSprak } from '@/components/Sprak';
 import { cn } from '@/lib/cn';
 import { feltKlasse } from './Input';
 
@@ -25,8 +26,8 @@ const fraIso = (s: string) => {
   return new Date(y, m - 1, d);
 };
 const visning = (s: string) => (s ? s.split('-').reverse().join('.') : '');
-const langTekst = (s: string) => {
-  const t = fraIso(s).toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const langTekst = (s: string, intl = 'nb-NO') => {
+  const t = fraIso(s).toLocaleDateString(intl, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 const leggTil = (d: Date, dager: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + dager);
@@ -69,6 +70,21 @@ export function Datovelger({
   feil?: string;
   required?: boolean;
 }) {
+  const { info, t } = useSprak();
+  const intl = info.intl;
+  const norsk = intl === 'nb-NO';
+  // Måneder og ukedager: faste norske navn, ellers fra Intl på markedets språk (mandag først).
+  const ukedager = norsk
+    ? UKEDAGER
+    : Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(2024, 0, 1 + i); // 1. januar 2024 er en mandag
+        return [
+          new Intl.DateTimeFormat(intl, { weekday: 'short' }).format(d).replace(/\.$/, ''),
+          new Intl.DateTimeFormat(intl, { weekday: 'long' }).format(d),
+        ];
+      });
+  const manedNavn = (d: Date) => (norsk ? MANEDER[d.getMonth()] : new Intl.DateTimeFormat(intl, { month: 'long' }).format(d));
+  const lang = (v: string) => langTekst(v, intl);
   const [tekst, setTekst] = useState(visning(value));
   const [apen, setApen] = useState(false);
   const [fokus, setFokus] = useState<Date>(() => (value ? fraIso(value) : min ? fraIso(min) : new Date()));
@@ -158,7 +174,7 @@ export function Datovelger({
       type="button"
       onClick={() => setFokus(leggTilMnd(fokus, retning))}
       disabled={retning === -1 && !kanTilbake}
-      aria-label={retning === -1 ? 'Forrige måned' : 'Neste måned'}
+      aria-label={retning === -1 ? t('Forrige måned') : t('Neste måned')}
       className="flex h-11 w-11 items-center justify-center rounded-pill text-text hover:bg-surface-soft disabled:opacity-30"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -178,7 +194,7 @@ export function Datovelger({
           type="text"
           inputMode="numeric"
           autoComplete="off"
-          placeholder="dd.mm.åååå"
+          placeholder={t('dd.mm.åååå')}
           value={tekst}
           required={required}
           aria-invalid={feil ? true : undefined}
@@ -204,7 +220,7 @@ export function Datovelger({
           onClick={() => (apen ? setApen(false) : apne())}
           aria-haspopup="dialog"
           aria-expanded={apen}
-          aria-label={value ? `Velg dato i kalender. Valgt: ${langTekst(value)}` : 'Velg dato i kalender'}
+          aria-label={value ? t('Velg dato i kalender. Valgt: {dato}', { dato: lang(value) }) : t('Velg dato i kalender')}
           className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-pill text-primary hover:bg-surface-soft"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -214,7 +230,7 @@ export function Datovelger({
         </button>
       </div>
       <span id={hintId} className="text-small font-medium text-text-muted">
-        {value ? langTekst(value) : 'Skriv datoen eller velg i kalenderen.'}
+        {value ? lang(value) : t('Skriv datoen eller velg i kalenderen.')}
       </span>
       {feil && (
         <span id={feilId} className="text-small font-semibold text-error">
@@ -234,15 +250,15 @@ export function Datovelger({
           <div className="flex items-center justify-between gap-2 pb-2">
             {pil(-1)}
             <h2 id={tittelId} aria-live="polite" className="m-0 font-display text-[19px] font-extrabold tracking-[-0.02em]">
-              {MANEDER[fokus.getMonth()].charAt(0).toUpperCase() + MANEDER[fokus.getMonth()].slice(1)} {fokus.getFullYear()}
+              {manedNavn(fokus).charAt(0).toUpperCase() + manedNavn(fokus).slice(1)} {fokus.getFullYear()}
             </h2>
             {pil(1)}
           </div>
           <table ref={grid} role="grid" aria-labelledby={tittelId} className="w-full border-collapse">
             <thead>
               <tr>
-                {UKEDAGER.map(([kort, lang]) => (
-                  <th key={kort} scope="col" abbr={lang} className="pb-1 text-center text-small font-semibold text-text-muted">
+                {ukedager.map(([kort, langt]) => (
+                  <th key={kort} scope="col" abbr={langt} className="pb-1 text-center text-small font-semibold text-text-muted">
                     {kort}
                   </th>
                 ))}
@@ -265,7 +281,7 @@ export function Datovelger({
                           tabIndex={aktiv ? 0 : -1}
                           aria-disabled={sperret || undefined}
                           aria-current={v === iDag ? 'date' : undefined}
-                          aria-label={langTekst(v)}
+                          aria-label={lang(v)}
                           onClick={() => velg(d)}
                           className={cn(
                             'k-num h-11 w-full rounded-pill text-base font-semibold outline-offset-2',
@@ -291,10 +307,10 @@ export function Datovelger({
               disabled={forTidlig(new Date())}
               className="min-h-touch rounded-pill px-3 text-[15px] font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-40"
             >
-              I dag
+              {t('I dag')}
             </button>
             <button type="button" onClick={lukk} className="min-h-touch rounded-pill px-3 text-[15px] font-semibold text-text hover:bg-surface-soft">
-              Lukk
+              {t('Lukk')}
             </button>
           </div>
         </div>

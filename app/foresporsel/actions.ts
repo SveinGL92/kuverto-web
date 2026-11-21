@@ -3,11 +3,12 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { headers } from 'next/headers';
 import { klippForForesporsel, MAKS_LEVERANDORER } from '@/lib/klipp';
-import { anledninger, budsjetter, erAllergen, kostholdstyper, leveringer } from '@/lib/labels';
+import { tFor } from '@/lib/i18n';
+import { anledninger, anledningNavn, budsjetter, erAllergen, kostholdstyper, leveringer } from '@/lib/labels';
 import { mal, sendEpost } from '@/lib/server/epost';
 import { fullstendigeLinjer, type KostholdRad } from '@/lib/server/formatering';
 import { finnPostnummer, leverandorerIKommune } from '@/lib/server/postnummer';
-import { aktivtMarked } from '@/lib/server/marked';
+import { sprak } from '@/lib/server/marked';
 import { db } from '@/lib/server/supabase';
 import type { Budsjett } from '@/lib/types';
 
@@ -40,8 +41,9 @@ export type PostnummerSvar = { ok: true; poststed: string; kommune: string; leve
 
 /** Slår opp postnummeret mens kunden skriver: poststed, kommune og om noen leverandører leverer der. */
 export async function sjekkPostnummer(nr: string): Promise<PostnummerSvar> {
-  const pn = await finnPostnummer(String(nr ?? '').trim(), await aktivtMarked());
-  if (!pn) return { ok: false, feil: 'Vi finner ikke dette postnummeret.' };
+  const { marked, t } = await sprak();
+  const pn = await finnPostnummer(String(nr ?? '').trim(), marked);
+  if (!pn) return { ok: false, feil: t('Vi finner ikke dette postnummeret.') };
   return { ok: true, poststed: pn.poststed, kommune: pn.kommunenavn, leverandorer: await leverandorerIKommune(pn.kommunenr) };
 }
 
@@ -59,17 +61,17 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
   const gjester = Math.round(Number(inn.gjester));
   const epost = tekst(inn.epost, 200).toLowerCase();
   const navn = tekst(inn.navn, 120);
-  const marked = await aktivtMarked();
+  const { marked, t } = await sprak();
   const postnummer = tekst(inn.postnummer, 6).replace(/\s/g, '');
   const dato = /^\d{4}-\d{2}-\d{2}$/.test(inn.dato ?? '') ? inn.dato : '';
 
-  if (!anledning || !levering || !budsjett) return { ok: false, feil: 'Noe i skjemaet mangler. Last siden på nytt og prøv igjen.' };
-  if (!(gjester >= 1 && gjester <= 9999)) return { ok: false, feil: 'Skriv antall gjester, minst 1.', felt: 'gjester' };
-  if (!dato && !inn.fleksibel) return { ok: false, feil: 'Velg en dato, eller kryss av for at datoen ikke er bestemt.', felt: 'dato' };
-  if (dato && dato < iDagOslo()) return { ok: false, feil: 'Datoen har passert.', felt: 'dato' };
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(inn.klokkeslett ?? '')) return { ok: false, feil: 'Ugyldig klokkeslett.', felt: 'klokkeslett' };
-  if (!navn) return { ok: false, feil: 'Skriv navnet ditt.', felt: 'navn' };
-  if (!epostOk(epost)) return { ok: false, feil: 'Skriv en gyldig e-postadresse.', felt: 'epost' };
+  if (!anledning || !levering || !budsjett) return { ok: false, feil: t('Noe i skjemaet mangler. Last siden på nytt og prøv igjen.') };
+  if (!(gjester >= 1 && gjester <= 9999)) return { ok: false, feil: t('Skriv antall gjester, minst 1.'), felt: 'gjester' };
+  if (!dato && !inn.fleksibel) return { ok: false, feil: t('Velg en dato, eller kryss av for at datoen ikke er bestemt.'), felt: 'dato' };
+  if (dato && dato < iDagOslo()) return { ok: false, feil: t('Datoen har passert.'), felt: 'dato' };
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(inn.klokkeslett ?? '')) return { ok: false, feil: t('Ugyldig klokkeslett.'), felt: 'klokkeslett' };
+  if (!navn) return { ok: false, feil: t('Skriv navnet ditt.'), felt: 'navn' };
+  if (!epostOk(epost)) return { ok: false, feil: t('Skriv en gyldig e-postadresse.'), felt: 'epost' };
 
   const kosthold: KostholdRad[] = Object.entries(inn.kosthold ?? {})
     .filter(([type]) => kostholdstyper.some((k) => k.id === type))
@@ -79,7 +81,7 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
 
   const s = db();
   const pn = await finnPostnummer(postnummer, marked);
-  if (!pn) return { ok: false, felt: 'postnummer', feil: 'Vi finner ikke dette postnummeret.' };
+  if (!pn) return { ok: false, felt: 'postnummer', feil: t('Vi finner ikke dette postnummeret.') };
   const antallLev = await leverandorerIKommune(pn.kommunenr);
 
   // Begrensning: høyst 5 forespørsler per e-post og 10 per IP-adresse i timen.
@@ -90,7 +92,7 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
     s.from('foresporsler').select('id', { count: 'exact', head: true }).eq('kunde_epost', epost).gte('opprettet', enTimeSiden),
     s.from('foresporsler').select('id', { count: 'exact', head: true }).eq('ip_hash', ipHash).gte('opprettet', enTimeSiden),
   ]);
-  if ((perEpost ?? 0) >= 5 || (perIp ?? 0) >= 10) return { ok: false, feil: 'Det er sendt mange forespørsler på kort tid. Vent litt, eller skriv til hei@kuverto.no.' };
+  if ((perEpost ?? 0) >= 5 || (perIp ?? 0) >= 10) return { ok: false, feil: t('Det er sendt mange forespørsler på kort tid. Vent litt, eller skriv til hei@kuverto.no.') };
   const token = randomBytes(24).toString('base64url');
 
   const omrade = pn.poststed === pn.kommunenavn ? `${pn.poststed} (${postnummer.slice(0, 2)}xx)` : `${pn.poststed}, ${pn.kommunenavn} (${postnummer.slice(0, 2)}xx)`;
@@ -118,7 +120,7 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
   const { data: f, error } = await s.from('foresporsler').insert(lagres).select('id').single();
   if (error || !f) {
     console.error('[foresporsel] insert', error);
-    return { ok: false, feil: 'Vi fikk ikke lagret forespørselen. Prøv igjen om litt.' };
+    return { ok: false, feil: t('Vi fikk ikke lagret forespørselen. Prøv igjen om litt.') };
   }
   const { error: kErr } = await s.from('foresporsel_kontakt').insert({
     foresporsel_id: f.id,
@@ -132,9 +134,11 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
   if (kErr) {
     console.error('[foresporsel] kontakt', kErr);
     await s.from('foresporsler').delete().eq('id', f.id);
-    return { ok: false, feil: 'Vi fikk ikke lagret forespørselen. Prøv igjen om litt.' };
+    return { ok: false, feil: t('Vi fikk ikke lagret forespørselen. Prøv igjen om litt.') };
   }
 
+  // E-posten går på kundens språk (markedet forespørselen ble sendt fra).
+  const te = tFor(marked);
   const linjer = fullstendigeLinjer(rad, {
     navn,
     firma: tekst(inn.firma, 160) || null,
@@ -142,24 +146,25 @@ export async function sendForesporsel(inn: ForesporselInn): Promise<Svar> {
     telefon: tekst(inn.telefon, 30) || null,
     melding: tekst(inn.melding, 1000) || null,
     adresse,
-  });
-  const anledningTekst = anledninger.find((a) => a.id === anledning)?.navn ?? '';
+  }, te, marked);
+  const anledningTekst = anledningNavn(anledning, te);
   await sendEpost({
     til: epost,
-    emne: `Bekreft forespørselen din om ${anledningTekst.toLowerCase()}`,
+    emne: te('Bekreft forespørselen din om {anledning}', { anledning: anledningTekst.toLowerCase() }),
     html: mal({
-      tittel: 'Bekreft forespørselen',
+      marked,
+      tittel: te('Bekreft forespørselen'),
       avsnitt: [
-        `Hei ${navn.split(' ')[0]}! Se over forespørselen under. Stemmer alt, trykker du på knappen. Da sender vi den til godkjente leverandører i området.`,
+        te('Hei {fornavn}! Se over forespørselen under. Stemmer alt, trykker du på knappen. Da sender vi den til godkjente leverandører i området.', { fornavn: navn.split(' ')[0] }),
         linjer.join('\n'),
-        'Leverandørene ser først området og behovet. Navn, kontaktinfo og ønskene dine ser bare de som låser opp forespørselen, og gateadressen deles først når du velger et tilbud.',
+        te('Leverandørene ser først området og behovet. Navn, kontaktinfo og ønskene dine ser bare de som låser opp forespørselen, og gateadressen deles først når du velger et tilbud.'),
         antallLev
-          ? 'Du får bare tilbud fra leverandører som har oppgitt at de leverer i ditt område.'
-          : `Ingen leverandører har oppgitt at de leverer i ${pn.kommunenavn} ennå. Bekrefter du, ligger forespørselen klar, og leverandører som begynner å levere i området, ser den.`,
-        'Er noe feil? Ikke bekreft. Send heller en ny forespørsel på kuverto.no.',
+          ? te('Du får bare tilbud fra leverandører som har oppgitt at de leverer i ditt område.')
+          : te('Ingen leverandører har oppgitt at de leverer i {kommune} ennå. Bekrefter du, ligger forespørselen klar, og leverandører som begynner å levere i området, ser den.', { kommune: pn.kommunenavn }),
+        te('Er noe feil? Ikke bekreft. Send heller en ny forespørsel på kuverto.no.'),
       ],
-      knapp: { tekst: 'Bekreft og send', sti: `/foresporsel/bekreft?t=${token}` },
-      fot: 'Sendte du ikke denne forespørselen, kan du se bort fra e-posten. Da blir ingenting sendt videre.',
+      knapp: { tekst: te('Bekreft og send'), sti: `/foresporsel/bekreft?t=${token}` },
+      fot: te('Sendte du ikke denne forespørselen, kan du se bort fra e-posten. Da blir ingenting sendt videre.'),
     }),
   });
 
