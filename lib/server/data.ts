@@ -1,4 +1,5 @@
 import 'server-only';
+import { fyll, type T } from '@/lib/i18n/core';
 import type { Anledning, Budsjett, Foresporsel, ForesporselKontakt, Kosthold, Levering, Servering, Tilbud, VedleggFil } from '@/lib/types';
 import { db } from './supabase';
 
@@ -53,7 +54,11 @@ export async function signerVedlegg(rader: Rad[]): Promise<Map<string, string>> 
   return new Map((data ?? []).filter((d) => d.signedUrl && d.path).map((d) => [d.path as string, d.signedUrl as string]));
 }
 
-export const tilTilbud = (r: Rad, lev: { navn: string; beskrivelse?: string | null }, i: number, lenker?: Map<string, string>): Tilbud => {
+/** Uten oversetter: norsk. */
+const norsk: T = (x, v) => fyll(x, v);
+
+/** t: språket til den som ser tilbudet (sprak().t). Standard norsk. */
+export const tilTilbud = (r: Rad, lev: { navn: string; beskrivelse?: string | null }, i: number, lenker?: Map<string, string>, t: T = norsk): Tilbud => {
   const vedlegg = ((r.vedlegg as LagretVedlegg[]) ?? [])
     .map((v) => ({ navn: v.navn, type: v.type, storrelse: v.storrelse, url: lenker?.get(v.sti) ?? '' }))
     .filter((v) => v.url);
@@ -64,14 +69,14 @@ export const tilTilbud = (r: Rad, lev: { navn: string; beskrivelse?: string | nu
   leverandorId: r.leverandor_id,
   leverandorNavn: lev.navn,
   leverandorBeskrivelse: lev.beskrivelse ?? undefined,
-  bilde: forsteBilde ? { src: forsteBilde.url, alt: `Bilde fra ${lev.navn}` } : { src: BILDER[i % BILDER.length], alt: 'Illustrasjonsbilde, ikke leverandørens egen mat' },
+  bilde: forsteBilde ? { src: forsteBilde.url, alt: t('Bilde fra {navn}', { navn: lev.navn }) } : { src: BILDER[i % BILDER.length], alt: t('Illustrasjonsbilde, ikke leverandørens egen mat') },
   prisPerKuvert: r.pris_per_kuvert,
   totalInklMva: r.total_inkl_mva,
   meny: r.meny,
-  kosthold: { dekket: r.kosthold_dekket, tekst: r.kosthold_tekst || (r.kosthold_dekket ? 'Dekket' : 'Ikke oppgitt'), merknad: r.kosthold_merknad ?? undefined },
+  kosthold: { dekket: r.kosthold_dekket, tekst: r.kosthold_tekst || (r.kosthold_dekket ? t('Dekket') : t('Ikke oppgitt')), merknad: r.kosthold_merknad ?? undefined },
   levering: { inkludert: r.levering_inkludert, pris: r.levering_pris ?? undefined },
   oppsettOgRydding: r.oppsett_og_rydding,
-  servise: r.servise || 'Ikke oppgitt',
+  servise: r.servise || t('Ikke oppgitt'),
   gyldigTil: r.gyldig_til,
   betingelser: r.betingelser ?? undefined,
   menyUrl: r.meny_url ?? undefined,

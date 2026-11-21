@@ -1,7 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { PILOT_GRATIS_KLIPP } from '@/lib/klipp';
+import { tFor } from '@/lib/i18n';
+import { PILOT_GRATIS_KLIPP, REFUSJON_ETTER_DAGER } from '@/lib/klipp';
+import { erMarked } from '@/lib/markets';
 import { mal, sendEpost } from '@/lib/server/epost';
 import { db, erAdmin, innloggetEpost } from '@/lib/server/supabase';
 import { varsleOmForesporsel } from '@/lib/server/varsle';
@@ -14,21 +16,26 @@ async function kravAdmin() {
 export async function godkjennLeverandor(id: string) {
   await kravAdmin();
   const s = db();
-  const { data: l, error } = await s.from('leverandorer').update({ status: 'godkjent', godkjent: new Date().toISOString() }).eq('id', id).select('navn, epost, kontaktperson').single();
+  const { data: l, error } = await s.from('leverandorer').update({ status: 'godkjent', godkjent: new Date().toISOString() }).eq('id', id).select('navn, epost, kontaktperson, marked').single();
   if (error) console.error('[admin] godkjenn', error.message);
   if (!l) return;
   // Gratis klipp én gang per leverandør (referansen er unik).
   await s.from('klipp_transaksjoner').upsert({ leverandor_id: id, endring: PILOT_GRATIS_KLIPP, grunn: 'gratis', referanse: `gratis:${id}` }, { onConflict: 'referanse', ignoreDuplicates: true });
+  // E-posten går på leverandørens språk, med lenke til riktig land.
+  const marked = erMarked(l.marked) ? l.marked : 'no';
+  const t = tFor(marked);
   await sendEpost({
     til: l.epost,
-    emne: `${l.navn} er godkjent på Kuverto`,
+    emne: t('{navn} er godkjent på Kuverto', { navn: l.navn }),
     html: mal({
-      tittel: 'Bedriften er godkjent',
+      tittel: t('Bedriften er godkjent'),
       avsnitt: [
-        `Hei ${l.kontaktperson.split(' ')[0]}! ${l.navn} er godkjent som leverandør på Kuverto.`,
-        `Du har fått ${PILOT_GRATIS_KLIPP} gratis klipp. Logg inn med denne e-postadressen for å se forespørsler i området ditt. Du får også e-post når nye forespørsler kommer.`,
+        t('Hei {fornavn}! {navn} er godkjent som leverandør på Kuverto.', { fornavn: l.kontaktperson.split(' ')[0], navn: l.navn }),
+        t('Du har fått {antall} gratis klipp. Logg inn med denne e-postadressen for å se forespørsler i området ditt. Du får også e-post når nye forespørsler kommer.', { antall: PILOT_GRATIS_KLIPP }),
+        t('Du får klippene tilbake hvis kunden trekker forespørselen, eller ikke svarer innen {dager} dager etter at du sendte tilbudet.', { dager: REFUSJON_ETTER_DAGER }),
       ],
-      knapp: { tekst: 'Logg inn', sti: `/logg-inn?rolle=leverandor&epost=${encodeURIComponent(l.epost)}` },
+      knapp: { tekst: t('Logg inn'), sti: `/logg-inn?rolle=leverandor&epost=${encodeURIComponent(l.epost)}` },
+      marked,
     }),
   });
   revalidatePath('/admin', 'layout');
